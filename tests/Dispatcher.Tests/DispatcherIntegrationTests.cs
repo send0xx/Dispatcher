@@ -87,7 +87,7 @@ public sealed class DispatcherIntegrationTests
     }
 
     [Fact]
-    public async Task Reusable_pipeline_is_safe_for_concurrent_requests_in_the_same_scope()
+    public async Task Pipeline_is_safe_for_concurrent_requests_in_the_same_scope()
     {
         var services = CreateServices();
         services.AddPipelineBehavior<PassthroughGreetingBehavior>();
@@ -114,6 +114,22 @@ public sealed class DispatcherIntegrationTests
         await dispatcher.QueryAsync(new GreetingQuery("Grace"));
 
         Assert.Equal(2, scope.ServiceProvider.GetRequiredService<TestState>().BehaviorInstances);
+    }
+
+    [Fact]
+    public async Task Behavior_registered_directly_in_microsoft_di_is_executed()
+    {
+        var services = CreateServices();
+        services.AddScoped<IPipelineBehavior<GreetingQuery, string>, FirstGreetingBehavior>();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GreetingQuery("Ada"));
+
+        Assert.Equal(
+            ["first-before", "handler", "first-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
     [Fact]
@@ -303,11 +319,11 @@ internal sealed class FirstGreetingBehavior(TestState state) : IPipelineBehavior
 {
     public async ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<GreetingQuery, string> next,
+        RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("first-before");
-        var result = await next(query, cancellationToken);
+        var result = await next(cancellationToken);
         state.Events.Add("first-after");
         return result;
     }
@@ -317,11 +333,11 @@ internal sealed class SecondGreetingBehavior(TestState state) : IPipelineBehavio
 {
     public async ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<GreetingQuery, string> next,
+        RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("second-before");
-        var result = await next(query, cancellationToken);
+        var result = await next(cancellationToken);
         state.Events.Add("second-after");
         return result;
     }
@@ -331,7 +347,7 @@ internal sealed class ShortCircuitSumBehavior : IPipelineBehavior<SumCommand, in
 {
     public ValueTask<int> HandleAsync(
         SumCommand command,
-        RequestHandlerDelegate<SumCommand, int> next,
+        RequestHandlerDelegate<int> next,
         CancellationToken cancellationToken) => ValueTask.FromResult(42);
 }
 
@@ -339,11 +355,11 @@ internal sealed class RecordCommandBehavior(TestState state) : IPipelineBehavior
 {
     public async ValueTask<Unit> HandleAsync(
         RecordCommand command,
-        RequestHandlerDelegate<RecordCommand, Unit> next,
+        RequestHandlerDelegate<Unit> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("record-before");
-        var result = await next(command, cancellationToken);
+        var result = await next(cancellationToken);
         state.Events.Add("record-after");
         return result;
     }
@@ -353,9 +369,9 @@ internal sealed class PassthroughGreetingBehavior : IPipelineBehavior<GreetingQu
 {
     public ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<GreetingQuery, string> next,
+        RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken) =>
-        next(query, cancellationToken);
+        next(cancellationToken);
 }
 
 internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuery, string>
@@ -367,8 +383,8 @@ internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuer
 
     public ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<GreetingQuery, string> next,
+        RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken) =>
-        next(query, cancellationToken);
+        next(cancellationToken);
 
 }

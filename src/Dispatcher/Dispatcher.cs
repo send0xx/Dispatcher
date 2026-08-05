@@ -2,8 +2,6 @@ namespace Dispatcher;
 
 public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
 {
-    private readonly PipelineCache _pipelineCache = new(serviceProvider);
-
     public ValueTask<TResponse> QueryAsync<TResponse>(
         IQuery<TResponse> query,
         CancellationToken cancellationToken = default)
@@ -20,7 +18,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
             throw InvalidMessageShape(query.GetType());
         }
 
-        return typedWrapper.HandleAsync(query, serviceProvider, _pipelineCache, cancellationToken);
+        return typedWrapper.HandleAsync(query, serviceProvider, cancellationToken);
     }
 
     public ValueTask<TResponse> ExecuteAsync<TResponse>(
@@ -39,7 +37,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
             throw InvalidMessageShape(command.GetType());
         }
 
-        return typedWrapper.HandleAsync(command, serviceProvider, _pipelineCache, cancellationToken);
+        return typedWrapper.HandleAsync(command, serviceProvider, cancellationToken);
     }
 
     public ValueTask ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
@@ -56,7 +54,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
             throw InvalidMessageShape(command.GetType());
         }
 
-        return typedWrapper.HandleAsync(command, serviceProvider, _pipelineCache, cancellationToken);
+        return typedWrapper.HandleAsync(command, serviceProvider, cancellationToken);
     }
 
     public ValueTask PublishAsync<TNotification>(

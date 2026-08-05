@@ -141,7 +141,7 @@ internal sealed class PassthroughBehavior<TRequest, TResponse> : IPipelineBehavi
 {
     public ValueTask<TResponse> HandleAsync(
         TRequest request,
-        RequestHandlerDelegate<TRequest, TResponse> next,
+        RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken) =>
-        next(request, cancellationToken);
+        next(cancellationToken);
 }

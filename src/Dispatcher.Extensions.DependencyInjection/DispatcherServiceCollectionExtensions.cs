@@ -24,9 +24,7 @@ public static class DispatcherServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(static provider =>
-            DispatcherRegistry.Create(
-                provider.GetServices<HandlerRegistration>(),
-                provider.GetServices<PipelineBehaviorRegistration>()));
+            DispatcherRegistry.Create(provider.GetServices<HandlerRegistration>()));
         services.TryAddScoped<Dispatcher>();
         services.TryAddScoped<IDispatcher>(static provider =>
             provider.GetRequiredService<Dispatcher>());
@@ -122,9 +120,6 @@ public static class DispatcherServiceCollectionExtensions
         foreach (var serviceType in serviceTypes)
         {
             services.Add(ServiceDescriptor.Describe(serviceType, behaviorType, lifetime));
-            services.AddSingleton(new PipelineBehaviorRegistration(
-                serviceType,
-                lifetime != ServiceLifetime.Transient));
         }
 
         return services;

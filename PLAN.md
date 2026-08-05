@@ -82,16 +82,14 @@ Handler methods will accept a `CancellationToken`. Query and result-bearing comm
 Define matching behavior contracts and explicit `next` delegates:
 
 ```csharp
-public delegate ValueTask<TResponse> RequestHandlerDelegate<in TRequest, TResponse>(
-    TRequest request,
-    CancellationToken cancellationToken)
-    where TRequest : IRequest;
+public delegate ValueTask<TResponse> RequestHandlerDelegate<TResponse>(
+    CancellationToken cancellationToken);
 
 public interface IPipelineBehavior<in TRequest, TResponse>
     where TRequest : IRequest;
 ```
 
-Each behavior's `HandleAsync` method will receive the message, its matching `next` delegate, and a `CancellationToken`. Passing the request and token explicitly through `next(request, cancellationToken)` allows the pipeline chain to be reused within a DI scope. The first registered behavior will be the outermost behavior and therefore execute first before the handler and last after it.
+Each behavior's `HandleAsync` method will receive the message, its matching `next` delegate, and a `CancellationToken`. Passing the token explicitly through `next(cancellationToken)` avoids requiring the pipeline to capture it and allows a behavior to replace or link the token deliberately. The first registered behavior will be the outermost behavior and therefore execute first before the handler and last after it.
 
 Expose role-specific dispatch contracts plus a convenience aggregate:
 
