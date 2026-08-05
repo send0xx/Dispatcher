@@ -12,6 +12,10 @@ The libraries target .NET 8 and .NET 10. The example application targets .NET 10
 
 Most applications only need to install `Dispatcher.Extensions.DependencyInjection`.
 
+```bash
+dotnet add package Dispatcher.Extensions.DependencyInjection --version 1.0.0
+```
+
 ## Define a query
 
 ```csharp
@@ -38,10 +42,8 @@ internal sealed class CreateOrderCommandHandler
 {
     public ValueTask<Guid> HandleAsync(
         CreateOrderCommand command,
-        CancellationToken cancellationToken)
-    {
-        // Execute the command and return its result.
-    }
+        CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Guid.NewGuid());
 }
 
 public sealed record ClearOrdersCommand : ICommand;
@@ -51,10 +53,8 @@ internal sealed class ClearOrdersCommandHandler
 {
     public ValueTask HandleAsync(
         ClearOrdersCommand command,
-        CancellationToken cancellationToken)
-    {
-        // Execute a command without a result.
-    }
+        CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
 }
 ```
 
@@ -79,6 +79,8 @@ public static IServiceCollection AddOrdersModule(this IServiceCollection service
 ```
 
 `AddDispatcher()` never scans assemblies implicitly. Handler registration can occur before or after it, and registering the same assembly again is ignored.
+
+The dispatcher, handlers, and behaviors are scoped by default. Resolve and use dispatcher interfaces inside a DI scope, as ASP.NET Core does for each request. Avoid overriding the dispatcher with a singleton registration because scoped handlers and behaviors must be resolved from their owning scope.
 
 ## Dispatch messages
 
@@ -141,6 +143,6 @@ containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/D
 
 ## Current limitations
 
-Handler registration uses reflection and is not trimming or NativeAOT safe. The separate `AddDispatcherHandlers` module-registration seam is intended to support generated registrations in a future release.
+Handler registration uses reflection and is not trimming or Native AOT safe. The separate `AddDispatcherHandlers` module-registration seam is intended to support generated registrations in a future release.
 
 Future maintenance notes are available in the [v1 implementation plan](docs/PLAN.md) and [Native AOT roadmap](docs/AOT.md).

@@ -386,5 +386,4 @@ internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuer
         RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken) =>
         next(cancellationToken);
-
 }

@@ -1,5 +1,7 @@
 # Dispatcher v1 implementation plan
 
+> This is the historical plan used to build version 1.0.0. The implemented public API and repository documentation are authoritative; see [AOT.md](AOT.md) for future Native AOT work.
+
 ## 1. Goal and initial scope
 
 Build a small, dependency-injection-oriented CQRS dispatcher with:
