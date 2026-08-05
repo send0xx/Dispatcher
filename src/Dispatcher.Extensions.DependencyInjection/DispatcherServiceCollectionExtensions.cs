@@ -25,15 +25,15 @@ public static class DispatcherServiceCollectionExtensions
 
         services.TryAddSingleton(static provider =>
             DispatcherRegistry.Create(provider.GetServices<HandlerRegistration>()));
-        services.TryAddScoped<global::Dispatcher.Dispatcher>();
+        services.TryAddScoped<Dispatcher>();
         services.TryAddScoped<IDispatcher>(static provider =>
-            provider.GetRequiredService<global::Dispatcher.Dispatcher>());
+            provider.GetRequiredService<Dispatcher>());
         services.TryAddScoped<IQueryDispatcher>(static provider =>
-            provider.GetRequiredService<global::Dispatcher.Dispatcher>());
+            provider.GetRequiredService<Dispatcher>());
         services.TryAddScoped<ICommandDispatcher>(static provider =>
-            provider.GetRequiredService<global::Dispatcher.Dispatcher>());
+            provider.GetRequiredService<Dispatcher>());
         services.TryAddScoped<INotificationPublisher>(static provider =>
-            provider.GetRequiredService<global::Dispatcher.Dispatcher>());
+            provider.GetRequiredService<Dispatcher>());
 
         return services;
     }
