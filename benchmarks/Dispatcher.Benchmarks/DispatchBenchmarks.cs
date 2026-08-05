@@ -1,7 +1,7 @@
+using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
 using Dispatcher.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using System.Runtime.CompilerServices;
 
 namespace Dispatcher.Benchmarks;
 

@@ -18,16 +18,31 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : QueryHandlerWrapp
     {
         var typedQuery = (TQuery)query;
         var handler = serviceProvider.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
-        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TQuery, TResponse>>().ToArray();
-        RequestHandlerDelegate<TResponse> pipeline = token => handler.HandleAsync(typedQuery, token);
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TQuery, TResponse>>();
 
-        for (var index = behaviors.Length - 1; index >= 0; index--)
+        if (behaviors.Count == 0)
+        {
+            return handler.HandleAsync(typedQuery, cancellationToken);
+        }
+
+        return HandlePipelineAsync(typedQuery, handler, behaviors, cancellationToken);
+    }
+
+    private static ValueTask<TResponse> HandlePipelineAsync(
+        TQuery query,
+        IQueryHandler<TQuery, TResponse> handler,
+        IReadOnlyList<IPipelineBehavior<TQuery, TResponse>> behaviors,
+        CancellationToken cancellationToken)
+    {
+        RequestHandlerDelegate<TResponse> pipeline = token => handler.HandleAsync(query, token);
+
+        for (var index = behaviors.Count - 1; index >= 1; index--)
         {
             var behavior = behaviors[index];
             var next = pipeline;
-            pipeline = token => behavior.HandleAsync(typedQuery, next, token);
+            pipeline = token => behavior.HandleAsync(query, next, token);
         }
 
-        return pipeline(cancellationToken);
+        return behaviors[0].HandleAsync(query, pipeline, cancellationToken);
     }
 }

@@ -8,8 +8,15 @@ internal static class ServiceProviderExtensions
             ?? throw new InvalidOperationException($"Service '{typeof(T).FullName}' is not registered.");
     }
 
-    public static IEnumerable<T> GetServices<T>(this IServiceProvider serviceProvider)
+    public static IReadOnlyList<T> GetServices<T>(this IServiceProvider serviceProvider)
     {
-        return (IEnumerable<T>?)serviceProvider.GetService(typeof(IEnumerable<T>)) ?? [];
+        var services = (IEnumerable<T>?)serviceProvider.GetService(typeof(IEnumerable<T>));
+
+        return services switch
+        {
+            null => [],
+            IReadOnlyList<T> list => list,
+            _ => services.ToArray()
+        };
     }
 }

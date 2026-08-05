@@ -18,17 +18,32 @@ internal sealed class CommandWithResponseHandlerWrapper<TCommand, TResponse> : C
     {
         var typedCommand = (TCommand)command;
         var handler = serviceProvider.GetRequiredService<ICommandHandler<TCommand, TResponse>>();
-        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand, TResponse>>().ToArray();
-        RequestHandlerDelegate<TResponse> pipeline = token => handler.HandleAsync(typedCommand, token);
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand, TResponse>>();
 
-        for (var index = behaviors.Length - 1; index >= 0; index--)
+        if (behaviors.Count == 0)
+        {
+            return handler.HandleAsync(typedCommand, cancellationToken);
+        }
+
+        return HandlePipelineAsync(typedCommand, handler, behaviors, cancellationToken);
+    }
+
+    private static ValueTask<TResponse> HandlePipelineAsync(
+        TCommand command,
+        ICommandHandler<TCommand, TResponse> handler,
+        IReadOnlyList<IPipelineBehavior<TCommand, TResponse>> behaviors,
+        CancellationToken cancellationToken)
+    {
+        RequestHandlerDelegate<TResponse> pipeline = token => handler.HandleAsync(command, token);
+
+        for (var index = behaviors.Count - 1; index >= 1; index--)
         {
             var behavior = behaviors[index];
             var next = pipeline;
-            pipeline = token => behavior.HandleAsync(typedCommand, next, token);
+            pipeline = token => behavior.HandleAsync(command, next, token);
         }
 
-        return pipeline(cancellationToken);
+        return behaviors[0].HandleAsync(command, pipeline, cancellationToken);
     }
 }
 
@@ -43,27 +58,42 @@ internal abstract class CommandHandlerWrapperBase : RequestHandlerWrapper
 internal sealed class CommandHandlerWrapper<TCommand> : CommandHandlerWrapperBase
     where TCommand : ICommand
 {
-    public override async ValueTask HandleAsync(
+    public override ValueTask HandleAsync(
         ICommand command,
         IServiceProvider serviceProvider,
         CancellationToken cancellationToken)
     {
         var typedCommand = (TCommand)command;
         var handler = serviceProvider.GetRequiredService<ICommandHandler<TCommand>>();
-        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand, Unit>>().ToArray();
+        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TCommand, Unit>>();
+
+        if (behaviors.Count == 0)
+        {
+            return handler.HandleAsync(typedCommand, cancellationToken);
+        }
+
+        return HandlePipelineAsync(typedCommand, handler, behaviors, cancellationToken);
+    }
+
+    private static async ValueTask HandlePipelineAsync(
+        TCommand command,
+        ICommandHandler<TCommand> handler,
+        IReadOnlyList<IPipelineBehavior<TCommand, Unit>> behaviors,
+        CancellationToken cancellationToken)
+    {
         RequestHandlerDelegate<Unit> pipeline = async token =>
         {
-            await handler.HandleAsync(typedCommand, token).ConfigureAwait(false);
+            await handler.HandleAsync(command, token).ConfigureAwait(false);
             return Unit.Value;
         };
 
-        for (var index = behaviors.Length - 1; index >= 0; index--)
+        for (var index = behaviors.Count - 1; index >= 1; index--)
         {
             var behavior = behaviors[index];
             var next = pipeline;
-            pipeline = token => behavior.HandleAsync(typedCommand, next, token);
+            pipeline = token => behavior.HandleAsync(command, next, token);
         }
 
-        await pipeline(cancellationToken).ConfigureAwait(false);
+        await behaviors[0].HandleAsync(command, pipeline, cancellationToken).ConfigureAwait(false);
     }
 }
