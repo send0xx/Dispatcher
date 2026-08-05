@@ -5,3 +5,4 @@
 .vscode/
 TestResults/
 artifacts/
+BenchmarkDotNet.Artifacts/

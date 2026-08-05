@@ -128,6 +128,17 @@ dotnet run --project samples/Dispatcher.SampleApi
 
 The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/Dispatcher.SampleApi/README.md).
 
+## Benchmarks
+
+Run the .NET 10 BenchmarkDotNet suite in Release mode:
+
+```bash
+dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
+```
+
+It reports latency and managed allocations for each message shape and for pipelines
+containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md).
+
 ## Current limitations
 
 Handler registration uses reflection and is not trimming or NativeAOT safe. The separate `AddDispatcherHandlers` module-registration seam is intended to support generated registrations in a future release.

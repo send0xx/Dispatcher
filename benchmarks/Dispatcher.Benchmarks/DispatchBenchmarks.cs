@@ -1,0 +1,147 @@
+using BenchmarkDotNet.Attributes;
+using Dispatcher.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using System.Runtime.CompilerServices;
+
+namespace Dispatcher.Benchmarks;
+
+[MemoryDiagnoser]
+[HideColumns("Error", "StdDev", "RatioSD")]
+public class DispatchBenchmarks
+{
+    private static readonly PingQuery QueryMessage = new(41);
+    private static readonly IncrementCommand CommandWithResponse = new(41);
+    private static readonly TouchCommand Command = new();
+    private static readonly TouchedNotification Notification = new();
+
+    private readonly PingQueryHandler _queryHandler = new();
+    private ServiceProvider _provider = null!;
+    private IServiceScope _scope = null!;
+    private IDispatcher _dispatcher = null!;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddDispatcherHandlers<DispatchBenchmarks>();
+
+        _provider = services.BuildServiceProvider();
+        _scope = _provider.CreateScope();
+        _dispatcher = _scope.ServiceProvider.GetRequiredService<IDispatcher>();
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _scope.Dispose();
+        _provider.Dispose();
+    }
+
+    [Benchmark(Baseline = true)]
+    public ValueTask<int> DirectQueryHandler() =>
+        _queryHandler.HandleAsync(QueryMessage, CancellationToken.None);
+
+    [Benchmark]
+    public ValueTask<int> Query() =>
+        _dispatcher.QueryAsync(QueryMessage);
+
+    [Benchmark]
+    public ValueTask<int> CommandReturningResponse() =>
+        _dispatcher.ExecuteAsync(CommandWithResponse);
+
+    [Benchmark]
+    public ValueTask CommandWithoutResponse() =>
+        _dispatcher.ExecuteAsync(Command);
+
+    [Benchmark]
+    public ValueTask NotificationWithOneHandler() =>
+        _dispatcher.PublishAsync(Notification);
+}
+
+[MemoryDiagnoser]
+[HideColumns("Error", "StdDev", "RatioSD")]
+public class PipelineBenchmarks
+{
+    private static readonly PingQuery QueryMessage = new(41);
+
+    private ServiceProvider _provider = null!;
+    private IServiceScope _scope = null!;
+    private IDispatcher _dispatcher = null!;
+
+    [Params(0, 1, 3)]
+    public int BehaviorCount { get; set; }
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddDispatcherHandlers<DispatchBenchmarks>();
+
+        for (var index = 0; index < BehaviorCount; index++)
+        {
+            services.AddPipelineBehavior<PassthroughBehavior<PingQuery, int>>();
+        }
+
+        _provider = services.BuildServiceProvider();
+        _scope = _provider.CreateScope();
+        _dispatcher = _scope.ServiceProvider.GetRequiredService<IDispatcher>();
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _scope.Dispose();
+        _provider.Dispose();
+    }
+
+    [Benchmark]
+    public ValueTask<int> Query() =>
+        _dispatcher.QueryAsync(QueryMessage);
+}
+
+internal sealed record PingQuery(int Value) : IQuery<int>;
+
+internal sealed class PingQueryHandler : IQueryHandler<PingQuery, int>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public ValueTask<int> HandleAsync(PingQuery query, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(query.Value + 1);
+}
+
+internal sealed record IncrementCommand(int Value) : ICommand<int>;
+
+internal sealed class IncrementCommandHandler : ICommandHandler<IncrementCommand, int>
+{
+    public ValueTask<int> HandleAsync(IncrementCommand command, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(command.Value + 1);
+}
+
+internal sealed record TouchCommand : ICommand;
+
+internal sealed class TouchCommandHandler : ICommandHandler<TouchCommand>
+{
+    public ValueTask HandleAsync(TouchCommand command, CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
+}
+
+internal sealed record TouchedNotification : INotification;
+
+internal sealed class TouchedNotificationHandler : INotificationHandler<TouchedNotification>
+{
+    public ValueTask HandleAsync(TouchedNotification notification, CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
+}
+
+internal sealed class PassthroughBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest
+{
+    public ValueTask<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
