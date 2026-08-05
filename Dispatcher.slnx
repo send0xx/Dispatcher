@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
+    <Project Path="samples/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
+    <Project Path="samples/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
+    <Project Path="src/Dispatcher.Extensions.DependencyInjection/Dispatcher.Extensions.DependencyInjection.csproj" />
+    <Project Path="src/Dispatcher/Dispatcher.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dispatcher.Tests/Dispatcher.Tests.csproj" />
+  </Folder>
+</Solution>
