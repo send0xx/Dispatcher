@@ -1,5 +1,11 @@
 namespace Dispatcher;
 
+/// <summary>
+/// The exception thrown when a query or command has multiple registered handlers.
+/// </summary>
+/// <param name="messageType">The message type with duplicate handlers.</param>
+/// <param name="firstHandlerType">The first registered handler type.</param>
+/// <param name="secondHandlerType">The second registered handler type.</param>
 public sealed class DuplicateHandlerException(
     Type messageType,
     Type firstHandlerType,
@@ -8,7 +14,18 @@ public sealed class DuplicateHandlerException(
         $"Multiple handlers are registered for message type '{messageType.FullName}': " +
         $"'{firstHandlerType.FullName}' and '{secondHandlerType.FullName}'.")
 {
+    /// <summary>
+    /// Gets the message type with duplicate handlers.
+    /// </summary>
     public Type MessageType { get; } = messageType;
+
+    /// <summary>
+    /// Gets the first registered handler type.
+    /// </summary>
     public Type FirstHandlerType { get; } = firstHandlerType;
+
+    /// <summary>
+    /// Gets the second registered handler type.
+    /// </summary>
     public Type SecondHandlerType { get; } = secondHandlerType;
 }

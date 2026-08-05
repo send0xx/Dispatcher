@@ -5,7 +5,6 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <Version>1.0.0</Version>
     <Authors>send0xx</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

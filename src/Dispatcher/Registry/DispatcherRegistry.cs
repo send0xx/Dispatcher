@@ -2,6 +2,9 @@ using System.Collections.Frozen;
 
 namespace Dispatcher;
 
+/// <summary>
+/// Provides immutable handler lookup tables used during dispatch.
+/// </summary>
 public sealed class DispatcherRegistry
 {
     internal FrozenDictionary<Type, RequestHandlerWrapper> RequestHandlers { get; }
@@ -15,6 +18,12 @@ public sealed class DispatcherRegistry
         NotificationHandlers = notificationHandlers;
     }
 
+    /// <summary>
+    /// Creates a registry from handler registrations.
+    /// </summary>
+    /// <param name="registrations">The handler registrations to include.</param>
+    /// <returns>An immutable dispatcher registry.</returns>
+    /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     public static DispatcherRegistry Create(IEnumerable<HandlerRegistration> registrations)
     {
         ArgumentNullException.ThrowIfNull(registrations);

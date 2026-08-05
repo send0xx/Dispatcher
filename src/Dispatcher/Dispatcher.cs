@@ -1,7 +1,13 @@
 namespace Dispatcher;
 
+/// <summary>
+/// Dispatches queries and commands and publishes notifications through an <see cref="IServiceProvider"/>.
+/// </summary>
+/// <param name="serviceProvider">The service provider used to resolve handlers and behaviors.</param>
+/// <param name="registry">The immutable handler registry.</param>
 public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
 {
+    /// <inheritdoc />
     public ValueTask<TResponse> QueryAsync<TResponse>(
         IQuery<TResponse> query,
         CancellationToken cancellationToken = default)
@@ -21,6 +27,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
         return typedWrapper.HandleAsync(query, serviceProvider, cancellationToken);
     }
 
+    /// <inheritdoc />
     public ValueTask<TResponse> ExecuteAsync<TResponse>(
         ICommand<TResponse> command,
         CancellationToken cancellationToken = default)
@@ -40,6 +47,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
         return typedWrapper.HandleAsync(command, serviceProvider, cancellationToken);
     }
 
+    /// <inheritdoc />
     public ValueTask ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -57,6 +65,7 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
         return typedWrapper.HandleAsync(command, serviceProvider, cancellationToken);
     }
 
+    /// <inheritdoc />
     public ValueTask PublishAsync<TNotification>(
         TNotification notification,
         CancellationToken cancellationToken = default)
