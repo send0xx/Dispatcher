@@ -105,11 +105,11 @@ internal sealed class LoggingBehavior<TRequest, TResponse>
 {
     public async ValueTask<TResponse> HandleAsync(
         TRequest request,
-        RequestHandlerDelegate<TResponse> next,
+        RequestHandlerDelegate<TRequest, TResponse> next,
         CancellationToken cancellationToken)
     {
         Console.WriteLine($"Executing {typeof(TRequest).Name}");
-        return await next(cancellationToken);
+        return await next(request, cancellationToken);
     }
 }
 

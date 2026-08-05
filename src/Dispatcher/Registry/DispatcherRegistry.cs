@@ -16,8 +16,15 @@ public sealed class DispatcherRegistry
     }
 
     public static DispatcherRegistry Create(IEnumerable<HandlerRegistration> registrations)
+        => Create(registrations, null);
+
+    public static DispatcherRegistry Create(
+        IEnumerable<HandlerRegistration> registrations,
+        IEnumerable<PipelineBehaviorRegistration>? pipelineBehaviorRegistrations)
     {
         ArgumentNullException.ThrowIfNull(registrations);
+
+        var behaviorRegistrations = pipelineBehaviorRegistrations?.ToArray();
 
         var requests = new Dictionary<Type, (RequestHandlerWrapper Wrapper, Type HandlerType)>();
         var notifications = new Dictionary<Type, NotificationHandlerWrapper>();
@@ -34,7 +41,7 @@ public sealed class DispatcherRegistry
                 continue;
             }
 
-            var wrapper = CreateRequestWrapper(registration);
+            var wrapper = CreateRequestWrapper(registration, GetPipelineMode(registration, behaviorRegistrations));
             if (!requests.TryAdd(registration.MessageType, (wrapper, registration.HandlerType)))
             {
                 var existing = requests[registration.MessageType];
@@ -50,7 +57,9 @@ public sealed class DispatcherRegistry
             notifications.ToFrozenDictionary());
     }
 
-    private static RequestHandlerWrapper CreateRequestWrapper(HandlerRegistration registration)
+    private static RequestHandlerWrapper CreateRequestWrapper(
+        HandlerRegistration registration,
+        PipelineMode pipelineMode)
     {
         var wrapperType = registration.Kind switch
         {
@@ -64,7 +73,33 @@ public sealed class DispatcherRegistry
             _ => throw new ArgumentOutOfRangeException(nameof(registration), registration.Kind, "Unknown handler kind.")
         };
 
-        return (RequestHandlerWrapper)Activator.CreateInstance(wrapperType)!;
+        return (RequestHandlerWrapper)Activator.CreateInstance(wrapperType, pipelineMode)!;
+    }
+
+    private static PipelineMode GetPipelineMode(
+        HandlerRegistration registration,
+        PipelineBehaviorRegistration[]? behaviorRegistrations)
+    {
+        if (behaviorRegistrations is null)
+        {
+            return PipelineMode.Dynamic;
+        }
+
+        var responseType = registration.ResponseType ?? typeof(Unit);
+        var pipelineType = typeof(IPipelineBehavior<,>).MakeGenericType(registration.MessageType, responseType);
+        var applicable = behaviorRegistrations.Where(item =>
+            item.ServiceType == pipelineType ||
+            item.ServiceType.IsGenericTypeDefinition &&
+            item.ServiceType == typeof(IPipelineBehavior<,>)).ToArray();
+
+        if (applicable.Length == 0)
+        {
+            return PipelineMode.None;
+        }
+
+        return applicable.All(static item => item.IsReusable)
+            ? PipelineMode.Reusable
+            : PipelineMode.Dynamic;
     }
 
     private static NotificationHandlerWrapper CreateNotificationWrapper(Type notificationType)

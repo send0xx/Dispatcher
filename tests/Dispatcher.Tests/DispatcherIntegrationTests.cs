@@ -87,6 +87,36 @@ public sealed class DispatcherIntegrationTests
     }
 
     [Fact]
+    public async Task Reusable_pipeline_is_safe_for_concurrent_requests_in_the_same_scope()
+    {
+        var services = CreateServices();
+        services.AddPipelineBehavior<PassthroughGreetingBehavior>();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
+
+        var first = dispatcher.QueryAsync(new GreetingQuery("Ada")).AsTask();
+        var second = dispatcher.QueryAsync(new GreetingQuery("Grace")).AsTask();
+
+        Assert.Equal(["Hello, Ada", "Hello, Grace"], await Task.WhenAll(first, second));
+    }
+
+    [Fact]
+    public async Task Transient_behavior_is_resolved_for_every_dispatch()
+    {
+        var services = CreateServices();
+        services.AddPipelineBehavior<TransientGreetingBehavior>(ServiceLifetime.Transient);
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
+
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
+        await dispatcher.QueryAsync(new GreetingQuery("Grace"));
+
+        Assert.Equal(2, scope.ServiceProvider.GetRequiredService<TestState>().BehaviorInstances);
+    }
+
+    [Fact]
     public async Task Publishes_notifications_sequentially_in_registration_order()
     {
         await using var provider = CreateProvider();
@@ -207,6 +237,7 @@ public sealed class TestState
 {
     public string? Recorded { get; set; }
     public List<string> Events { get; } = [];
+    public int BehaviorInstances { get; set; }
 }
 
 public sealed record GreetingQuery(string Name) : IQuery<string>;
@@ -272,11 +303,11 @@ internal sealed class FirstGreetingBehavior(TestState state) : IPipelineBehavior
 {
     public async ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<string> next,
+        RequestHandlerDelegate<GreetingQuery, string> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("first-before");
-        var result = await next(cancellationToken);
+        var result = await next(query, cancellationToken);
         state.Events.Add("first-after");
         return result;
     }
@@ -286,11 +317,11 @@ internal sealed class SecondGreetingBehavior(TestState state) : IPipelineBehavio
 {
     public async ValueTask<string> HandleAsync(
         GreetingQuery query,
-        RequestHandlerDelegate<string> next,
+        RequestHandlerDelegate<GreetingQuery, string> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("second-before");
-        var result = await next(cancellationToken);
+        var result = await next(query, cancellationToken);
         state.Events.Add("second-after");
         return result;
     }
@@ -300,7 +331,7 @@ internal sealed class ShortCircuitSumBehavior : IPipelineBehavior<SumCommand, in
 {
     public ValueTask<int> HandleAsync(
         SumCommand command,
-        RequestHandlerDelegate<int> next,
+        RequestHandlerDelegate<SumCommand, int> next,
         CancellationToken cancellationToken) => ValueTask.FromResult(42);
 }
 
@@ -308,12 +339,36 @@ internal sealed class RecordCommandBehavior(TestState state) : IPipelineBehavior
 {
     public async ValueTask<Unit> HandleAsync(
         RecordCommand command,
-        RequestHandlerDelegate<Unit> next,
+        RequestHandlerDelegate<RecordCommand, Unit> next,
         CancellationToken cancellationToken)
     {
         state.Events.Add("record-before");
-        var result = await next(cancellationToken);
+        var result = await next(command, cancellationToken);
         state.Events.Add("record-after");
         return result;
     }
+}
+
+internal sealed class PassthroughGreetingBehavior : IPipelineBehavior<GreetingQuery, string>
+{
+    public ValueTask<string> HandleAsync(
+        GreetingQuery query,
+        RequestHandlerDelegate<GreetingQuery, string> next,
+        CancellationToken cancellationToken) =>
+        next(query, cancellationToken);
+}
+
+internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuery, string>
+{
+    public TransientGreetingBehavior(TestState state)
+    {
+        state.BehaviorInstances++;
+    }
+
+    public ValueTask<string> HandleAsync(
+        GreetingQuery query,
+        RequestHandlerDelegate<GreetingQuery, string> next,
+        CancellationToken cancellationToken) =>
+        next(query, cancellationToken);
+
 }

@@ -8,11 +8,11 @@ internal sealed class ValidationCommandBehavior<TCommand, TResponse>(
 {
     public async ValueTask<TResponse> HandleAsync(
         TCommand command,
-        RequestHandlerDelegate<TResponse> next,
+        RequestHandlerDelegate<TCommand, TResponse> next,
         CancellationToken cancellationToken)
     {
         await ValidateAsync(command, cancellationToken);
-        return await next(cancellationToken);
+        return await next(command, cancellationToken);
     }
 
     private async ValueTask ValidateAsync(TCommand command, CancellationToken cancellationToken)
