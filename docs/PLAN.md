@@ -1,4 +1,4 @@
-# Dispatcher implementation plan
+# Dispatcher v1 implementation plan
 
 ## 1. Goal and initial scope
 

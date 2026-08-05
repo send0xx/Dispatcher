@@ -15,4 +15,11 @@
   <Folder Name="/tests/">
     <Project Path="tests/Dispatcher.Tests/Dispatcher.Tests.csproj" />
   </Folder>
+  <Folder Name="/_/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
 </Solution>

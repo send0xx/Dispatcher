@@ -142,3 +142,5 @@ containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/D
 ## Current limitations
 
 Handler registration uses reflection and is not trimming or NativeAOT safe. The separate `AddDispatcherHandlers` module-registration seam is intended to support generated registrations in a future release.
+
+Future maintenance notes are available in the [v1 implementation plan](docs/PLAN.md) and [Native AOT roadmap](docs/AOT.md).

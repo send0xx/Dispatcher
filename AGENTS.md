@@ -14,6 +14,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `samples`: beginner-friendly Minimal API with internal handlers in Orders and Stock modules.
 - `tests/Dispatcher.Tests`: integration tests targeting .NET 8 and .NET 10.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
+- `docs/PLAN.md`: original v1 implementation plan and design history.
+- `docs/AOT.md`: proposed Native AOT and source-generation roadmap.
 
 All library types intentionally use the `Dispatcher` namespace, even when files are organized into folders.
 
@@ -132,6 +134,7 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 
 ## Future AOT and source generation
 
+- Read `docs/AOT.md` before starting AOT or generator work.
 - The current reflection implementation is intentionally not trimming or NativeAOT safe.
 - Preserve the separate `AddDispatcherHandlers` module seam so generated registrations can replace reflection later.
 - Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public command/query contracts unnecessarily.
