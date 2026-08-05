@@ -6,3 +6,4 @@
 TestResults/
 artifacts/
 BenchmarkDotNet.Artifacts/
+*.DotSettings.user
