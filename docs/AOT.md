@@ -2,19 +2,19 @@
 
 ## Current status
 
-The first four delivery milestones are implemented:
+The Native AOT implementation is complete:
 
 - typed manual registration exists for queries, both command shapes, and notifications;
 - typed registrations construct closed wrappers without `MakeGenericType` or `Activator.CreateInstance`;
 - reflection registration remains available and has trimming and dynamic-code compatibility annotations;
-- all library projects enable AOT compatibility analysis;
+- all runtime library projects enable AOT compatibility analysis;
 - `samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
 - `Dispatcher.SourceGeneration` emits deterministic module-local typed registrations for internal handlers;
 - generator diagnostics report invalid method names, duplicate or missing request handlers, unsupported open generic handlers, and handlers that cannot be activated by DI;
 - the module-owned Native AOT sample consumes generated registration behind its module entry point;
 - the host-owned Native AOT sample calls generated registration for a referenced handler assembly directly from the composition root.
 
-Open generic pipeline behaviors remain explicitly closed through the typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API. Automatic behavior closure is optional generator ergonomics rather than a requirement for AOT correctness.
+Open generic pipeline behaviors are explicitly closed through the typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API. This keeps behavior applicability and ordering visible at the composition root while remaining fully Native AOT safe. Automatic behavior closure is not part of the current generator scope.
 
 ## Objective
 
@@ -137,9 +137,9 @@ Do not suppress trimming or AOT warnings globally.
 
 ## Pipeline behaviors
 
-Open generic behaviors require special handling because an AOT compiler must see every required closed generic instantiation.
+Open generic behaviors require explicit closure because an AOT compiler must see every required closed generic instantiation.
 
-For known request shapes, generated registration should close applicable behaviors explicitly:
+Applications register each applicable closed behavior explicitly:
 
 ```csharp
 services.AddScoped<
@@ -147,14 +147,15 @@ services.AddScoped<
     ValidationBehavior<CreateOrderCommand, Guid>>();
 ```
 
-The first generator version should support:
+The generator supports:
 
 - closed query and command types;
 - closed handler implementations;
 - resultless commands represented as `Unit` in the pipeline;
-- open generic behaviors that can be closed for known requests;
-- compile-time validation of generic constraints;
-- deterministic behavior ordering matching registration order.
+- deterministic handler registration;
+- compile-time handler diagnostics.
+
+Behavior registration remains an application concern. The typed registration API validates generic constraints at compile time, and Microsoft DI preserves registration order. Automatically generating closed behavior registrations may be reconsidered later as an ergonomic feature, but it is not required for Native AOT correctness.
 
 Open generic commands and handlers may remain unsupported initially. Emit an actionable diagnostic instead of generating unsafe runtime fallback code.
 
@@ -218,7 +219,9 @@ Success criteria include zero unexpected trimming/AOT warnings and behavior matc
 
 ## Package compatibility settings
 
-When the generated path is functional, evaluate enabling the following on relevant library projects:
+The runtime library projects enable `IsAotCompatible`, which activates the trimming, single-file, and AOT compatibility analyzers. Reflection entry points remain annotated as incompatible, while typed and generated registration provide the supported Native AOT path.
+
+The relevant MSBuild settings are:
 
 ```xml
 <IsTrimmable>true</IsTrimmable>
@@ -227,7 +230,7 @@ When the generated path is functional, evaluate enabling the following on releva
 <EnableAotAnalyzer>true</EnableAotAnalyzer>
 ```
 
-Enable these only after all warnings have been understood and the native sample passes. Reflection entry points may remain annotated as incompatible while the generated path is AOT-safe.
+Native samples must continue publishing without unexpected trimming or AOT warnings.
 
 ## Delivery sequence
 
@@ -235,9 +238,9 @@ Enable these only after all warnings have been understood and the native sample 
 2. Publish and execute an AOT sample using only manual registration. **Complete.**
 3. Add the incremental generator that emits the same registration calls. **Complete.**
 4. Add compile-time handler diagnostics. **Complete.**
-5. Generate closed registrations for applicable open generic behaviors.
-6. Add native publish and endpoint smoke tests to CI.
-7. Benchmark reflection startup against generated startup and measure application size.
-8. Evaluate generated dispatch or pipeline execution only as a later performance feature.
+5. Keep pipeline behaviors explicitly closed through the typed registration API. **Complete.**
+6. Add native publish and endpoint smoke tests to CI. **Pending.**
+7. Benchmark reflection startup against generated startup and measure application size. **Pending.**
+8. Evaluate generated behavior registration or generated dispatch only if future measurements justify the additional complexity. **Optional.**
 
 The first AOT milestone is successful warning-free native publication with correct behavior. Generated dispatch code is not required for that milestone.
