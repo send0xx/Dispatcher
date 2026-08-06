@@ -98,7 +98,7 @@ Expose role-specific dispatch contracts plus a convenience aggregate:
 - `IQueryDispatcher.QueryAsync<TResponse>(IQuery<TResponse>, CancellationToken)`;
 - `ICommandDispatcher.ExecuteAsync<TResponse>(ICommand<TResponse>, CancellationToken)`;
 - `ICommandDispatcher.ExecuteAsync(ICommand, CancellationToken)`;
-- `INotificationPublisher.PublishAsync<TNotification>(TNotification, CancellationToken)`;
+- `INotificationDispatcher.PublishAsync<TNotification>(TNotification, CancellationToken)`;
 - `IDispatcher`, combining all three contracts.
 
 The implementation will validate null messages and report missing or ambiguous request handlers with dedicated, descriptive exceptions. Publishing a notification with no handlers will be a successful no-op.

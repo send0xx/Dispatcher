@@ -39,7 +39,7 @@ Minimal API endpoint
   -> ICommandDispatcher.ExecuteAsync
   -> FluentValidation command behavior
   -> internal CreateOrderCommandHandler
-  -> INotificationPublisher.PublishAsync
+  -> INotificationDispatcher.PublishAsync
   -> internal Stock notification handler
 ```
 

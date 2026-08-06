@@ -169,7 +169,7 @@ public sealed class DispatcherIntegrationTests
         await using var provider = CreateProvider();
         await using var scope = provider.CreateAsyncScope();
 
-        await scope.ServiceProvider.GetRequiredService<INotificationPublisher>()
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
             .PublishAsync(new SomethingHappened());
 
         Assert.Equal(["notification-a", "notification-b"],
@@ -182,7 +182,7 @@ public sealed class DispatcherIntegrationTests
         await using var provider = CreateProvider();
         await using var scope = provider.CreateAsyncScope();
 
-        await scope.ServiceProvider.GetRequiredService<INotificationPublisher>()
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
             .PublishAsync(new UnhandledNotification());
     }
 
@@ -227,7 +227,7 @@ public sealed class DispatcherIntegrationTests
 
         Assert.Same(aggregate, scope.ServiceProvider.GetRequiredService<IQueryDispatcher>());
         Assert.Same(aggregate, scope.ServiceProvider.GetRequiredService<ICommandDispatcher>());
-        Assert.Same(aggregate, scope.ServiceProvider.GetRequiredService<INotificationPublisher>());
+        Assert.Same(aggregate, scope.ServiceProvider.GetRequiredService<INotificationDispatcher>());
         Assert.Equal(2, scope.ServiceProvider.GetServices<INotificationHandler<SomethingHappened>>().Count());
     }
 

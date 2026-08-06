@@ -28,7 +28,7 @@ public static class DispatcherServiceCollectionExtensions
             provider.GetRequiredService<Dispatcher>());
         services.TryAddScoped<ICommandDispatcher>(static provider =>
             provider.GetRequiredService<Dispatcher>());
-        services.TryAddScoped<INotificationPublisher>(static provider =>
+        services.TryAddScoped<INotificationDispatcher>(static provider =>
             provider.GetRequiredService<Dispatcher>());
 
         return services;

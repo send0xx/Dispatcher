@@ -24,7 +24,7 @@ internal sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrde
 
 internal sealed class CreateOrderCommandHandler(
     OrderStore store,
-    INotificationPublisher publisher) : ICommandHandler<CreateOrderCommand, Guid>
+    INotificationDispatcher dispatcher) : ICommandHandler<CreateOrderCommand, Guid>
 {
     public async ValueTask<Guid> HandleAsync(
         CreateOrderCommand command,
@@ -32,7 +32,7 @@ internal sealed class CreateOrderCommandHandler(
     {
         var order = new Order(Guid.NewGuid(), command.ProductId, command.Quantity, DateTimeOffset.UtcNow);
         store.Add(order);
-        await publisher.PublishAsync(
+        await dispatcher.PublishAsync(
             new OrderCreated(order.Id, order.ProductId, order.Quantity),
             cancellationToken);
         return order.Id;

@@ -30,21 +30,21 @@ internal sealed class GetCounterQueryHandler(CounterState state)
 
 internal sealed class IncrementCounterCommandHandler(
     CounterState state,
-    INotificationPublisher publisher) : ICommandHandler<IncrementCounterCommand, int>
+    INotificationDispatcher dispatcher) : ICommandHandler<IncrementCounterCommand, int>
 {
     public async ValueTask<int> HandleAsync(
         IncrementCounterCommand command,
         CancellationToken cancellationToken)
     {
         var value = state.Increment(command.Amount);
-        await publisher.PublishAsync(new CounterChanged(value), cancellationToken);
+        await dispatcher.PublishAsync(new CounterChanged(value), cancellationToken);
         return value;
     }
 }
 
 internal sealed class ResetCounterCommandHandler(
     CounterState state,
-    INotificationPublisher publisher) : ICommandHandler<ResetCounterCommand>
+    INotificationDispatcher publisher) : ICommandHandler<ResetCounterCommand>
 {
     public async ValueTask HandleAsync(
         ResetCounterCommand command,

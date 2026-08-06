@@ -1,9 +1,9 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Publishes notifications to their registered handlers.
+/// Dispatches notifications to their registered handlers.
 /// </summary>
-public interface INotificationPublisher
+public interface INotificationDispatcher
 {
     /// <summary>
     /// Publishes a notification to all registered handlers.

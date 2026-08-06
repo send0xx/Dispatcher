@@ -39,7 +39,7 @@ internal sealed class ListMessagesQueryHandler(MessageStore store)
 
 internal sealed class AddMessageCommandHandler(
     MessageStore store,
-    INotificationPublisher publisher) : ICommandHandler<AddMessageCommand, Guid>
+    INotificationDispatcher dispatcher) : ICommandHandler<AddMessageCommand, Guid>
 {
     public async ValueTask<Guid> HandleAsync(
         AddMessageCommand command,
@@ -47,7 +47,7 @@ internal sealed class AddMessageCommandHandler(
     {
         var message = new Message(Guid.NewGuid(), command.Text);
         store.Add(message);
-        await publisher.PublishAsync(new MessageAdded(message.Id), cancellationToken);
+        await dispatcher.PublishAsync(new MessageAdded(message.Id), cancellationToken);
         return message.Id;
     }
 }
