@@ -72,20 +72,20 @@ internal static class HandlerAssemblyScanner
 
         if (definition == typeof(IQueryHandler<,>))
         {
-            return new HandlerRegistration(arguments[0], arguments[1], HandlerKind.Query, handlerType);
+            return new QueryHandlerRegistration(arguments[0], arguments[1], handlerType);
         }
 
         if (definition == typeof(ICommandHandler<,>))
         {
-            return new HandlerRegistration(arguments[0], arguments[1], HandlerKind.CommandWithResponse, handlerType);
+            return new CommandWithResponseHandlerRegistration(arguments[0], arguments[1], handlerType);
         }
 
         if (definition == typeof(ICommandHandler<>))
         {
-            return new HandlerRegistration(arguments[0], null, HandlerKind.Command, handlerType);
+            return new CommandHandlerRegistration(arguments[0], handlerType);
         }
 
-        return new HandlerRegistration(arguments[0], null, HandlerKind.Notification, handlerType);
+        return new NotificationHandlerRegistration(arguments[0], handlerType);
     }
 
     private static bool IsHandlerInterface(Type type) =>

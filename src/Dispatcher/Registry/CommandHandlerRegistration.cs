@@ -1,0 +1,33 @@
+namespace Dispatcher;
+
+/// <summary>
+/// Describes a resultless command handler registration.
+/// </summary>
+public sealed record CommandHandlerRegistration : HandlerRegistration
+{
+    /// <summary>
+    /// Initializes a resultless command handler registration.
+    /// </summary>
+    /// <param name="messageType">The handled command type.</param>
+    /// <param name="handlerType">The concrete handler type.</param>
+    public CommandHandlerRegistration(Type messageType, Type handlerType)
+        : base(messageType, handlerType)
+    {
+    }
+
+    internal RequestHandlerWrapper? Wrapper { get; init; }
+
+    /// <summary>
+    /// Creates an AOT-safe resultless command handler registration with a closed dispatch wrapper.
+    /// </summary>
+    /// <typeparam name="TCommand">The command type.</typeparam>
+    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
+    /// <returns>The prepared handler registration.</returns>
+    public static CommandHandlerRegistration Create<TCommand, THandler>()
+        where TCommand : ICommand
+        where THandler : class, ICommandHandler<TCommand> =>
+        new(typeof(TCommand), typeof(THandler))
+        {
+            Wrapper = new CommandHandlerWrapper<TCommand>()
+        };
+}

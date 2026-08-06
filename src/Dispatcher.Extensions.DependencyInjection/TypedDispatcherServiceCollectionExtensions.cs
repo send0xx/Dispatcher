@@ -26,7 +26,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         return AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(
             services,
-            HandlerRegistration.CreateQuery<TQuery, TResponse, THandler>(),
+            QueryHandlerRegistration.Create<TQuery, TResponse, THandler>(),
             lifetime);
     }
 
@@ -48,7 +48,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         return AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(
             services,
-            HandlerRegistration.CreateCommand<TCommand, TResponse, THandler>(),
+            CommandWithResponseHandlerRegistration.Create<TCommand, TResponse, THandler>(),
             lifetime);
     }
 
@@ -69,7 +69,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         return AddHandler<ICommandHandler<TCommand>, THandler>(
             services,
-            HandlerRegistration.CreateCommand<TCommand, THandler>(),
+            CommandHandlerRegistration.Create<TCommand, THandler>(),
             lifetime);
     }
 
@@ -90,7 +90,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         return AddHandler<INotificationHandler<TNotification>, THandler>(
             services,
-            HandlerRegistration.CreateNotification<TNotification, THandler>(),
+            NotificationHandlerRegistration.Create<TNotification, THandler>(),
             lifetime);
     }
 

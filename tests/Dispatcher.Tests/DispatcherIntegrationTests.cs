@@ -204,8 +204,8 @@ public sealed class DispatcherIntegrationTests
     {
         var registrations = new[]
         {
-            new HandlerRegistration(typeof(GreetingQuery), typeof(string), HandlerKind.Query, typeof(GreetingQueryHandler)),
-            new HandlerRegistration(typeof(GreetingQuery), typeof(string), HandlerKind.Query, typeof(AlternativeGreetingHandler))
+            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(GreetingQueryHandler)),
+            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(AlternativeGreetingHandler))
         };
 
         Assert.Throws<DuplicateHandlerException>(() => DispatcherRegistry.Create(registrations));
