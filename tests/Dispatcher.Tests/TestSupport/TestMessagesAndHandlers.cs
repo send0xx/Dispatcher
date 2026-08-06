@@ -1,0 +1,66 @@
+namespace Dispatcher.Tests.TestSupport;
+
+internal sealed record GreetingQuery(string Name) : IQuery<string>;
+
+internal sealed class GreetingQueryHandler(TestState state) : IQueryHandler<GreetingQuery, string>
+{
+    public ValueTask<string> HandleAsync(GreetingQuery query, CancellationToken cancellationToken)
+    {
+        state.Events.Add("handler");
+        return ValueTask.FromResult($"Hello, {query.Name}");
+    }
+}
+
+internal sealed record TokenQuery : IQuery<CancellationToken>;
+
+internal sealed class TokenQueryHandler : IQueryHandler<TokenQuery, CancellationToken>
+{
+    public ValueTask<CancellationToken> HandleAsync(TokenQuery query, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(cancellationToken);
+}
+
+internal sealed record SumCommand(int Left, int Right) : ICommand<int>;
+
+internal sealed class SumCommandHandler(TestState state) : ICommandHandler<SumCommand, int>
+{
+    public ValueTask<int> HandleAsync(SumCommand command, CancellationToken cancellationToken)
+    {
+        state.Events.Add("sum-handler");
+        return ValueTask.FromResult(command.Left + command.Right);
+    }
+}
+
+internal sealed record RecordCommand(string Value) : ICommand;
+
+internal sealed class RecordCommandHandler(TestState state) : ICommandHandler<RecordCommand>
+{
+    public ValueTask HandleAsync(RecordCommand command, CancellationToken cancellationToken)
+    {
+        state.Recorded = command.Value;
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal sealed record SomethingHappened : INotification;
+
+internal sealed class ANotificationHandler(TestState state) : INotificationHandler<SomethingHappened>
+{
+    public ValueTask HandleAsync(SomethingHappened notification, CancellationToken cancellationToken)
+    {
+        state.Events.Add("notification-a");
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal sealed class BNotificationHandler(TestState state) : INotificationHandler<SomethingHappened>
+{
+    public ValueTask HandleAsync(SomethingHappened notification, CancellationToken cancellationToken)
+    {
+        state.Events.Add("notification-b");
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal sealed record UnhandledNotification : INotification;
+internal sealed record MissingQuery : IQuery<int>;
+internal sealed class AlternativeGreetingHandler;
