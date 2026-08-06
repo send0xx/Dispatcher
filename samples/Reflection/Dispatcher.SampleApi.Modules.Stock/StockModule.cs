@@ -1,5 +1,4 @@
 using Dispatcher.Extensions.Microsoft.DependencyInjection;
-using Dispatcher.SampleApi.Modules.Orders;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

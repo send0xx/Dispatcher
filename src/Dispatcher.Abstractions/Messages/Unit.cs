@@ -5,6 +5,7 @@ namespace Dispatcher;
 /// </summary>
 public readonly struct Unit : IEquatable<Unit>, IComparable<Unit>, IComparable
 {
+    // ReSharper disable once InconsistentNaming
     private static readonly Unit _value = new();
 
     /// <summary>
