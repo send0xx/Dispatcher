@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -9,19 +10,6 @@ namespace Dispatcher.Extensions.DependencyInjection;
 /// </summary>
 public static class DispatcherServiceCollectionExtensions
 {
-    private static readonly HashSet<Type> HandlerInterfaces =
-    [
-        typeof(IQueryHandler<,>),
-        typeof(ICommandHandler<,>),
-        typeof(ICommandHandler<>),
-        typeof(INotificationHandler<>)
-    ];
-
-    private static readonly HashSet<Type> BehaviorInterfaces =
-    [
-        typeof(IPipelineBehavior<,>)
-    ];
-
     /// <summary>
     /// Registers Dispatcher infrastructure without scanning for handlers.
     /// </summary>
@@ -32,7 +20,7 @@ public static class DispatcherServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(static provider =>
-            DispatcherRegistry.Create(provider.GetServices<HandlerRegistration>()));
+            DispatcherRegistry.CreatePrepared(provider.GetServices<HandlerRegistration>()));
         services.TryAddScoped<Dispatcher>();
         services.TryAddScoped<IDispatcher>(static provider =>
             provider.GetRequiredService<Dispatcher>());
@@ -53,6 +41,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers<TAssemblyMarker>(
         this IServiceCollection services,
         ServiceLifetime lifetime = ServiceLifetime.Scoped) =>
@@ -65,6 +55,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="assembly">The assembly to scan.</param>
     /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
         Assembly assembly,
@@ -80,6 +72,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
         params Assembly[] assemblies) =>
@@ -92,6 +86,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
         ServiceLifetime lifetime,
@@ -100,23 +96,7 @@ public static class DispatcherServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        foreach (var assembly in assemblies.Distinct())
-        {
-            ArgumentNullException.ThrowIfNull(assembly);
-
-            if (services.Any(descriptor =>
-                    descriptor.ServiceType == typeof(ScannedAssembly) &&
-                    descriptor.ImplementationInstance is ScannedAssembly scanned &&
-                    scanned.Assembly == assembly))
-            {
-                continue;
-            }
-
-            services.AddSingleton(new ScannedAssembly(assembly));
-            RegisterHandlers(services, assembly, lifetime);
-        }
-
-        return services;
+        return HandlerAssemblyScanner.Register(services, assemblies, lifetime);
     }
 
     /// <summary>
@@ -126,6 +106,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="lifetime">The behavior lifetime.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior<TBehavior>(
         this IServiceCollection services,
         ServiceLifetime lifetime = ServiceLifetime.Scoped) =>
@@ -139,6 +121,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="lifetime">The behavior lifetime.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentException"><paramref name="behaviorType"/> is not a concrete behavior class.</exception>
+    [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior(
         this IServiceCollection services,
         Type behaviorType,
@@ -147,93 +131,6 @@ public static class DispatcherServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(behaviorType);
 
-        if (!behaviorType.IsClass || behaviorType.IsAbstract)
-        {
-            throw new ArgumentException(
-                $"Pipeline behavior '{behaviorType.FullName}' must be a non-abstract class.",
-                nameof(behaviorType));
-        }
-
-        var serviceTypes = behaviorType.GetInterfaces()
-            .Where(IsBehaviorInterface)
-            .Select(type => behaviorType.IsGenericTypeDefinition ? type.GetGenericTypeDefinition() : type)
-            .Distinct()
-            .ToArray();
-
-        if (serviceTypes.Length == 0)
-        {
-            throw new ArgumentException(
-                $"Pipeline behavior '{behaviorType.FullName}' does not implement a supported behavior interface.",
-                nameof(behaviorType));
-        }
-
-        foreach (var serviceType in serviceTypes)
-        {
-            services.Add(ServiceDescriptor.Describe(serviceType, behaviorType, lifetime));
-        }
-
-        return services;
+        return PipelineBehaviorTypeRegistrar.Register(services, behaviorType, lifetime);
     }
-
-    private static void RegisterHandlers(
-        IServiceCollection services,
-        Assembly assembly,
-        ServiceLifetime lifetime)
-    {
-        foreach (var implementationType in GetLoadableTypes(assembly)
-                     .Where(type => type is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
-                     .OrderBy(type => type.FullName, StringComparer.Ordinal))
-        {
-            foreach (var serviceType in implementationType.GetInterfaces()
-                         .Where(IsHandlerInterface)
-                         .OrderBy(type => type.FullName, StringComparer.Ordinal))
-            {
-                services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
-                services.AddSingleton(CreateRegistration(serviceType, implementationType));
-            }
-        }
-    }
-
-    private static HandlerRegistration CreateRegistration(Type serviceType, Type handlerType)
-    {
-        var definition = serviceType.GetGenericTypeDefinition();
-        var arguments = serviceType.GetGenericArguments();
-
-        if (definition == typeof(IQueryHandler<,>))
-        {
-            return new HandlerRegistration(arguments[0], arguments[1], HandlerKind.Query, handlerType);
-        }
-
-        if (definition == typeof(ICommandHandler<,>))
-        {
-            return new HandlerRegistration(arguments[0], arguments[1], HandlerKind.CommandWithResponse, handlerType);
-        }
-
-        if (definition == typeof(ICommandHandler<>))
-        {
-            return new HandlerRegistration(arguments[0], null, HandlerKind.Command, handlerType);
-        }
-
-        return new HandlerRegistration(arguments[0], null, HandlerKind.Notification, handlerType);
-    }
-
-    private static bool IsHandlerInterface(Type type) =>
-        type.IsGenericType && HandlerInterfaces.Contains(type.GetGenericTypeDefinition());
-
-    private static bool IsBehaviorInterface(Type type) =>
-        type.IsGenericType && BehaviorInterfaces.Contains(type.GetGenericTypeDefinition());
-
-    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            return exception.Types.Where(static type => type is not null)!;
-        }
-    }
-
-    private sealed record ScannedAssembly(Assembly Assembly);
 }

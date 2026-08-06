@@ -1,5 +1,17 @@
 # Native AOT and source-generation design
 
+## Current status
+
+The first two delivery milestones are implemented:
+
+- typed manual registration exists for queries, both command shapes, and notifications;
+- typed registrations construct closed wrappers without `MakeGenericType` or `Activator.CreateInstance`;
+- reflection registration remains available and has trimming and dynamic-code compatibility annotations;
+- all library projects enable AOT compatibility analysis;
+- `samples/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
+
+The next milestone is the incremental source generator. It should emit the same typed registration calls already proven by the native sample.
+
 ## Objective
 
 Add Native AOT and trimming support without replacing the existing reflection implementation or unnecessarily changing the public query, command, notification, and pipeline contracts.
@@ -208,8 +220,8 @@ Enable these only after all warnings have been understood and the native sample 
 
 ## Delivery sequence
 
-1. Add typed manual handler and wrapper registration.
-2. Publish and execute an AOT sample using only manual registration.
+1. Add typed manual handler and wrapper registration. **Complete.**
+2. Publish and execute an AOT sample using only manual registration. **Complete.**
 3. Add the incremental generator that emits the same registration calls.
 4. Add compile-time handler diagnostics.
 5. Generate closed registrations for applicable open generic behaviors.

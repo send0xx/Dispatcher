@@ -25,6 +25,37 @@ public sealed class DispatcherIntegrationTests
     }
 
     [Fact]
+    public async Task Typed_registration_dispatches_every_message_shape()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>()
+            .AddCommandHandler<SumCommand, int, SumCommandHandler>()
+            .AddCommandHandler<RecordCommand, RecordCommandHandler>()
+            .AddNotificationHandler<SomethingHappened, ANotificationHandler>()
+            .AddNotificationHandler<SomethingHappened, BNotificationHandler>();
+        services.AddScoped<TestState>();
+
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada")));
+        Assert.Equal(5, await dispatcher.ExecuteAsync(new SumCommand(2, 3)));
+        await dispatcher.ExecuteAsync(new RecordCommand("typed"));
+        await dispatcher.PublishAsync(new SomethingHappened());
+
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        Assert.Equal("typed", state.Recorded);
+        Assert.Equal(["handler", "sum-handler", "notification-a", "notification-b"], state.Events);
+    }
+
+    [Fact]
     public async Task Passes_cancellation_token_to_handler()
     {
         await using var provider = CreateProvider();

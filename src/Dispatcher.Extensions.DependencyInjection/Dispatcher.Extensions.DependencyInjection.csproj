@@ -4,6 +4,7 @@
     <PackageId>Dispatcher.Extensions.DependencyInjection</PackageId>
     <Description>Microsoft dependency injection integration for Dispatcher.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>

@@ -144,6 +144,7 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 ## Repository hygiene
 
 - Preserve unrelated user changes in a dirty worktree.
+- Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.
 - Use `apply_patch` for intentional source edits and keep changes scoped to the requested work.

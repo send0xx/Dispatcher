@@ -4,6 +4,7 @@
     <PackageId>Dispatcher</PackageId>
     <Description>A small container-neutral CQRS dispatcher backed by FrozenDictionary.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>

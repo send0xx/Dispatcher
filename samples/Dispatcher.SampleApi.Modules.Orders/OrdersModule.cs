@@ -13,5 +13,15 @@ public static class OrdersModule
         return services.AddDispatcherHandlers<OrdersAssemblyMarker>();
     }
 
+    public static IServiceCollection AddOrdersModuleAot(this IServiceCollection services)
+    {
+        services.AddSingleton<OrderStore>();
+        services.AddScoped<IValidator<CreateOrderCommand>, CreateOrderCommandValidator>();
+        return services
+            .AddCommandHandler<CreateOrderCommand, Guid, CreateOrderCommandHandler>()
+            .AddQueryHandler<GetOrderQuery, Order?, GetOrderQueryHandler>()
+            .AddQueryHandler<ListOrdersQuery, IReadOnlyCollection<Order>, ListOrdersQueryHandler>();
+    }
+
     private sealed class OrdersAssemblyMarker;
 }

@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Dispatcher;
 
@@ -24,7 +25,23 @@ public sealed class DispatcherRegistry
     /// <param name="registrations">The handler registrations to include.</param>
     /// <returns>An immutable dispatcher registry.</returns>
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
+    [RequiresDynamicCode("Creating wrappers from runtime handler metadata requires dynamic generic construction.")]
+    [RequiresUnreferencedCode("Creating wrappers from runtime handler metadata is not trimming safe.")]
     public static DispatcherRegistry Create(IEnumerable<HandlerRegistration> registrations)
+    {
+        ArgumentNullException.ThrowIfNull(registrations);
+
+        return CreatePrepared(registrations.Select(PrepareRegistration));
+    }
+
+    /// <summary>
+    /// Creates a registry from registrations that already contain closed dispatch wrappers.
+    /// </summary>
+    /// <param name="registrations">The prepared handler registrations to include.</param>
+    /// <returns>An immutable dispatcher registry.</returns>
+    /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
+    /// <exception cref="InvalidOperationException">A registration was not created by a typed factory or prepared first.</exception>
+    public static DispatcherRegistry CreatePrepared(IEnumerable<HandlerRegistration> registrations)
     {
         ArgumentNullException.ThrowIfNull(registrations);
 
@@ -39,11 +56,13 @@ public sealed class DispatcherRegistry
             {
                 notifications.TryAdd(
                     registration.MessageType,
-                    CreateNotificationWrapper(registration.MessageType));
+                    registration.NotificationWrapper ??
+                    throw MissingPreparedWrapper(registration.MessageType));
                 continue;
             }
 
-            var wrapper = CreateRequestWrapper(registration);
+            var wrapper = registration.RequestWrapper ??
+                throw MissingPreparedWrapper(registration.MessageType);
             if (!requests.TryAdd(registration.MessageType, (wrapper, registration.HandlerType)))
             {
                 var existing = requests[registration.MessageType];
@@ -59,8 +78,22 @@ public sealed class DispatcherRegistry
             notifications.ToFrozenDictionary());
     }
 
-    private static RequestHandlerWrapper CreateRequestWrapper(HandlerRegistration registration)
+    /// <summary>
+    /// Creates and attaches a dispatch wrapper using runtime handler metadata.
+    /// </summary>
+    /// <param name="registration">The handler registration to prepare.</param>
+    /// <returns>A registration containing its closed dispatch wrapper.</returns>
+    [RequiresDynamicCode("Creating wrappers from runtime handler metadata requires dynamic generic construction.")]
+    [RequiresUnreferencedCode("Creating wrappers from runtime handler metadata is not trimming safe.")]
+    public static HandlerRegistration PrepareRegistration(HandlerRegistration registration)
     {
+        ArgumentNullException.ThrowIfNull(registration);
+
+        if (registration.RequestWrapper is not null || registration.NotificationWrapper is not null)
+        {
+            return registration;
+        }
+
         var wrapperType = registration.Kind switch
         {
             HandlerKind.Query => typeof(QueryHandlerWrapper<,>).MakeGenericType(
@@ -70,18 +103,27 @@ public sealed class DispatcherRegistry
                 registration.MessageType,
                 registration.ResponseType ?? throw MissingResponseType(registration)),
             HandlerKind.Command => typeof(CommandHandlerWrapper<>).MakeGenericType(registration.MessageType),
+            HandlerKind.Notification => typeof(NotificationHandlerWrapper<>).MakeGenericType(
+                registration.MessageType),
             _ => throw new ArgumentOutOfRangeException(nameof(registration), registration.Kind, "Unknown handler kind.")
         };
 
-        return (RequestHandlerWrapper)Activator.CreateInstance(wrapperType)!;
-    }
+        var wrapper = Activator.CreateInstance(wrapperType)!;
 
-    private static NotificationHandlerWrapper CreateNotificationWrapper(Type notificationType)
-    {
-        var wrapperType = typeof(NotificationHandlerWrapper<>).MakeGenericType(notificationType);
-        return (NotificationHandlerWrapper)Activator.CreateInstance(wrapperType)!;
+        return registration.Kind == HandlerKind.Notification
+            ? registration with
+            {
+                NotificationWrapper = (NotificationHandlerWrapper)wrapper
+            }
+            : registration with
+            {
+                RequestWrapper = (RequestHandlerWrapper)wrapper
+            };
     }
 
     private static InvalidOperationException MissingResponseType(HandlerRegistration registration) =>
         new($"Registration for '{registration.MessageType.FullName}' requires a response type.");
+
+    private static InvalidOperationException MissingPreparedWrapper(Type messageType) =>
+        new($"Registration for '{messageType.FullName}' was not created by a typed registration method.");
 }

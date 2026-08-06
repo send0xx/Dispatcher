@@ -4,6 +4,7 @@
     <PackageId>Dispatcher.Abstractions</PackageId>
     <Description>Contracts for the Dispatcher CQRS library.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>

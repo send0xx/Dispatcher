@@ -82,6 +82,19 @@ public static IServiceCollection AddOrdersModule(this IServiceCollection service
 
 The dispatcher, handlers, and behaviors are scoped by default. Resolve and use dispatcher interfaces inside a DI scope, as ASP.NET Core does for each request. Avoid overriding the dispatcher with a singleton registration because scoped handlers and behaviors must be resolved from their owning scope.
 
+For trimming and Native AOT, register handlers explicitly inside each module so internal handler types remain accessible:
+
+```csharp
+services
+    .AddDispatcher()
+    .AddQueryHandler<GetOrderQuery, Order?, GetOrderQueryHandler>()
+    .AddCommandHandler<CreateOrderCommand, Guid, CreateOrderCommandHandler>()
+    .AddCommandHandler<ClearOrdersCommand, ClearOrdersCommandHandler>()
+    .AddNotificationHandler<OrderCreated, ReserveStockHandler>();
+```
+
+Typed registration avoids assembly scanning and runtime generic construction. Register closed behaviors in AOT applications with `AddPipelineBehavior<TRequest, TResponse, TBehavior>()`. See the [Native AOT sample](samples/Dispatcher.NativeAotSample) for a complete slim web application.
+
 ## Dispatch messages
 
 ```csharp
@@ -143,6 +156,6 @@ containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/D
 
 ## Current limitations
 
-Handler registration uses reflection and is not trimming or Native AOT safe. The separate `AddDispatcherHandlers` module-registration seam is intended to support generated registrations in a future release.
+Reflection-based handler and behavior registration is not trimming or Native AOT safe. Typed handler registration and direct closed behavior registration are AOT compatible. A future source generator will emit these registrations automatically.
 
 Future maintenance notes are available in the [v1 implementation plan](docs/PLAN.md) and [Native AOT roadmap](docs/AOT.md).
