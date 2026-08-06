@@ -5,7 +5,7 @@ This .NET 10 sample keeps all state in memory so the CQRS flow is easy to follow
 Start it from the repository root:
 
 ```bash
-dotnet run --project samples/Dispatcher.SampleApi
+dotnet run --project samples/Reflection/Dispatcher.SampleApi
 ```
 
 Set stock, create an order, and observe that the notification handler reserves stock:

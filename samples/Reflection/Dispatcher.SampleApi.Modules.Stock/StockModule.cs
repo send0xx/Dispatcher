@@ -14,15 +14,5 @@ public static class StockModule
         return services.AddDispatcherHandlers<StockAssemblyMarker>();
     }
 
-    public static IServiceCollection AddStockModuleAot(this IServiceCollection services)
-    {
-        services.AddSingleton<StockStore>();
-        services.AddScoped<IValidator<SetStockCommand>, SetStockCommandValidator>();
-        return services
-            .AddQueryHandler<GetStockQuery, StockLevel, GetStockQueryHandler>()
-            .AddCommandHandler<SetStockCommand, SetStockCommandHandler>()
-            .AddNotificationHandler<OrderCreated, ReserveStockWhenOrderCreated>();
-    }
-
     private sealed class StockAssemblyMarker;
 }

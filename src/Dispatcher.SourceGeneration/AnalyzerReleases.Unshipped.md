@@ -1,0 +1,11 @@
+; Unshipped analyzer release
+
+### New Rules
+
+Rule ID | Category | Severity | Notes
+--------|----------|----------|-------
+DSPG001 | Dispatcher.SourceGeneration | Error | Invalid generated registration method name
+DSPG002 | Dispatcher.SourceGeneration | Error | Multiple request handlers
+DSPG003 | Dispatcher.SourceGeneration | Error | Open generic handlers are unsupported
+DSPG004 | Dispatcher.SourceGeneration | Error | Handler cannot be activated
+DSPG005 | Dispatcher.SourceGeneration | Error | Request has no handler

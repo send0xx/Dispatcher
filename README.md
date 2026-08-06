@@ -9,6 +9,7 @@ The libraries target .NET 8 and .NET 10. The example application targets .NET 10
 - `Dispatcher.Abstractions` contains messages, handlers, behaviors, and dispatch interfaces.
 - `Dispatcher` contains the container-neutral runtime.
 - `Dispatcher.Extensions.DependencyInjection` adds Microsoft DI registration and references the other packages transitively.
+- `Dispatcher.SourceGeneration` generates module-local typed handler registrations for trimming and Native AOT.
 
 Most applications only need to install `Dispatcher.Extensions.DependencyInjection`.
 
@@ -93,7 +94,19 @@ services
     .AddNotificationHandler<OrderCreated, ReserveStockHandler>();
 ```
 
-Typed registration avoids assembly scanning and runtime generic construction. Register closed behaviors in AOT applications with `AddPipelineBehavior<TRequest, TResponse, TBehavior>()`. See the [Native AOT sample](samples/Dispatcher.NativeAotSample) for a complete slim web application.
+Typed registration avoids assembly scanning and runtime generic construction. For generated registration, reference `Dispatcher.SourceGeneration` as an analyzer and opt in from each module:
+
+```xml
+<PackageReference Include="Dispatcher.SourceGeneration"
+                  Version="1.0.0"
+                  PrivateAssets="all" />
+```
+
+```csharp
+[assembly: GenerateDispatcherHandlers("AddGeneratedOrdersHandlers")]
+```
+
+The generator emits an extension method that directly references the module's internal handlers. Register closed behaviors in AOT applications with `AddPipelineBehavior<TRequest, TResponse, TBehavior>()`. See the [module-owned Native AOT sample](samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample) for a complete slim web application.
 
 ## Dispatch messages
 
@@ -138,10 +151,15 @@ The same `IPipelineBehavior<TRequest, TResponse>` contract applies to queries an
 Run the beginner-friendly Minimal API:
 
 ```bash
-dotnet run --project samples/Dispatcher.SampleApi
+dotnet run --project samples/Reflection/Dispatcher.SampleApi
 ```
 
-The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/Dispatcher.SampleApi/README.md).
+The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/Reflection/Dispatcher.SampleApi/README.md).
+
+Two Native AOT samples demonstrate generated registration without changing the message contracts:
+
+- [module-owned registration](samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample), where the referenced Counter module registers its own services and generated handlers;
+- [host-owned registration](samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample), where the host explicitly calls `AddDispatcher`, the referenced assembly's generated handler method, and its dependency registrations.
 
 ## Benchmarks
 
@@ -156,6 +174,6 @@ containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/D
 
 ## Current limitations
 
-Reflection-based handler and behavior registration is not trimming or Native AOT safe. Typed handler registration and direct closed behavior registration are AOT compatible. A future source generator will emit these registrations automatically.
+Reflection-based handler and behavior registration is not trimming or Native AOT safe. Typed and generated handler registration and typed closed behavior registration are AOT compatible.
 
 Future maintenance notes are available in the [v1 implementation plan](docs/PLAN.md) and [Native AOT roadmap](docs/AOT.md).

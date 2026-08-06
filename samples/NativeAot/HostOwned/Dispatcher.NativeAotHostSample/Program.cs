@@ -1,0 +1,47 @@
+using System.Text.Json.Serialization;
+using Dispatcher;
+using Dispatcher.Extensions.DependencyInjection;
+using Dispatcher.NativeAotHostSample.Handlers;
+
+var builder = WebApplication.CreateSlimBuilder(args);
+
+builder.Services
+    .AddDispatcher()
+    .AddGeneratedMessageHandlers()
+    .AddSingleton<MessageStore>();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
+
+var app = builder.Build();
+
+app.MapPost("/messages", async (
+    AddMessageRequest request,
+    ICommandDispatcher commands,
+    CancellationToken cancellationToken) =>
+{
+    var id = await commands.ExecuteAsync(new AddMessageCommand(request.Text), cancellationToken);
+    return Results.Ok(new AddMessageResponse(id));
+});
+
+app.MapDelete("/messages", async (
+    ICommandDispatcher commands,
+    CancellationToken cancellationToken) =>
+{
+    await commands.ExecuteAsync(new ClearMessagesCommand(), cancellationToken);
+    return Results.NoContent();
+});
+
+app.MapGet("/messages", async (IQueryDispatcher queries, CancellationToken cancellationToken) =>
+    Results.Ok(await queries.QueryAsync(new ListMessagesQuery(), cancellationToken)));
+
+app.Run();
+
+public sealed record AddMessageRequest(string Text);
+public sealed record AddMessageResponse(Guid Id);
+
+[JsonSerializable(typeof(AddMessageRequest))]
+[JsonSerializable(typeof(AddMessageResponse))]
+[JsonSerializable(typeof(MessageSnapshot))]
+internal partial class AppJsonSerializerContext : JsonSerializerContext;
+
+public partial class Program;

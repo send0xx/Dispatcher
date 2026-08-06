@@ -11,7 +11,10 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
 - `src/Dispatcher`: container-neutral runtime, frozen handler registry, wrappers, and exceptions.
 - `src/Dispatcher.Extensions.DependencyInjection`: Microsoft DI registration and reflection-based handler scanning.
-- `samples`: beginner-friendly Minimal API with internal handlers in Orders and Stock modules.
+- `src/Dispatcher.SourceGeneration`: incremental generator for module-local AOT-safe handler registration.
+- `samples/Reflection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
+- `samples/NativeAot/ModuleOwned`: Native AOT Minimal API where a referenced Counter module owns generated registration.
+- `samples/NativeAot/HostOwned`: Native AOT Minimal API where the host composes generated handlers from a referenced assembly.
 - `tests/Dispatcher.Tests`: integration tests targeting .NET 8 and .NET 10.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs/PLAN.md`: original v1 implementation plan and design history.
@@ -139,6 +142,9 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - Preserve the separate `AddDispatcherHandlers` module seam so generated registrations can replace reflection later.
 - Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public command/query contracts unnecessarily.
 - Internal handlers across module assemblies must remain supported.
+- The generator injects its internal `GenerateDispatcherHandlersAttribute`; do not add generator-only attributes to runtime or abstractions assemblies.
+- Generated modules opt in with `GenerateDispatcherHandlersAttribute` and must use a unique, valid extension method name.
+- Keep generator diagnostics documented in `AnalyzerReleases.Unshipped.md` and covered by generator tests.
 - Add generated/AOT support as a separate implementation path and compare it against the reflection path before replacing existing behavior.
 
 ## Repository hygiene

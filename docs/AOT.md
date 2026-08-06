@@ -2,15 +2,19 @@
 
 ## Current status
 
-The first two delivery milestones are implemented:
+The first four delivery milestones are implemented:
 
 - typed manual registration exists for queries, both command shapes, and notifications;
 - typed registrations construct closed wrappers without `MakeGenericType` or `Activator.CreateInstance`;
 - reflection registration remains available and has trimming and dynamic-code compatibility annotations;
 - all library projects enable AOT compatibility analysis;
-- `samples/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
+- `samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
+- `Dispatcher.SourceGeneration` emits deterministic module-local typed registrations for internal handlers;
+- generator diagnostics report invalid method names, duplicate or missing request handlers, unsupported open generic handlers, and handlers that cannot be activated by DI;
+- the module-owned Native AOT sample consumes generated registration behind its module entry point;
+- the host-owned Native AOT sample calls generated registration for a referenced handler assembly directly from the composition root.
 
-The next milestone is the incremental source generator. It should emit the same typed registration calls already proven by the native sample.
+Open generic pipeline behaviors remain explicitly closed through the typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API. Automatic behavior closure is optional generator ergonomics rather than a requirement for AOT correctness.
 
 ## Objective
 
@@ -178,16 +182,18 @@ Compile-time diagnostics are a primary benefit of the generated path, not merely
 
 ## AOT sample and validation
 
-Add a dedicated application:
+Maintain two dedicated applications:
 
 ```text
-samples/Dispatcher.NativeAotSample
+samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample
+samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample
 ```
 
-It should demonstrate:
+Together they demonstrate:
 
 - `WebApplication.CreateSlimBuilder`;
-- generated module registration;
+- generated module registration behind a module-owned composition method;
+- generated handler registration called directly by the host;
 - internal handlers in separate module assemblies;
 - queries and both command shapes;
 - multiple notification handlers;
@@ -197,7 +203,12 @@ It should demonstrate:
 CI should publish a native executable, start it, and exercise its endpoints:
 
 ```bash
-dotnet publish samples/Dispatcher.NativeAotSample \
+dotnet publish samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample \
+  -c Release \
+  -r linux-x64 \
+  /p:PublishAot=true
+
+dotnet publish samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample \
   -c Release \
   -r linux-x64 \
   /p:PublishAot=true
@@ -222,8 +233,8 @@ Enable these only after all warnings have been understood and the native sample 
 
 1. Add typed manual handler and wrapper registration. **Complete.**
 2. Publish and execute an AOT sample using only manual registration. **Complete.**
-3. Add the incremental generator that emits the same registration calls.
-4. Add compile-time handler diagnostics.
+3. Add the incremental generator that emits the same registration calls. **Complete.**
+4. Add compile-time handler diagnostics. **Complete.**
 5. Generate closed registrations for applicable open generic behaviors.
 6. Add native publish and endpoint smoke tests to CI.
 7. Benchmark reflection startup against generated startup and measure application size.
