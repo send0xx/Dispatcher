@@ -25,12 +25,12 @@ public sealed record QueryHandlerRegistration : HandlerRegistration
     internal RequestHandlerWrapper? Wrapper { get; init; }
 
     /// <summary>
-    /// Creates an AOT-safe query handler registration with a closed dispatch wrapper.
+    /// Creates a query handler registration.
     /// </summary>
     /// <typeparam name="TQuery">The query type.</typeparam>
     /// <typeparam name="TResponse">The response type.</typeparam>
     /// <typeparam name="THandler">The query handler implementation type.</typeparam>
-    /// <returns>The prepared handler registration.</returns>
+    /// <returns>The query handler registration.</returns>
     public static QueryHandlerRegistration Create<TQuery, TResponse, THandler>()
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>

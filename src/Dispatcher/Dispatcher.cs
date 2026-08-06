@@ -4,7 +4,7 @@ namespace Dispatcher;
 /// Dispatches queries and commands and publishes notifications through an <see cref="IServiceProvider"/>.
 /// </summary>
 /// <param name="serviceProvider">The service provider used to resolve handlers and behaviors.</param>
-/// <param name="registry">The immutable handler registry.</param>
+/// <param name="registry">The handler registry.</param>
 public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
 {
     /// <inheritdoc />

@@ -18,11 +18,11 @@ public sealed record NotificationHandlerRegistration : HandlerRegistration
     internal NotificationHandlerWrapper? Wrapper { get; init; }
 
     /// <summary>
-    /// Creates an AOT-safe notification handler registration with a closed dispatch wrapper.
+    /// Creates a notification handler registration.
     /// </summary>
     /// <typeparam name="TNotification">The notification type.</typeparam>
     /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
-    /// <returns>The prepared handler registration.</returns>
+    /// <returns>The notification handler registration.</returns>
     public static NotificationHandlerRegistration Create<TNotification, THandler>()
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>

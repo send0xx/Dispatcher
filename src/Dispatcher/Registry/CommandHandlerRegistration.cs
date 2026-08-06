@@ -18,11 +18,11 @@ public sealed record CommandHandlerRegistration : HandlerRegistration
     internal RequestHandlerWrapper? Wrapper { get; init; }
 
     /// <summary>
-    /// Creates an AOT-safe resultless command handler registration with a closed dispatch wrapper.
+    /// Creates a resultless command handler registration.
     /// </summary>
     /// <typeparam name="TCommand">The command type.</typeparam>
     /// <typeparam name="THandler">The command handler implementation type.</typeparam>
-    /// <returns>The prepared handler registration.</returns>
+    /// <returns>The command handler registration.</returns>
     public static CommandHandlerRegistration Create<TCommand, THandler>()
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>

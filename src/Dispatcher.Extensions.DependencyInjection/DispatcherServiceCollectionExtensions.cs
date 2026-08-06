@@ -11,7 +11,7 @@ namespace Dispatcher.Extensions.DependencyInjection;
 public static class DispatcherServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers Dispatcher infrastructure without scanning for handlers.
+    /// Registers Dispatcher services. Handlers must be registered separately.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>

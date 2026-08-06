@@ -4,12 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Dispatcher.Extensions.DependencyInjection;
 
 /// <summary>
-/// Provides AOT-safe typed registration methods for Microsoft dependency injection.
+/// Provides typed Dispatcher registration methods for Microsoft dependency injection.
 /// </summary>
 public static class TypedDispatcherServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers a query handler without assembly scanning or runtime generic construction.
+    /// Registers a query handler.
     /// </summary>
     /// <typeparam name="TQuery">The query type.</typeparam>
     /// <typeparam name="TResponse">The response type.</typeparam>
@@ -31,7 +31,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a result-bearing command handler without assembly scanning or runtime generic construction.
+    /// Registers a result-bearing command handler.
     /// </summary>
     /// <typeparam name="TCommand">The command type.</typeparam>
     /// <typeparam name="TResponse">The response type.</typeparam>
@@ -53,7 +53,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a resultless command handler without assembly scanning or runtime generic construction.
+    /// Registers a resultless command handler.
     /// </summary>
     /// <typeparam name="TCommand">The command type.</typeparam>
     /// <typeparam name="THandler">The command handler implementation type.</typeparam>
@@ -74,7 +74,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a notification handler without assembly scanning or runtime generic construction.
+    /// Registers a notification handler.
     /// </summary>
     /// <typeparam name="TNotification">The notification type.</typeparam>
     /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
@@ -114,7 +114,7 @@ public static class TypedDispatcherServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers a closed pipeline behavior without runtime interface inspection.
+    /// Registers a pipeline behavior for a request and response type.
     /// </summary>
     /// <typeparam name="TRequest">The request type.</typeparam>
     /// <typeparam name="TResponse">The response type.</typeparam>

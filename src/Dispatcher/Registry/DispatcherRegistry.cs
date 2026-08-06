@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Dispatcher;
 
 /// <summary>
-/// Provides immutable handler lookup tables used during dispatch.
+/// Provides handler lookup used during dispatch.
 /// </summary>
 public sealed class DispatcherRegistry
 {
@@ -23,7 +23,7 @@ public sealed class DispatcherRegistry
     /// Creates a registry from handler registrations.
     /// </summary>
     /// <param name="registrations">The handler registrations to include.</param>
-    /// <returns>An immutable dispatcher registry.</returns>
+    /// <returns>The dispatcher registry.</returns>
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     [RequiresDynamicCode("Creating wrappers from runtime handler metadata requires dynamic generic construction.")]
     [RequiresUnreferencedCode("Creating wrappers from runtime handler metadata is not trimming safe.")]
@@ -35,12 +35,12 @@ public sealed class DispatcherRegistry
     }
 
     /// <summary>
-    /// Creates a registry from registrations that already contain closed dispatch wrappers.
+    /// Creates a registry from typed handler registrations.
     /// </summary>
-    /// <param name="registrations">The prepared handler registrations to include.</param>
-    /// <returns>An immutable dispatcher registry.</returns>
+    /// <param name="registrations">The handler registrations to include.</param>
+    /// <returns>The dispatcher registry.</returns>
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
-    /// <exception cref="InvalidOperationException">A registration was not created by a typed factory or prepared first.</exception>
+    /// <exception cref="InvalidOperationException">A registration does not contain the required dispatch metadata.</exception>
     public static DispatcherRegistry CreatePrepared(IEnumerable<HandlerRegistration> registrations)
     {
         ArgumentNullException.ThrowIfNull(registrations);
@@ -83,10 +83,10 @@ public sealed class DispatcherRegistry
     }
 
     /// <summary>
-    /// Creates and attaches a dispatch wrapper using runtime handler metadata.
+    /// Prepares a handler registration for dispatch.
     /// </summary>
     /// <param name="registration">The handler registration to prepare.</param>
-    /// <returns>A registration containing its closed dispatch wrapper.</returns>
+    /// <returns>The handler registration with its dispatch metadata.</returns>
     [RequiresDynamicCode("Creating wrappers from runtime handler metadata requires dynamic generic construction.")]
     [RequiresUnreferencedCode("Creating wrappers from runtime handler metadata is not trimming safe.")]
     public static HandlerRegistration PrepareRegistration(HandlerRegistration registration)
