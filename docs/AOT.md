@@ -91,7 +91,7 @@ Create a separate analyzer package:
 ```text
 Dispatcher.Abstractions
 Dispatcher
-Dispatcher.Extensions.DependencyInjection
+Dispatcher.Extensions.Microsoft.DependencyInjection
 Dispatcher.SourceGeneration
 ```
 

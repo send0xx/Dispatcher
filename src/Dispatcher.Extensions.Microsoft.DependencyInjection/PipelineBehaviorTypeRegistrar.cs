@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dispatcher.Extensions.DependencyInjection;
+namespace Dispatcher.Extensions.Microsoft.DependencyInjection;
 
 internal static class PipelineBehaviorTypeRegistrar
 {

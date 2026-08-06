@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dispatcher.Extensions.DependencyInjection;
+namespace Dispatcher.Extensions.Microsoft.DependencyInjection;
 
 internal static class HandlerAssemblyScanner
 {

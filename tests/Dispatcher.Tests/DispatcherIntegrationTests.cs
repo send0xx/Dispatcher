@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
 using System.Reflection;
-using Dispatcher.Extensions.DependencyInjection;
+using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

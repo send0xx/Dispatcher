@@ -3,7 +3,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Dispatcher.Extensions.DependencyInjection;
+namespace Dispatcher.Extensions.Microsoft.DependencyInjection;
 
 /// <summary>
 /// Provides Microsoft dependency injection registration methods for Dispatcher.

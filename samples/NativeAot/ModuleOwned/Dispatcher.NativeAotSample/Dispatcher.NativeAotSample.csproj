@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Dispatcher.NativeAotSample.Module/Dispatcher.NativeAotSample.Module.csproj" />
-    <ProjectReference Include="../../../../src/Dispatcher.Extensions.DependencyInjection/Dispatcher.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="../../../../src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 </Project>

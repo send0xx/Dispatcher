@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using Dispatcher;
-using Dispatcher.Extensions.DependencyInjection;
+using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using Dispatcher.NativeAotSample;
 using Dispatcher.NativeAotSample.Module;
 

@@ -8,13 +8,13 @@ The libraries target .NET 8 and .NET 10. The example application targets .NET 10
 
 - `Dispatcher.Abstractions` contains messages, handlers, behaviors, and dispatch interfaces.
 - `Dispatcher` contains the container-neutral runtime.
-- `Dispatcher.Extensions.DependencyInjection` adds Microsoft DI registration and references the other packages transitively.
+- `Dispatcher.Extensions.Microsoft.DependencyInjection` adds Microsoft DI registration and references the other packages transitively.
 - `Dispatcher.SourceGeneration` generates module-local typed handler registrations for trimming and Native AOT.
 
-Most applications only need to install `Dispatcher.Extensions.DependencyInjection`.
+Most applications only need to install `Dispatcher.Extensions.Microsoft.DependencyInjection`.
 
 ```bash
-dotnet add package Dispatcher.Extensions.DependencyInjection --version 1.0.0
+dotnet add package Dispatcher.Extensions.Microsoft.DependencyInjection --version 1.0.0-preview.1
 ```
 
 ## Define a query

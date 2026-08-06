@@ -1,5 +1,5 @@
 using System.Collections.Immutable;
-using Dispatcher.Extensions.DependencyInjection;
+using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using Dispatcher.SourceGeneration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

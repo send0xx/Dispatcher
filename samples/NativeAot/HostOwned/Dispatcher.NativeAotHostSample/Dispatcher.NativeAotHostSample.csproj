@@ -6,6 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
-    <ProjectReference Include="../../../../src/Dispatcher.Extensions.DependencyInjection/Dispatcher.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="../../../../src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
   </ItemGroup>
 </Project>

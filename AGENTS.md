@@ -10,7 +10,7 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
 - `src/Dispatcher`: container-neutral runtime, frozen handler registry, wrappers, and exceptions.
-- `src/Dispatcher.Extensions.DependencyInjection`: Microsoft DI registration and reflection-based handler scanning.
+- `src/Dispatcher.Extensions.Microsoft.DependencyInjection`: Microsoft DI registration and reflection-based handler scanning.
 - `src/Dispatcher.SourceGeneration`: incremental generator for module-local AOT-safe handler registration.
 - `samples/Reflection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot/ModuleOwned`: Native AOT Minimal API where a referenced Counter module owns generated registration.
@@ -130,7 +130,7 @@ For package-affecting changes, pack all three libraries and inspect their depend
 ```bash
 dotnet pack src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj -c Release -o artifacts/packages
 dotnet pack src/Dispatcher/Dispatcher.csproj -c Release -o artifacts/packages
-dotnet pack src/Dispatcher.Extensions.DependencyInjection/Dispatcher.Extensions.DependencyInjection.csproj -c Release -o artifacts/packages
+dotnet pack src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj -c Release -o artifacts/packages
 ```
 
 The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, registration idempotence, and frozen registries.

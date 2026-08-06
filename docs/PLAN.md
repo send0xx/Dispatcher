@@ -30,8 +30,8 @@ src/
     Dispatcher.Abstractions.csproj
   Dispatcher/
     Dispatcher.csproj
-  Dispatcher.Extensions.DependencyInjection/
-    Dispatcher.Extensions.DependencyInjection.csproj
+  Dispatcher.Extensions.Microsoft.DependencyInjection/
+    Dispatcher.Extensions.Microsoft.DependencyInjection.csproj
 tests/
   Dispatcher.Tests/
     Dispatcher.Tests.csproj
@@ -48,11 +48,11 @@ Package IDs:
 
 - `Dispatcher.Abstractions`: public messages, handlers, behaviors, and dispatcher contracts, with no DI dependency;
 - `Dispatcher`: runtime dispatcher, typed wrappers, registry descriptors, exceptions, and `FrozenDictionary` registries, referencing only `Dispatcher.Abstractions` and BCL APIs such as `IServiceProvider`;
-- `Dispatcher.Extensions.DependencyInjection`: Microsoft DI integration, reflection scanning, `IServiceCollection` extensions, lifetimes, and service descriptors, referencing both other packages and `Microsoft.Extensions.DependencyInjection.Abstractions`.
+- `Dispatcher.Extensions.Microsoft.DependencyInjection`: Microsoft DI integration, reflection scanning, `IServiceCollection` extensions, lifetimes, and service descriptors, referencing both other packages and `Microsoft.Extensions.DependencyInjection.Abstractions`.
 
 All three package projects will multi-target `net8.0;net10.0`. The tests will multi-target both frameworks where installed; the sample projects will prefer and target `net10.0`.
 
-Installing `Dispatcher.Extensions.DependencyInjection` will bring `Dispatcher` and `Dispatcher.Abstractions` transitively. Applications using another container can reference the first two packages and provide their own composition adapter without depending on Microsoft DI.
+Installing `Dispatcher.Extensions.Microsoft.DependencyInjection` will bring `Dispatcher` and `Dispatcher.Abstractions` transitively. Applications using another container can reference the first two packages and provide their own composition adapter without depending on Microsoft DI.
 
 ## 3. Public abstractions
 
@@ -107,7 +107,7 @@ The implementation will validate null messages and report missing or ambiguous r
 
 The `Dispatcher` runtime package will own dispatch lookup and invocation but will not reference `Microsoft.Extensions.DependencyInjection`. It will resolve closed handler and behavior service types through standard `IServiceProvider.GetService(Type)` calls; collection resolution will request the corresponding closed `IEnumerable<T>` service type. Registry construction inputs will be exposed through a deliberately narrow runtime API so the DI adapter can construct the frozen registry without making wrapper implementation details public.
 
-The `Dispatcher.Extensions.DependencyInjection` package will own every Microsoft-specific concept: `IServiceCollection`, `ServiceDescriptor`, `ServiceLifetime`, `TryAdd` behavior, assembly scanning, and the `AddDispatcher`, `AddDispatcherHandlers`, and `AddPipelineBehavior` extension methods. Namespace naming will follow the package boundary so consumers explicitly opt into the DI integration with a `using` directive.
+The `Dispatcher.Extensions.Microsoft.DependencyInjection` package will own every Microsoft-specific concept: `IServiceCollection`, `ServiceDescriptor`, `ServiceLifetime`, `TryAdd` behavior, assembly scanning, and the `AddDispatcher`, `AddDispatcherHandlers`, and `AddPipelineBehavior` extension methods. Namespace naming will follow the package boundary so consumers explicitly opt into the DI integration with a `using` directive.
 
 ## 5. Discovery and DI registration
 
@@ -257,7 +257,7 @@ Run `dotnet restore`, `dotnet build`, and `dotnet test` for both target framewor
 - Keep versioning centralized and start with a prerelease version such as `0.1.0-preview.1` until the API is reviewed.
 - Enable nullable reference types, implicit usings, XML documentation generation, and package validation.
 - Document installation, registration, all message shapes, internal-handler scanning, lifetimes, notification ordering/error semantics, and current non-AOT limitation.
-- Pack all three libraries locally and add smoke checks that consume the generated packages rather than project references: one with Microsoft DI through `Dispatcher.Extensions.DependencyInjection`, and one minimal custom `IServiceProvider` check against `Dispatcher` to enforce the container-neutral boundary.
+- Pack all three libraries locally and add smoke checks that consume the generated packages rather than project references: one with Microsoft DI through `Dispatcher.Extensions.Microsoft.DependencyInjection`, and one minimal custom `IServiceProvider` check against `Dispatcher` to enforce the container-neutral boundary.
 
 ## 10. Implementation sequence
 
@@ -289,7 +289,7 @@ The plan currently assumes:
 - exact concrete-type dispatch only;
 - query and command behaviors in v1, but no notification behavior pipeline;
 - FluentValidation integration belongs to the sample application and is not a dependency of the reusable packages;
-- contracts live in `Dispatcher.Abstractions`, the container-neutral runtime lives in `Dispatcher`, and Microsoft DI registration lives exclusively in `Dispatcher.Extensions.DependencyInjection`;
+- contracts live in `Dispatcher.Abstractions`, the container-neutral runtime lives in `Dispatcher`, and Microsoft DI registration lives exclusively in `Dispatcher.Extensions.Microsoft.DependencyInjection`;
 - an MIT license and placeholder repository/author metadata until real values are supplied.
 
 These are intentionally called out because changing them later could affect the public API or observable behavior.

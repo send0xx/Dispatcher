@@ -1,4 +1,4 @@
-using Dispatcher.Extensions.DependencyInjection;
+using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
