@@ -68,6 +68,17 @@ public sealed class DispatcherGeneratorDiagnosticTests
     }
 
     [Fact]
+    public void Reports_invalid_generated_dispatcher_class_name()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("not valid")]
+            """;
+
+        AssertDiagnostic(source, "DSPG006");
+    }
+
+    [Fact]
     public void Reports_handler_without_public_constructor()
     {
         const string source = """

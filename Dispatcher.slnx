@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/samples/NativeAot/HostOwned/">
     <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
+    <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
     <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj" />
   </Folder>
   <Folder Name="/samples/">

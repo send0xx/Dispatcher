@@ -4,11 +4,13 @@ This .NET 10 Minimal API references a Counter module containing messages, intern
 
 ```csharp
 builder.Services
-    .AddDispatcher()
     .AddCounterModule();
 ```
 
-`AddCounterModule` registers module services and calls its generated handler method internally. The host also demonstrates typed closed FluentValidation behaviors and source-generated JSON metadata. It does not call reflection-based registration APIs.
+`AddCounterModule` registers module services and calls its generated `AddCounterHandlers()` and
+`AddDispatcher()` methods internally.
+The module references only `Dispatcher.SourceGeneration`. The host also demonstrates closed
+FluentValidation behaviors and source-generated JSON metadata.
 
 `CounterChanged` has two internal notification handlers. One records the last published value and the other counts observed changes, demonstrating generated notification fan-out.
 

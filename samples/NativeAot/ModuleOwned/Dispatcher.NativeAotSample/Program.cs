@@ -1,21 +1,17 @@
 using System.Text.Json.Serialization;
 using Dispatcher;
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using Dispatcher.NativeAotSample;
 using Dispatcher.NativeAotSample.Module;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services
-    .AddDispatcher()
     .AddCounterModule()
-    .AddPipelineBehavior<
-        IncrementCounterCommand,
-        int,
+    .AddScoped<
+        IPipelineBehavior<IncrementCounterCommand, int>,
         ValidationCommandBehavior<IncrementCounterCommand, int>>()
-    .AddPipelineBehavior<
-        ResetCounterCommand,
-        Unit,
+    .AddScoped<
+        IPipelineBehavior<ResetCounterCommand, Unit>,
         ValidationCommandBehavior<ResetCounterCommand, Unit>>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));

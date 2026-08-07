@@ -9,10 +9,11 @@ The Native AOT implementation is complete:
 - reflection registration remains available and has trimming and dynamic-code compatibility annotations;
 - all runtime library projects enable AOT compatibility analysis;
 - `samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
-- `Dispatcher.SourceGeneration` emits deterministic module-local typed registrations for internal handlers;
+- `Dispatcher.SourceGeneration` emits deterministic handler registrations and a concrete dispatcher for internal handlers;
 - generator diagnostics report invalid method names, duplicate or missing request handlers, unsupported open generic handlers, and handlers that cannot be activated by DI;
-- the module-owned Native AOT sample consumes generated registration behind its module entry point;
-- the host-owned Native AOT sample calls generated registration for a referenced handler assembly directly from the composition root.
+- the module-owned Native AOT sample consumes a fully generated dispatcher behind its module entry point;
+- the host-owned Native AOT sample composes two generated modules into one host-generated dispatcher;
+- both Native AOT samples reference the source-generation implementation without the reflection implementation package;
 
 Open generic pipeline behaviors are explicitly closed through the typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API. This keeps behavior applicability and ordering visible at the composition root while remaining fully Native AOT safe. Automatic behavior closure is not part of the current generator scope.
 
@@ -24,17 +25,16 @@ Native AOT performs trimming and cannot safely support unbounded runtime reflect
 
 ## Architectural direction
 
-Treat generated registration as a second input into the same runtime registry:
+Treat reflection and source generation as separate implementation choices:
 
 ```text
-Reflection scanner ──┐
-                     ├── Registry builder ── FrozenDictionary
-Generated code ──────┘
+Dispatcher.Extensions.Microsoft.DependencyInjection ── reflection scanner + runtime wrappers
+Dispatcher.SourceGeneration ───────────────────────── generated registrations + dispatcher
 ```
 
-The reflection path remains convenient for normal applications. The generated path supplies compile-time-known handler and wrapper registrations for trimmed and Native AOT applications.
-
-Do not create a separate dispatcher implementation for the first AOT release. Registration is the current reflection-heavy area; steady-state dispatch should continue using the same frozen registry and wrappers.
+The reflection path remains convenient for normal applications. The generated path emits handler
+registrations in each module and one internal `Dispatcher` in the host assembly. Applications select one implementation package;
+samples must not combine both.
 
 ## Phase 1: typed manual registration
 
@@ -99,21 +99,25 @@ Dispatcher.SourceGeneration
 
 The generator should run in every module containing handlers. Generated code is compiled into that module and can therefore reference its internal handler types directly.
 
-Prefer explicit generated module registration, for example:
+Modules name their generated handler-registration method:
 
 ```csharp
-services.AddDispatcher();
-services.AddGeneratedOrdersHandlers();
-services.AddGeneratedStockHandlers();
+[assembly: GenerateDispatcherHandlers("AddOrdersHandlers")]
 ```
 
-An alternative is a generated marker implementing a static registration contract:
+The host requests the single dispatcher and composes module registrations:
 
 ```csharp
-services.AddGeneratedDispatcherHandlers<OrdersModule>();
+[assembly: GenerateDispatcher("AddDispatcher")]
 ```
 
-Choose the final shape after prototyping discoverability, naming collisions, and partial-type requirements. Do not rely on experimental call-site interception merely to preserve the reflection method name.
+```csharp
+services.AddOrdersHandlers().AddStockHandlers().AddDispatcher();
+```
+
+Module-generated code can reference internal handlers because it is compiled into the module.
+The host-generated dispatcher references only public message and handler contracts while building
+routes across opted-in referenced modules. It does not use call-site interception or partial classes.
 
 ## Reflection fallback
 
@@ -193,8 +197,8 @@ samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample
 Together they demonstrate:
 
 - `WebApplication.CreateSlimBuilder`;
-- generated module registration behind a module-owned composition method;
-- generated handler registration called directly by the host;
+- a fully generated dispatcher behind a module-owned composition method;
+- a generated dispatcher from a referenced handler assembly called directly by the host;
 - internal handlers in separate module assemblies;
 - queries and both command shapes;
 - multiple notification handlers;
@@ -241,6 +245,6 @@ Native samples must continue publishing without unexpected trimming or AOT warni
 5. Keep pipeline behaviors explicitly closed through the typed registration API. **Complete.**
 6. Add native publish and endpoint smoke tests to CI. **Pending.**
 7. Benchmark reflection startup against generated startup and measure application size. **Pending.**
-8. Evaluate generated behavior registration or generated dispatch only if future measurements justify the additional complexity. **Optional.**
+8. Add an optional fully generated dispatcher implementation. **Complete.**
 
-The first AOT milestone is successful warning-free native publication with correct behavior. Generated dispatch code is not required for that milestone.
+The first AOT milestone is successful warning-free native publication with correct behavior.

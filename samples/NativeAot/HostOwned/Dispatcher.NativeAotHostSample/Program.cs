@@ -1,14 +1,18 @@
 using System.Text.Json.Serialization;
 using Dispatcher;
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.NativeAotHostSample.Audit;
 using Dispatcher.NativeAotHostSample.Handlers;
+
+[assembly: GenerateDispatcher("AddDispatcher")]
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services
     .AddDispatcher()
-    .AddGeneratedMessageHandlers()
-    .AddSingleton<MessageStore>();
+    .AddMessageHandlers()
+    .AddAuditHandlers()
+    .AddSingleton<MessageStore>()
+    .AddSingleton<AuditState>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
 
@@ -33,6 +37,9 @@ app.MapDelete("/messages", async (
 
 app.MapGet("/messages", async (IQueryDispatcher queries, CancellationToken cancellationToken) =>
     Results.Ok(await queries.QueryAsync(new ListMessagesQuery(), cancellationToken)));
+
+app.MapGet("/audit", async (IQueryDispatcher queries, CancellationToken cancellationToken) =>
+    Results.Ok(await queries.QueryAsync(new GetAuditCountQuery(), cancellationToken)));
 
 app.Run();
 

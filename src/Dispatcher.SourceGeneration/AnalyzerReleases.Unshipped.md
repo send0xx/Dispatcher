@@ -9,3 +9,5 @@ DSPG002 | Dispatcher.SourceGeneration | Error | Multiple request handlers
 DSPG003 | Dispatcher.SourceGeneration | Error | Open generic handlers are unsupported
 DSPG004 | Dispatcher.SourceGeneration | Error | Handler cannot be activated
 DSPG005 | Dispatcher.SourceGeneration | Error | Request has no handler
+DSPG006 | Dispatcher.SourceGeneration | Error | Invalid generated dispatcher registration method name
+DSPG007 | Dispatcher.SourceGeneration | Error | Referenced handler message is inaccessible to the host dispatcher

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Dispatcher;
 
-[assembly: GenerateDispatcherHandlers("AddGeneratedMessageHandlers")]
+[assembly: GenerateDispatcherHandlers("AddMessageHandlers")]
 
 namespace Dispatcher.NativeAotHostSample.Handlers;
 

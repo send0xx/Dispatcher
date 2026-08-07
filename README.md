@@ -9,12 +9,15 @@ The libraries target .NET 8 and .NET 10. The example application targets .NET 10
 - `Dispatcher.Abstractions` contains messages, handlers, behaviors, and dispatch interfaces.
 - `Dispatcher` contains the container-neutral runtime.
 - `Dispatcher.Extensions.Microsoft.DependencyInjection` adds Microsoft DI registration and references the other packages transitively.
-- `Dispatcher.SourceGeneration` generates module-local typed handler registrations for trimming and Native AOT.
+- `Dispatcher.SourceGeneration` generates a dispatcher and handler registrations without reflection.
 
-Most applications only need to install `Dispatcher.Extensions.Microsoft.DependencyInjection`.
+Choose one implementation package. Use the Microsoft DI extension for the reflection-based runtime,
+or use source generation for a generated dispatcher:
 
 ```bash
 dotnet add package Dispatcher.Extensions.Microsoft.DependencyInjection --version 1.0.0-preview.1
+# or
+dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.1
 ```
 
 ## Define a query
@@ -83,30 +86,25 @@ public static IServiceCollection AddOrdersModule(this IServiceCollection service
 
 The dispatcher, handlers, and behaviors are scoped by default. Resolve and use dispatcher interfaces inside a DI scope, as ASP.NET Core does for each request. Avoid overriding the dispatcher with a singleton registration because scoped handlers and behaviors must be resolved from their owning scope.
 
-For trimming and Native AOT, register handlers explicitly inside each module so internal handler types remain accessible:
+For trimming and Native AOT, reference only `Dispatcher.SourceGeneration`. Each module opts into
+handler registration, while the host opts into the single dispatcher:
 
 ```csharp
-services
-    .AddDispatcher()
-    .AddQueryHandler<GetOrderQuery, Order?, GetOrderQueryHandler>()
-    .AddCommandHandler<CreateOrderCommand, Guid, CreateOrderCommandHandler>()
-    .AddCommandHandler<ClearOrdersCommand, ClearOrdersCommandHandler>()
-    .AddNotificationHandler<OrderCreated, ReserveStockHandler>();
-```
+[assembly: GenerateDispatcherHandlers("AddOrdersHandlers")]
 
-Typed registration avoids assembly scanning and runtime generic construction. For generated registration, reference `Dispatcher.SourceGeneration` as an analyzer and opt in from each module:
-
-```xml
-<PackageReference Include="Dispatcher.SourceGeneration"
-                  Version="1.0.0"
-                  PrivateAssets="all" />
+[assembly: GenerateDispatcher("AddDispatcher")]
 ```
 
 ```csharp
-[assembly: GenerateDispatcherHandlers("AddGeneratedOrdersHandlers")]
+services.AddOrdersHandlers().AddStockHandlers().AddDispatcher();
 ```
 
-The generator emits an extension method that directly references the module's internal handlers. Register closed behaviors in AOT applications with `AddPipelineBehavior<TRequest, TResponse, TBehavior>()`. See the [module-owned Native AOT sample](samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample) for a complete slim web application.
+Each module generates registrations inside its own assembly, allowing its handlers to remain
+internal. The host generator discovers opted-in referenced modules and emits one internal
+`Dispatcher` with routes for all of them.
+It uses frozen dispatch tables while resolving handlers and behaviors from the current service-provider
+scope. This path does not reference `Dispatcher` or
+`Dispatcher.Extensions.Microsoft.DependencyInjection`.
 
 ## Dispatch messages
 

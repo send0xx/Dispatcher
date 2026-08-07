@@ -8,7 +8,7 @@ namespace Dispatcher.SourceGeneration.Tests.TestSupport;
 
 internal static class GeneratorTestHarness
 {
-    internal static GeneratorTestResult Run(string source)
+    internal static GeneratorTestResult Run(string source, bool includeRuntimeIntegration = true)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(
             "global using System.Threading; global using System.Threading.Tasks;" + source,
@@ -16,12 +16,7 @@ internal static class GeneratorTestHarness
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Select(path => MetadataReference.CreateFromFile(path))
-            .Concat(
-            [
-                MetadataReference.CreateFromFile(typeof(IRequest).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(TypedDispatcherServiceCollectionExtensions).Assembly.Location)
-            ])
+            .Concat(GetDispatcherReferences(includeRuntimeIntegration))
             .Distinct(MetadataReferencePathComparer.Instance);
         var compilation = CSharpCompilation.Create(
             "GeneratorTests",
@@ -43,6 +38,18 @@ internal static class GeneratorTestHarness
             diagnostics.AddRange(runResult.Diagnostics),
             runResult.GeneratedTrees,
             outputCompilation);
+    }
+
+    private static IEnumerable<MetadataReference> GetDispatcherReferences(bool includeRuntimeIntegration)
+    {
+        yield return MetadataReference.CreateFromFile(typeof(IRequest).Assembly.Location);
+        yield return MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location);
+
+        if (includeRuntimeIntegration)
+        {
+            yield return MetadataReference.CreateFromFile(
+                typeof(TypedDispatcherServiceCollectionExtensions).Assembly.Location);
+        }
     }
 
     private sealed class MetadataReferencePathComparer : IEqualityComparer<MetadataReference>

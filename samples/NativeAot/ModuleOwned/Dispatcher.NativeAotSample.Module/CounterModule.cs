@@ -1,9 +1,9 @@
 using Dispatcher;
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: GenerateDispatcherHandlers("AddGeneratedCounterHandlers")]
+[assembly: GenerateDispatcherHandlers("AddCounterHandlers")]
+[assembly: GenerateDispatcher("AddDispatcher")]
 
 namespace Dispatcher.NativeAotSample.Module;
 
@@ -13,6 +13,6 @@ public static class CounterModule
     {
         services.AddSingleton<CounterState>();
         services.AddScoped<IValidator<IncrementCounterCommand>, IncrementCounterCommandValidator>();
-        return services.AddGeneratedCounterHandlers();
+        return services.AddCounterHandlers().AddDispatcher();
     }
 }
