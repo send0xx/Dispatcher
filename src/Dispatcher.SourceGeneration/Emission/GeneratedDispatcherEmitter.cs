@@ -235,35 +235,48 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        TRequest request,");
         source.AppendLine("        global::Dispatcher.IQueryHandler<TRequest, TResponse> handler,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
-        source.AppendLine("        where TRequest : global::Dispatcher.IQuery<TResponse> =>");
-        source.AppendLine("        RunPipeline(request, token => handler.HandleAsync(request, token), cancellationToken);");
+        source.AppendLine("        where TRequest : global::Dispatcher.IQuery<TResponse>");
+        source.AppendLine("    {");
+        source.AppendLine("        var behaviors = GetServices<global::Dispatcher.IPipelineBehavior<TRequest, TResponse>>();");
+        source.AppendLine("        if (behaviors.Count == 0)");
+        source.AppendLine("        {");
+        source.AppendLine("            return handler.HandleAsync(request, cancellationToken);");
+        source.AppendLine("        }");
+        source.AppendLine("        return RunQueryPipeline(request, handler, behaviors, cancellationToken);");
+        source.AppendLine("    }");
         source.AppendLine();
         source.AppendLine("    private global::System.Threading.Tasks.ValueTask<TResponse> RequestCore<TRequest, TResponse>(");
         source.AppendLine("        TRequest request,");
         source.AppendLine("        global::Dispatcher.ICommandHandler<TRequest, TResponse> handler,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
-        source.AppendLine("        where TRequest : global::Dispatcher.ICommand<TResponse> =>");
-        source.AppendLine("        RunPipeline(request, token => handler.HandleAsync(request, token), cancellationToken);");
-        source.AppendLine();
-        source.AppendLine("    private global::System.Threading.Tasks.ValueTask<TResponse> RunPipeline<TRequest, TResponse>(");
-        source.AppendLine("        TRequest request,");
-        source.AppendLine("        global::Dispatcher.RequestHandlerDelegate<TResponse> handler,");
-        source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
-        source.AppendLine("        where TRequest : global::Dispatcher.IRequest");
+        source.AppendLine("        where TRequest : global::Dispatcher.ICommand<TResponse>");
         source.AppendLine("    {");
         source.AppendLine("        var behaviors = GetServices<global::Dispatcher.IPipelineBehavior<TRequest, TResponse>>();");
         source.AppendLine("        if (behaviors.Count == 0)");
         source.AppendLine("        {");
-        source.AppendLine("            return handler(cancellationToken);");
+        source.AppendLine("            return handler.HandleAsync(request, cancellationToken);");
         source.AppendLine("        }");
-        source.AppendLine("        global::Dispatcher.RequestHandlerDelegate<TResponse> pipeline = handler;");
-        source.AppendLine("        for (var index = behaviors.Count - 1; index >= 1; index--)");
-        source.AppendLine("        {");
-        source.AppendLine("            var behavior = behaviors[index];");
-        source.AppendLine("            var next = pipeline;");
-        source.AppendLine("            pipeline = token => behavior.HandleAsync(request, next, token);");
-        source.AppendLine("        }");
-        source.AppendLine("        return behaviors[0].HandleAsync(request, pipeline, cancellationToken);");
+        source.AppendLine("        return RunResponseCommandPipeline(request, handler, behaviors, cancellationToken);");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.AppendLine("    private static global::System.Threading.Tasks.ValueTask<TResponse> RunQueryPipeline<TRequest, TResponse>(");
+        source.AppendLine("        TRequest request,");
+        source.AppendLine("        global::Dispatcher.IQueryHandler<TRequest, TResponse> handler,");
+        source.AppendLine("        global::System.Collections.Generic.IReadOnlyList<global::Dispatcher.IPipelineBehavior<TRequest, TResponse>> behaviors,");
+        source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
+        source.AppendLine("        where TRequest : global::Dispatcher.IQuery<TResponse>");
+        source.AppendLine("    {");
+        AppendPipelineBody(source, "request", "handler.HandleAsync(request, token)");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.AppendLine("    private static global::System.Threading.Tasks.ValueTask<TResponse> RunResponseCommandPipeline<TRequest, TResponse>(");
+        source.AppendLine("        TRequest request,");
+        source.AppendLine("        global::Dispatcher.ICommandHandler<TRequest, TResponse> handler,");
+        source.AppendLine("        global::System.Collections.Generic.IReadOnlyList<global::Dispatcher.IPipelineBehavior<TRequest, TResponse>> behaviors,");
+        source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
+        source.AppendLine("        where TRequest : global::Dispatcher.ICommand<TResponse>");
+        source.AppendLine("    {");
+        AppendPipelineBody(source, "request", "handler.HandleAsync(request, token)");
         source.AppendLine("    }");
         source.AppendLine();
         source.AppendLine("    private global::System.Threading.Tasks.ValueTask CommandCore<TCommand>(");
@@ -325,6 +338,21 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("            _ => global::System.Linq.Enumerable.ToArray(services)");
         source.AppendLine("        };");
         source.AppendLine("    }");
+    }
+
+    private static void AppendPipelineBody(StringBuilder source, string requestName, string handlerInvocation)
+    {
+        source.Append("        global::Dispatcher.RequestHandlerDelegate<TResponse> pipeline = token => ")
+            .Append(handlerInvocation).AppendLine(";");
+        source.AppendLine("        for (var index = behaviors.Count - 1; index >= 1; index--)");
+        source.AppendLine("        {");
+        source.AppendLine("            var behavior = behaviors[index];");
+        source.AppendLine("            var next = pipeline;");
+        source.Append("            pipeline = token => behavior.HandleAsync(").Append(requestName)
+            .AppendLine(", next, token);");
+        source.AppendLine("        }");
+        source.Append("        return behaviors[0].HandleAsync(").Append(requestName)
+            .AppendLine(", pipeline, cancellationToken);");
     }
 
     private static void AppendDispatcherContractRegistration(

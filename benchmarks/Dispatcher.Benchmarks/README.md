@@ -15,5 +15,11 @@ Run one benchmark class while iterating:
 dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*PipelineBenchmarks*'
 ```
 
+Compare the reflection and source-generated implementations under the same runtime:
+
+```shell
+dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*Implementation*'
+```
+
 BenchmarkDotNet writes detailed reports to `BenchmarkDotNet.Artifacts/`. Run benchmarks
 on an otherwise idle machine without a debugger attached for representative results.

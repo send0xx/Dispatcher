@@ -30,6 +30,8 @@ public sealed class DispatcherGeneratorOutputTests
                 StringComparison.Ordinal))).ToString();
         Assert.Contains("FrozenDictionary", generated, StringComparison.Ordinal);
         Assert.Contains("QueryCore<global::TestQuery", generated, StringComparison.Ordinal);
+        Assert.Contains("return handler.HandleAsync(request, cancellationToken);", generated, StringComparison.Ordinal);
+        Assert.Contains("RunQueryPipeline", generated, StringComparison.Ordinal);
         Assert.Contains(result.GeneratedTrees, tree =>
             tree.ToString().Contains("AddTestDispatcher", StringComparison.Ordinal));
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
