@@ -23,7 +23,7 @@ internal static class HandlerRegistrationEmitter
         source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
-    
+
         foreach (var handler in result.LocalHandlers)
         {
             source.Append("        global::Dispatcher.Extensions.Microsoft.DependencyInjection.TypedDispatcherServiceCollectionExtensions.")
@@ -32,12 +32,12 @@ internal static class HandlerRegistrationEmitter
                 .Append(handler.TypeArguments)
                 .AppendLine(">(services);");
         }
-    
+
         source.AppendLine();
         source.AppendLine("        return services;");
         source.AppendLine("    }");
         source.AppendLine("}");
-    
+
         context.AddSource(className + ".g.cs", SourceText.From(source.ToString(), Encoding.UTF8));
     }
 }

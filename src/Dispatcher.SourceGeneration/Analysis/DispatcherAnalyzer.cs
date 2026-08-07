@@ -17,7 +17,7 @@ internal static class DispatcherAnalyzer
     private const string CommandMetadataName = "Dispatcher.ICommand`1";
     private const string CommandWithoutResponseMetadataName = "Dispatcher.ICommand";
     private const string PipelineBehaviorMetadataName = "Dispatcher.IPipelineBehavior`2";
-    
+
     internal static GenerationResult Analyze(Compilation compilation, CancellationToken cancellationToken)
     {
         var attributeType = compilation.GetTypeByMetadataName(AttributeMetadataName);
@@ -26,7 +26,7 @@ internal static class DispatcherAnalyzer
         {
             return GenerationResult.Empty;
         }
-    
+
         var attribute = compilation.Assembly.GetAttributes()
             .FirstOrDefault(candidate => SymbolEqualityComparer.Default.Equals(candidate.AttributeClass, attributeType));
         var dispatcherAttribute = compilation.Assembly.GetAttributes()
@@ -36,7 +36,7 @@ internal static class DispatcherAnalyzer
         {
             return GenerationResult.Empty;
         }
-    
+
         var methodName = attribute?.ConstructorArguments.Length == 1
             ? attribute.ConstructorArguments[0].Value as string
             : null;
@@ -45,7 +45,7 @@ internal static class DispatcherAnalyzer
             : null;
         var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
         var attributeLocation = attribute?.ApplicationSyntaxReference?.GetSyntax(cancellationToken).GetLocation();
-    
+
         if (attribute is not null && (string.IsNullOrWhiteSpace(methodName) ||
             !SyntaxFacts.IsValidIdentifier(methodName) ||
             SyntaxFacts.GetKeywordKind(methodName) != SyntaxKind.None))
@@ -62,7 +62,7 @@ internal static class DispatcherAnalyzer
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
-    
+
         if (dispatcherAttribute is not null && (string.IsNullOrWhiteSpace(dispatcherMethodName) ||
             !SyntaxFacts.IsValidIdentifier(dispatcherMethodName) ||
             SyntaxFacts.GetKeywordKind(dispatcherMethodName) != SyntaxKind.None))
@@ -79,7 +79,7 @@ internal static class DispatcherAnalyzer
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
-    
+
         var queryHandler = compilation.GetTypeByMetadataName(QueryHandlerMetadataName);
         var commandHandler = compilation.GetTypeByMetadataName(CommandHandlerMetadataName);
         var commandWithoutResponseHandler = compilation.GetTypeByMetadataName(
@@ -96,18 +96,18 @@ internal static class DispatcherAnalyzer
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
-    
+
         var allTypes = GetAllTypes(compilation.Assembly.GlobalNamespace).ToImmutableArray();
         var pipelineBehavior = compilation.GetTypeByMetadataName(PipelineBehaviorMetadataName);
         var openBehaviors = pipelineBehavior is null
             ? ImmutableArray<INamedTypeSymbol>.Empty
             : GetOpenPipelineBehaviors(allTypes, pipelineBehavior, diagnostics);
         var handlers = ImmutableArray.CreateBuilder<HandlerModel>();
-    
+
         foreach (var type in allTypes)
         {
             cancellationToken.ThrowIfCancellationRequested();
-    
+
             var implementedHandlers = type.AllInterfaces
                 .Where(@interface => IsHandlerInterface(
                     @interface.OriginalDefinition,
@@ -120,7 +120,7 @@ internal static class DispatcherAnalyzer
             {
                 continue;
             }
-    
+
             if (type.Arity != 0 || implementedHandlers.Any(ContainsTypeParameter))
             {
                 diagnostics.Add(Diagnostic.Create(
@@ -129,7 +129,7 @@ internal static class DispatcherAnalyzer
                     type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
                 continue;
             }
-    
+
             if (type.TypeKind != TypeKind.Class || type.IsAbstract ||
                 !compilation.IsSymbolAccessibleWithin(type, compilation.Assembly) ||
                 !type.InstanceConstructors.Any(constructor =>
@@ -141,7 +141,7 @@ internal static class DispatcherAnalyzer
                     type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
                 continue;
             }
-    
+
             foreach (var handlerInterface in implementedHandlers)
             {
                 handlers.Add(CreateHandlerModel(
@@ -152,15 +152,15 @@ internal static class DispatcherAnalyzer
                     commandWithoutResponseHandler));
             }
         }
-    
+
         AddMissingHandlerDiagnostics(compilation, allTypes, handlers, diagnostics);
-    
+
         var localHandlers = handlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
         var dispatchHandlers = ImmutableArray.CreateBuilder<HandlerModel>();
         dispatchHandlers.AddRange(localHandlers);
-    
+
         if (dispatcherAttribute is not null)
         {
             AddReferencedHandlers(
@@ -178,7 +178,7 @@ internal static class DispatcherAnalyzer
         {
             AddDuplicateDiagnostics(localHandlers, diagnostics);
         }
-    
+
         return new GenerationResult(
             methodName,
             dispatcherMethodName,
@@ -188,7 +188,7 @@ internal static class DispatcherAnalyzer
             diagnostics.ToImmutable(),
             compilation.AssemblyName ?? "DispatcherModule");
     }
-    
+
     private static ImmutableArray<INamedTypeSymbol> GetOpenPipelineBehaviors(
         ImmutableArray<INamedTypeSymbol> allTypes,
         INamedTypeSymbol pipelineBehavior,
@@ -203,7 +203,7 @@ internal static class DispatcherAnalyzer
             {
                 continue;
             }
-    
+
             var supported = type.Arity == 2 &&
                 SymbolEqualityComparer.Default.Equals(behaviorInterface.TypeArguments[0], type.TypeParameters[0]) &&
                 SymbolEqualityComparer.Default.Equals(behaviorInterface.TypeArguments[1], type.TypeParameters[1]) &&
@@ -217,14 +217,14 @@ internal static class DispatcherAnalyzer
                     type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
                 continue;
             }
-    
+
             behaviors.Add(type);
         }
-    
+
         return behaviors.OrderBy(type => type.ToDisplayString(SymbolDisplayFormats.FullyQualified), StringComparer.Ordinal)
             .ToImmutableArray();
     }
-    
+
     private static void AddReferencedHandlers(
         Compilation compilation,
         INamedTypeSymbol queryHandler,
@@ -241,7 +241,7 @@ internal static class DispatcherAnalyzer
             foreach (var type in GetAllTypes(assembly.GlobalNamespace))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-    
+
                 foreach (var handlerInterface in type.AllInterfaces.Where(@interface =>
                              IsHandlerInterface(
                                  @interface.OriginalDefinition,
@@ -254,7 +254,7 @@ internal static class DispatcherAnalyzer
                     {
                         continue;
                     }
-    
+
                     var model = CreateHandlerModel(
                         type,
                         handlerInterface,
@@ -272,18 +272,18 @@ internal static class DispatcherAnalyzer
                             assembly.Name));
                         continue;
                     }
-    
+
                     handlers.Add(model);
                 }
             }
         }
     }
-    
+
     private static bool HasGeneratedHandlerRegistration(IAssemblySymbol assembly) =>
         assembly.GetAttributes().Any(attribute =>
             attribute.AttributeClass?.ToDisplayString() ==
             "Dispatcher.GenerateDispatcherHandlersAttribute");
-    
+
     private static HandlerModel CreateHandlerModel(
         INamedTypeSymbol implementation,
         INamedTypeSymbol handlerInterface,
@@ -299,14 +299,14 @@ internal static class DispatcherAnalyzer
                 : SymbolEqualityComparer.Default.Equals(definition, commandWithoutResponseHandler)
                     ? HandlerModelKind.Command
                     : HandlerModelKind.Notification;
-    
+
         return new HandlerModel(
             kind,
             handlerInterface.TypeArguments[0],
             handlerInterface.TypeArguments.Length == 2 ? handlerInterface.TypeArguments[1] : null,
             implementation);
     }
-    
+
     private static void AddDuplicateDiagnostics(
         IEnumerable<HandlerModel> handlers,
         ImmutableArray<Diagnostic>.Builder diagnostics)
@@ -327,7 +327,7 @@ internal static class DispatcherAnalyzer
                 implementations));
         }
     }
-    
+
     private static void AddMissingHandlerDiagnostics(
         Compilation compilation,
         ImmutableArray<INamedTypeSymbol> allTypes,
@@ -341,7 +341,7 @@ internal static class DispatcherAnalyzer
         {
             return;
         }
-    
+
         foreach (var type in allTypes.Where(type =>
                      type.Locations.Any(location => location.IsInSource) &&
                      type.Arity == 0 &&
@@ -352,14 +352,14 @@ internal static class DispatcherAnalyzer
             {
                 continue;
             }
-    
+
             diagnostics.Add(Diagnostic.Create(
                 GeneratorDiagnostics.MissingRequestHandler,
                 type.Locations.FirstOrDefault(),
                 type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
         }
     }
-    
+
     private static bool IsRequest(
         INamedTypeSymbol type,
         INamedTypeSymbol query,
@@ -369,7 +369,7 @@ internal static class DispatcherAnalyzer
             SymbolEqualityComparer.Default.Equals(@interface.OriginalDefinition, query) ||
             SymbolEqualityComparer.Default.Equals(@interface.OriginalDefinition, command) ||
             SymbolEqualityComparer.Default.Equals(@interface, commandWithoutResponse));
-    
+
     private static bool IsHandlerInterface(
         INamedTypeSymbol definition,
         INamedTypeSymbol queryHandler,
@@ -380,10 +380,10 @@ internal static class DispatcherAnalyzer
         SymbolEqualityComparer.Default.Equals(definition, commandHandler) ||
         SymbolEqualityComparer.Default.Equals(definition, commandWithoutResponseHandler) ||
         SymbolEqualityComparer.Default.Equals(definition, notificationHandler);
-    
+
     private static bool ContainsTypeParameter(INamedTypeSymbol type) =>
         type.TypeArguments.Any(argument => argument.TypeKind == TypeKind.TypeParameter);
-    
+
     private static IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
     {
         foreach (var type in @namespace.GetTypeMembers())
@@ -393,7 +393,7 @@ internal static class DispatcherAnalyzer
                 yield return nestedType;
             }
         }
-    
+
         foreach (var childNamespace in @namespace.GetNamespaceMembers())
         {
             foreach (var type in GetAllTypes(childNamespace))
@@ -402,11 +402,11 @@ internal static class DispatcherAnalyzer
             }
         }
     }
-    
+
     private static IEnumerable<INamedTypeSymbol> GetTypeAndNestedTypes(INamedTypeSymbol type)
     {
         yield return type;
-    
+
         foreach (var nestedType in type.GetTypeMembers())
         {
             foreach (var descendant in GetTypeAndNestedTypes(nestedType))
@@ -415,5 +415,5 @@ internal static class DispatcherAnalyzer
             }
         }
     }
-    
+
 }

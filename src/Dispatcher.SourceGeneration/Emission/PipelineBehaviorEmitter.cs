@@ -43,7 +43,7 @@ internal static class PipelineBehaviorEmitter
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(behaviorType);");
-    
+
         foreach (var behavior in result.OpenBehaviors)
         {
             source.Append("        if (behaviorType == typeof(")
@@ -57,7 +57,7 @@ internal static class PipelineBehaviorEmitter
                 {
                     continue;
                 }
-    
+
                 source.Append("            global::Dispatcher.Extensions.Microsoft.DependencyInjection.TypedDispatcherServiceCollectionExtensions.AddPipelineBehavior<")
                     .Append(request.Request.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
                     .Append(response.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
@@ -67,7 +67,7 @@ internal static class PipelineBehaviorEmitter
             source.AppendLine("            return services;");
             source.AppendLine("        }");
         }
-    
+
         source.AppendLine();
         source.AppendLine("        throw new global::System.ArgumentException(");
         source.AppendLine("            $\"Pipeline behavior '{behaviorType.FullName}' was not discovered by the Dispatcher generator.\",");
@@ -78,7 +78,7 @@ internal static class PipelineBehaviorEmitter
             "GeneratedPipelineBehaviorServiceCollectionExtensions.g.cs",
             SourceText.From(source.ToString(), Encoding.UTF8));
     }
-    
+
     private static bool CanCloseBehavior(
         INamedTypeSymbol behavior,
         ITypeSymbol request,
@@ -98,7 +98,7 @@ internal static class PipelineBehaviorEmitter
             {
                 return false;
             }
-    
+
             foreach (var constraint in parameter.ConstraintTypes)
             {
                 var closedConstraint = SubstituteTypeParameters(constraint, behavior.TypeParameters, arguments);
@@ -108,10 +108,10 @@ internal static class PipelineBehaviorEmitter
                 }
             }
         }
-    
+
         return true;
     }
-    
+
     private static ITypeSymbol SubstituteTypeParameters(
         ITypeSymbol type,
         ImmutableArray<ITypeParameterSymbol> parameters,
@@ -122,35 +122,35 @@ internal static class PipelineBehaviorEmitter
             var index = parameters.IndexOf(parameter, SymbolEqualityComparer.Default);
             return index >= 0 ? arguments[index] : type;
         }
-    
+
         if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
         {
             return type;
         }
-    
+
         return namedType.OriginalDefinition.Construct(namedType.TypeArguments
             .Select(argument => SubstituteTypeParameters(argument, parameters, arguments))
             .ToArray());
     }
-    
+
     private static bool SatisfiesTypeConstraint(ITypeSymbol argument, ITypeSymbol constraint)
     {
         if (SymbolEqualityComparer.Default.Equals(argument, constraint))
         {
             return true;
         }
-    
+
         if (argument is not INamedTypeSymbol namedArgument)
         {
             return false;
         }
-    
+
         if (namedArgument.AllInterfaces.Any(@interface =>
                 SymbolEqualityComparer.Default.Equals(@interface, constraint)))
         {
             return true;
         }
-    
+
         for (var baseType = namedArgument.BaseType; baseType is not null; baseType = baseType.BaseType)
         {
             if (SymbolEqualityComparer.Default.Equals(baseType, constraint))
@@ -158,7 +158,7 @@ internal static class PipelineBehaviorEmitter
                 return true;
             }
         }
-    
+
         return false;
     }
 }
