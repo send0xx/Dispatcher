@@ -13,8 +13,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `src/Dispatcher.Extensions.Microsoft.DependencyInjection`: typed, reflection-free Microsoft DI registrations.
 - `src/Dispatcher.DependencyInjection`: reflection-based Microsoft DI dispatcher registration and handler scanning.
 - `src/Dispatcher.SourceGeneration`: generated dispatcher implementation and handler registration.
-- `samples/Reflection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
-- `samples/NativeAot/HostOwned`: Native AOT Minimal API where the host composes generated handlers from a referenced assembly.
+- `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
+- `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
 - `tests/Dispatcher.Tests`: integration tests targeting .NET 8 and .NET 10.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs/PLAN.md`: original v1 implementation plan and design history.
@@ -152,6 +152,7 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 ## Repository hygiene
 
 - Preserve unrelated user changes in a dirty worktree.
+- Do not add empty lines at the end of files.
 - Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.

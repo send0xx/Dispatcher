@@ -151,12 +151,12 @@ The same `IPipelineBehavior<TRequest, TResponse>` contract applies to queries an
 Run the beginner-friendly Minimal API:
 
 ```bash
-dotnet run --project samples/Reflection/Dispatcher.SampleApi
+dotnet run --project samples/DependencyInjection/Dispatcher.SampleApi
 ```
 
-The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/Reflection/Dispatcher.SampleApi/README.md).
+The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/DependencyInjection/Dispatcher.SampleApi/README.md).
 
-The [Native AOT sample](samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample) demonstrates
+The [Native AOT sample](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates
 two referenced modules with internal handlers composed into one host-generated dispatcher.
 
 ## Benchmarks

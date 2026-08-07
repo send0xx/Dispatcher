@@ -22,5 +22,5 @@ modules receive it.
 Publish a native executable for the current platform:
 
 ```bash
-dotnet publish samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample -c Release
+dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample -c Release
 ```

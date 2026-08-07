@@ -191,7 +191,7 @@ Compile-time diagnostics are a primary benefit of the generated path, not merely
 Maintain a dedicated application:
 
 ```text
-samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample
+samples/NativeAot/Dispatcher.NativeAotHostSample
 ```
 
 It demonstrates:
@@ -207,7 +207,7 @@ It demonstrates:
 CI should publish a native executable, start it, and exercise its endpoints:
 
 ```bash
-dotnet publish samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample \
+dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample \
   -c Release \
   -r linux-x64 \
   /p:PublishAot=true

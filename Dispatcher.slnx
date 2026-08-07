@@ -6,18 +6,18 @@
     <File Path="docs/AOT.md" />
     <File Path="docs/PLAN.md" />
   </Folder>
-  <Folder Name="/samples/NativeAot/HostOwned/">
-    <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
-    <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
-    <Project Path="samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj" />
+  <Folder Name="/samples/NativeAot/">
+    <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
+    <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
+    <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <File Path="samples/README.md" />
   </Folder>
-  <Folder Name="/samples/Reflection/">
-    <Project Path="samples/Reflection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
-    <Project Path="samples/Reflection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
-    <Project Path="samples/Reflection/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj" />
+  <Folder Name="/samples/DependencyInjection/">
+    <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
+    <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
+    <Project Path="samples/DependencyInjection/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
