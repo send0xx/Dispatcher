@@ -104,6 +104,13 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        if (services.Any(descriptor =>
+                descriptor.ServiceType == typeof(TService) &&
+                descriptor.ImplementationType == typeof(THandler)))
+        {
+            return services;
+        }
+
         services.Add(ServiceDescriptor.Describe(
             typeof(TService),
             typeof(THandler),

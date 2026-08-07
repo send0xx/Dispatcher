@@ -72,4 +72,22 @@ public sealed class DispatcherRegistrationTests
 
         Assert.Throws<ArgumentException>(() => services.AddPipelineBehavior(typeof(string)));
     }
+
+    [Fact]
+    public void Typed_handler_registration_is_idempotent()
+    {
+        var services = new ServiceCollection();
+
+        services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>();
+        services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>();
+        services.AddNotificationHandler<SomethingHappened, ANotificationHandler>();
+        services.AddNotificationHandler<SomethingHappened, ANotificationHandler>();
+
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>));
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(INotificationHandler<SomethingHappened>));
+    }
 }

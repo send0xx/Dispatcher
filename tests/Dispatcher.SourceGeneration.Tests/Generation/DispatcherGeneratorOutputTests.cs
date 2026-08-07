@@ -128,4 +128,53 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
+
+    [Fact]
+    public void Applies_constrained_behavior_only_to_compatible_commands_and_uses_unit()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestQuery : IQuery<string>;
+            internal sealed class TestQueryHandler : IQueryHandler<TestQuery, string>
+            {
+                public ValueTask<string> HandleAsync(TestQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("value");
+            }
+            internal sealed record TestCommand : ICommand;
+            internal sealed class TestCommandHandler : ICommandHandler<TestCommand>
+            {
+                public ValueTask HandleAsync(TestCommand command, CancellationToken cancellationToken) =>
+                    ValueTask.CompletedTask;
+            }
+            internal sealed class CommandBehavior<TCommand, TResponse>
+                : IPipelineBehavior<TCommand, TResponse>
+                where TCommand : ICommand<TResponse>
+            {
+                public ValueTask<TResponse> HandleAsync(
+                    TCommand request,
+                    RequestHandlerDelegate<TResponse> next,
+                    CancellationToken cancellationToken) => next(cancellationToken);
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "GeneratedPipelineBehaviorServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "AddPipelineBehavior<global::TestCommand, global::Dispatcher.Unit, global::CommandBehavior<global::TestCommand, global::Dispatcher.Unit>>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "CommandBehavior<global::TestQuery, string>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
 }

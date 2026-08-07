@@ -96,6 +96,26 @@ public sealed class DispatcherGeneratorDiagnosticTests
         AssertDiagnostic(source, "DSPG004");
     }
 
+    [Fact]
+    public void Reports_unsupported_open_generic_behavior_shape()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddDispatcher")]
+            internal sealed class InvalidBehavior<TRequest>
+                : IPipelineBehavior<TRequest, string>
+                where TRequest : IRequest
+            {
+                public ValueTask<string> HandleAsync(
+                    TRequest request,
+                    RequestHandlerDelegate<string> next,
+                    CancellationToken cancellationToken) => next(cancellationToken);
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG008");
+    }
+
     private static void AssertDiagnostic(string source, string diagnosticId) =>
         Assert.Contains(
             GeneratorTestHarness.Run(source).Diagnostics,
