@@ -8,14 +8,15 @@ The Native AOT implementation is complete:
 - typed registrations construct closed wrappers without `MakeGenericType` or `Activator.CreateInstance`;
 - reflection registration remains available and has trimming and dynamic-code compatibility annotations;
 - all runtime library projects enable AOT compatibility analysis;
-- `samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample` publishes and runs as a warning-free native executable using internal handlers, typed closed FluentValidation behavior registration, and source-generated JSON metadata.
 - `Dispatcher.SourceGeneration` emits deterministic handler registrations and a concrete dispatcher for internal handlers;
 - generator diagnostics report invalid method names, duplicate or missing request handlers, unsupported open generic handlers, and handlers that cannot be activated by DI;
-- the module-owned Native AOT sample consumes a fully generated dispatcher behind its module entry point;
 - the host-owned Native AOT sample composes two generated modules into one host-generated dispatcher;
-- both Native AOT samples reference the source-generation implementation without the reflection implementation package;
+- the Native AOT sample references the source-generation implementation without the reflection implementation package;
 
-Open generic pipeline behaviors are explicitly closed through the typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API. This keeps behavior applicability and ordering visible at the composition root while remaining fully Native AOT safe. Automatic behavior closure is not part of the current generator scope.
+The generated host supports `AddPipelineBehavior(typeof(Behavior<,>))`. It emits typed closed
+registrations for every compatible query and command, preserving call order without runtime generic
+construction. The typed `AddPipelineBehavior<TRequest, TResponse, TBehavior>` API remains available
+for explicit per-request registration.
 
 ## Objective
 
@@ -28,8 +29,9 @@ Native AOT performs trimming and cannot safely support unbounded runtime reflect
 Treat reflection and source generation as separate implementation choices:
 
 ```text
-Dispatcher.Extensions.Microsoft.DependencyInjection ── reflection scanner + runtime wrappers
-Dispatcher.SourceGeneration ───────────────────────── generated registrations + dispatcher
+Dispatcher.Extensions.Microsoft.DependencyInjection ── typed, reflection-free registrations
+Dispatcher.DependencyInjection ────────────────────── reflection scanner + runtime dispatcher
+Dispatcher.SourceGeneration ────────────────────────── generated registrations + dispatcher
 ```
 
 The reflection path remains convenient for normal applications. The generated path emits handler
@@ -92,6 +94,7 @@ Create a separate analyzer package:
 Dispatcher.Abstractions
 Dispatcher
 Dispatcher.Extensions.Microsoft.DependencyInjection
+Dispatcher.DependencyInjection
 Dispatcher.SourceGeneration
 ```
 
@@ -141,14 +144,10 @@ Do not suppress trimming or AOT warnings globally.
 
 ## Pipeline behaviors
 
-Open generic behaviors require explicit closure because an AOT compiler must see every required closed generic instantiation.
-
-Applications register each applicable closed behavior explicitly:
+The generated host closes open generic behaviors over every compatible known request:
 
 ```csharp
-services.AddScoped<
-    IPipelineBehavior<CreateOrderCommand, Guid>,
-    ValidationBehavior<CreateOrderCommand, Guid>>();
+services.AddPipelineBehavior(typeof(ValidationBehavior<,>));
 ```
 
 The generator supports:
@@ -156,10 +155,12 @@ The generator supports:
 - closed query and command types;
 - closed handler implementations;
 - resultless commands represented as `Unit` in the pipeline;
+- open generic behaviors with compatible request and response constraints;
 - deterministic handler registration;
 - compile-time handler diagnostics.
 
-Behavior registration remains an application concern. The typed registration API validates generic constraints at compile time, and Microsoft DI preserves registration order. Automatically generating closed behavior registrations may be reconsidered later as an ergonomic feature, but it is not required for Native AOT correctness.
+Behavior registration remains explicit at the composition root. The generator emits only closed
+typed registrations, and Microsoft DI preserves registration order.
 
 Open generic commands and handlers may remain unsupported initially. Emit an actionable diagnostic instead of generating unsafe runtime fallback code.
 
@@ -187,18 +188,16 @@ Compile-time diagnostics are a primary benefit of the generated path, not merely
 
 ## AOT sample and validation
 
-Maintain two dedicated applications:
+Maintain a dedicated application:
 
 ```text
-samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample
 samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample
 ```
 
-Together they demonstrate:
+It demonstrates:
 
 - `WebApplication.CreateSlimBuilder`;
-- a fully generated dispatcher behind a module-owned composition method;
-- a generated dispatcher from a referenced handler assembly called directly by the host;
+- one host-generated dispatcher composed from referenced module assemblies;
 - internal handlers in separate module assemblies;
 - queries and both command shapes;
 - multiple notification handlers;
@@ -208,11 +207,6 @@ Together they demonstrate:
 CI should publish a native executable, start it, and exercise its endpoints:
 
 ```bash
-dotnet publish samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample \
-  -c Release \
-  -r linux-x64 \
-  /p:PublishAot=true
-
 dotnet publish samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample \
   -c Release \
   -r linux-x64 \

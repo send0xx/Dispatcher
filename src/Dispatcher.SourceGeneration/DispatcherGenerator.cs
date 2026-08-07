@@ -18,6 +18,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
     private const string QueryMetadataName = "Dispatcher.IQuery`1";
     private const string CommandMetadataName = "Dispatcher.ICommand`1";
     private const string CommandWithoutResponseMetadataName = "Dispatcher.ICommand";
+    private const string PipelineBehaviorMetadataName = "Dispatcher.IPipelineBehavior`2";
 
     private static readonly SymbolDisplayFormat TypeDisplayFormat =
         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
@@ -76,6 +77,14 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
         "DSPG007",
         "Referenced message is inaccessible",
         "Message '{0}' handled by module '{1}' must be accessible to the generated host dispatcher",
+        "Dispatcher.SourceGeneration",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor UnsupportedOpenGenericBehavior = new(
+        "DSPG008",
+        "Unsupported open generic pipeline behavior",
+        "Pipeline behavior '{0}' must have two type parameters, implement IPipelineBehavior<TRequest, TResponse>, and be applicable to every request",
         "Dispatcher.SourceGeneration",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -176,6 +185,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
 
@@ -192,6 +202,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
                 null,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
 
@@ -208,10 +219,15 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
 
         var allTypes = GetAllTypes(compilation.Assembly.GlobalNamespace).ToImmutableArray();
+        var pipelineBehavior = compilation.GetTypeByMetadataName(PipelineBehaviorMetadataName);
+        var openBehaviors = pipelineBehavior is null
+            ? ImmutableArray<INamedTypeSymbol>.Empty
+            : GetOpenPipelineBehaviors(allTypes, pipelineBehavior, diagnostics);
         var handlers = ImmutableArray.CreateBuilder<HandlerModel>();
 
         foreach (var type in allTypes)
@@ -294,8 +310,45 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
             dispatcherMethodName,
             localHandlers,
             dispatchHandlers.OrderBy(handler => handler.SortKey, StringComparer.Ordinal).ToImmutableArray(),
+            openBehaviors,
             diagnostics.ToImmutable(),
             compilation.AssemblyName ?? "DispatcherModule");
+    }
+
+    private static ImmutableArray<INamedTypeSymbol> GetOpenPipelineBehaviors(
+        ImmutableArray<INamedTypeSymbol> allTypes,
+        INamedTypeSymbol pipelineBehavior,
+        ImmutableArray<Diagnostic>.Builder diagnostics)
+    {
+        var behaviors = ImmutableArray.CreateBuilder<INamedTypeSymbol>();
+        foreach (var type in allTypes.Where(type => type.TypeKind == TypeKind.Class && !type.IsAbstract && type.Arity > 0))
+        {
+            var behaviorInterface = type.AllInterfaces.FirstOrDefault(@interface =>
+                SymbolEqualityComparer.Default.Equals(@interface.OriginalDefinition, pipelineBehavior));
+            if (behaviorInterface is null)
+            {
+                continue;
+            }
+
+            var supported = type.Arity == 2 &&
+                SymbolEqualityComparer.Default.Equals(behaviorInterface.TypeArguments[0], type.TypeParameters[0]) &&
+                SymbolEqualityComparer.Default.Equals(behaviorInterface.TypeArguments[1], type.TypeParameters[1]) &&
+                type.InstanceConstructors.Any(constructor =>
+                    !constructor.IsStatic && constructor.DeclaredAccessibility == Accessibility.Public);
+            if (!supported)
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    UnsupportedOpenGenericBehavior,
+                    type.Locations.FirstOrDefault(),
+                    type.ToDisplayString(TypeDisplayFormat)));
+                continue;
+            }
+
+            behaviors.Add(type);
+        }
+
+        return behaviors.OrderBy(type => type.ToDisplayString(TypeDisplayFormat), StringComparer.Ordinal)
+            .ToImmutableArray();
     }
 
     private static void AddReferencedHandlers(
@@ -531,32 +584,15 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
 
         foreach (var handler in result.LocalHandlers)
         {
-            source.Append("        AddHandler(services, typeof(")
-                .Append(handler.ServiceType).Append("), typeof(")
-                .Append(handler.ImplementationType.ToDisplayString(TypeDisplayFormat)).AppendLine("));");
+            source.Append("        global::Dispatcher.Extensions.Microsoft.DependencyInjection.TypedDispatcherServiceCollectionExtensions.")
+                .Append(handler.MethodName)
+                .Append('<')
+                .Append(handler.TypeArguments)
+                .AppendLine(">(services);");
         }
 
         source.AppendLine();
         source.AppendLine("        return services;");
-        source.AppendLine("    }");
-        source.AppendLine();
-        source.AppendLine("    private static void AddHandler(");
-        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
-        source.AppendLine("        global::System.Type serviceType,");
-        source.AppendLine("        [global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(");
-        source.AppendLine("            global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]");
-        source.AppendLine("        global::System.Type implementationType)");
-        source.AppendLine("    {");
-        source.AppendLine("        foreach (var descriptor in services)");
-        source.AppendLine("        {");
-        source.AppendLine("            if (descriptor.ServiceType == serviceType && descriptor.ImplementationType == implementationType)");
-        source.AppendLine("            {");
-        source.AppendLine("                return;");
-        source.AppendLine("            }");
-        source.AppendLine("        }");
-        source.AppendLine();
-        source.AppendLine("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(");
-        source.AppendLine("            serviceType, implementationType));");
         source.AppendLine("    }");
         source.AppendLine("}");
 
@@ -637,6 +673,165 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
         registration.AppendLine("    }");
         registration.AppendLine("}");
         context.AddSource(extensionsName + ".g.cs", SourceText.From(registration.ToString(), Encoding.UTF8));
+
+        if (!result.OpenBehaviors.IsDefaultOrEmpty)
+        {
+            EmitPipelineBehaviorRegistration(context, result);
+        }
+    }
+
+    private static void EmitPipelineBehaviorRegistration(
+        SourceProductionContext context,
+        GenerationResult result)
+    {
+        var requests = result.DispatchHandlers
+            .Where(handler => handler.Kind != HandlerModelKind.Notification)
+            .Select(handler => new
+            {
+                Request = handler.MessageType,
+                Response = handler.Kind == HandlerModelKind.Command
+                    ? ((INamedTypeSymbol)handler.MessageType).AllInterfaces
+                        .First(@interface => @interface.OriginalDefinition.ToDisplayString() ==
+                            "Dispatcher.ICommand<TResponse>").TypeArguments[0]
+                    : handler.ResponseType
+            })
+            .Where(item => item.Response is not null)
+            .GroupBy(item => item.Request.ToDisplayString(TypeDisplayFormat) + "|" +
+                item.Response!.ToDisplayString(TypeDisplayFormat), StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToArray();
+        var source = new StringBuilder();
+        source.AppendLine("// <auto-generated />");
+        source.AppendLine("#nullable enable");
+        source.AppendLine("namespace Microsoft.Extensions.DependencyInjection;");
+        source.AppendLine();
+        source.AppendLine("public static class GeneratedPipelineBehaviorServiceCollectionExtensions");
+        source.AppendLine("{");
+        source.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddPipelineBehavior(");
+        source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        source.AppendLine("        global::System.Type behaviorType,");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime =");
+        source.AppendLine("            global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped)");
+        source.AppendLine("    {");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(behaviorType);");
+
+        foreach (var behavior in result.OpenBehaviors)
+        {
+            source.Append("        if (behaviorType == typeof(")
+                .Append(behavior.ConstructUnboundGenericType().ToDisplayString(TypeDisplayFormat))
+                .AppendLine("))");
+            source.AppendLine("        {");
+            foreach (var request in requests)
+            {
+                var response = request.Response!;
+                if (!CanCloseBehavior(behavior, request.Request, response))
+                {
+                    continue;
+                }
+
+                source.Append("            global::Dispatcher.Extensions.Microsoft.DependencyInjection.TypedDispatcherServiceCollectionExtensions.AddPipelineBehavior<")
+                    .Append(request.Request.ToDisplayString(TypeDisplayFormat)).Append(", ")
+                    .Append(response.ToDisplayString(TypeDisplayFormat)).Append(", ")
+                    .Append(behavior.Construct(request.Request, response).ToDisplayString(TypeDisplayFormat))
+                    .AppendLine(">(services, lifetime);");
+            }
+            source.AppendLine("            return services;");
+            source.AppendLine("        }");
+        }
+
+        source.AppendLine();
+        source.AppendLine("        throw new global::System.ArgumentException(");
+        source.AppendLine("            $\"Pipeline behavior '{behaviorType.FullName}' was not discovered by the Dispatcher generator.\",");
+        source.AppendLine("            nameof(behaviorType));");
+        source.AppendLine("    }");
+        source.AppendLine("}");
+        context.AddSource(
+            "GeneratedPipelineBehaviorServiceCollectionExtensions.g.cs",
+            SourceText.From(source.ToString(), Encoding.UTF8));
+    }
+
+    private static bool CanCloseBehavior(
+        INamedTypeSymbol behavior,
+        ITypeSymbol request,
+        ITypeSymbol response)
+    {
+        ITypeSymbol[] arguments = [request, response];
+        for (var index = 0; index < behavior.TypeParameters.Length; index++)
+        {
+            var parameter = behavior.TypeParameters[index];
+            var argument = arguments[index];
+            if (parameter.HasReferenceTypeConstraint && !argument.IsReferenceType ||
+                parameter.HasValueTypeConstraint && !argument.IsValueType ||
+                parameter.HasConstructorConstraint &&
+                argument is INamedTypeSymbol namedArgument &&
+                !namedArgument.InstanceConstructors.Any(constructor =>
+                    constructor.Parameters.IsEmpty && constructor.DeclaredAccessibility == Accessibility.Public))
+            {
+                return false;
+            }
+
+            foreach (var constraint in parameter.ConstraintTypes)
+            {
+                var closedConstraint = SubstituteTypeParameters(constraint, behavior.TypeParameters, arguments);
+                if (!SatisfiesTypeConstraint(argument, closedConstraint))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static ITypeSymbol SubstituteTypeParameters(
+        ITypeSymbol type,
+        ImmutableArray<ITypeParameterSymbol> parameters,
+        IReadOnlyList<ITypeSymbol> arguments)
+    {
+        if (type is ITypeParameterSymbol parameter)
+        {
+            var index = parameters.IndexOf(parameter, SymbolEqualityComparer.Default);
+            return index >= 0 ? arguments[index] : type;
+        }
+
+        if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
+        {
+            return type;
+        }
+
+        return namedType.OriginalDefinition.Construct(namedType.TypeArguments
+            .Select(argument => SubstituteTypeParameters(argument, parameters, arguments))
+            .ToArray());
+    }
+
+    private static bool SatisfiesTypeConstraint(ITypeSymbol argument, ITypeSymbol constraint)
+    {
+        if (SymbolEqualityComparer.Default.Equals(argument, constraint))
+        {
+            return true;
+        }
+
+        if (argument is not INamedTypeSymbol namedArgument)
+        {
+            return false;
+        }
+
+        if (namedArgument.AllInterfaces.Any(@interface =>
+                SymbolEqualityComparer.Default.Equals(@interface, constraint)))
+        {
+            return true;
+        }
+
+        for (var baseType = namedArgument.BaseType; baseType is not null; baseType = baseType.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(baseType, constraint))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AppendRequestDictionary(
@@ -950,6 +1145,19 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
         public INamedTypeSymbol ImplementationType { get; }
         public string SortKey => MessageType.ToDisplayString(TypeDisplayFormat) + "|" +
             ImplementationType.ToDisplayString(TypeDisplayFormat);
+        public string MethodName => Kind switch
+        {
+            HandlerModelKind.Query => "AddQueryHandler",
+            HandlerModelKind.CommandWithResponse => "AddCommandHandler",
+            HandlerModelKind.Command => "AddCommandHandler",
+            _ => "AddNotificationHandler"
+        };
+        public string TypeArguments => ResponseType is null
+            ? MessageType.ToDisplayString(TypeDisplayFormat) + ", " +
+              ImplementationType.ToDisplayString(TypeDisplayFormat)
+            : MessageType.ToDisplayString(TypeDisplayFormat) + ", " +
+              ResponseType.ToDisplayString(TypeDisplayFormat) + ", " +
+              ImplementationType.ToDisplayString(TypeDisplayFormat);
         public string ServiceType => Kind switch
         {
             HandlerModelKind.Query => "global::Dispatcher.IQueryHandler<" +
@@ -972,6 +1180,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
             null,
             ImmutableArray<HandlerModel>.Empty,
             ImmutableArray<HandlerModel>.Empty,
+            ImmutableArray<INamedTypeSymbol>.Empty,
             ImmutableArray<Diagnostic>.Empty);
 
         public GenerationResult(
@@ -979,6 +1188,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
             string? dispatcherMethodName,
             ImmutableArray<HandlerModel> localHandlers,
             ImmutableArray<HandlerModel> dispatchHandlers,
+            ImmutableArray<INamedTypeSymbol> openBehaviors,
             ImmutableArray<Diagnostic> diagnostics,
             string assemblyName = "")
         {
@@ -986,6 +1196,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
             DispatcherMethodName = dispatcherMethodName;
             LocalHandlers = localHandlers;
             DispatchHandlers = dispatchHandlers;
+            OpenBehaviors = openBehaviors;
             Diagnostics = diagnostics;
             AssemblyName = assemblyName;
         }
@@ -994,6 +1205,7 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
         public string? DispatcherMethodName { get; }
         public ImmutableArray<HandlerModel> LocalHandlers { get; }
         public ImmutableArray<HandlerModel> DispatchHandlers { get; }
+        public ImmutableArray<INamedTypeSymbol> OpenBehaviors { get; }
         public ImmutableArray<Diagnostic> Diagnostics { get; }
         public string AssemblyName { get; }
     }

@@ -9,6 +9,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
   </ItemGroup>
 </Project>

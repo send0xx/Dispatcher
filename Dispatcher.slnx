@@ -14,10 +14,6 @@
   <Folder Name="/samples/">
     <File Path="samples/README.md" />
   </Folder>
-  <Folder Name="/samples/NativeAot/ModuleOwned/">
-    <Project Path="samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample.Module/Dispatcher.NativeAotSample.Module.csproj" />
-    <Project Path="samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample/Dispatcher.NativeAotSample.csproj" />
-  </Folder>
   <Folder Name="/samples/Reflection/">
     <Project Path="samples/Reflection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
     <Project Path="samples/Reflection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
@@ -26,6 +22,7 @@
   <Folder Name="/src/">
     <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
     <Project Path="src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
+    <Project Path="src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
     <Project Path="src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
     <Project Path="src/Dispatcher/Dispatcher.csproj" />
   </Folder>

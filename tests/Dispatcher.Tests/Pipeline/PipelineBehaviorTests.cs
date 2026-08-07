@@ -1,4 +1,4 @@
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.DependencyInjection;
 using Dispatcher.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

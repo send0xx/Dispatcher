@@ -8,14 +8,15 @@ The libraries target .NET 8 and .NET 10. The example application targets .NET 10
 
 - `Dispatcher.Abstractions` contains messages, handlers, behaviors, and dispatch interfaces.
 - `Dispatcher` contains the container-neutral runtime.
-- `Dispatcher.Extensions.Microsoft.DependencyInjection` adds Microsoft DI registration and references the other packages transitively.
+- `Dispatcher.Extensions.Microsoft.DependencyInjection` provides typed, reflection-free Microsoft DI registrations.
+- `Dispatcher.DependencyInjection` provides the reflection-based Microsoft DI implementation.
 - `Dispatcher.SourceGeneration` generates a dispatcher and handler registrations without reflection.
 
 Choose one implementation package. Use the Microsoft DI extension for the reflection-based runtime,
 or use source generation for a generated dispatcher:
 
 ```bash
-dotnet add package Dispatcher.Extensions.Microsoft.DependencyInjection --version 1.0.0-preview.1
+dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.1
 # or
 dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.1
 ```
@@ -103,8 +104,9 @@ Each module generates registrations inside its own assembly, allowing its handle
 internal. The host generator discovers opted-in referenced modules and emits one internal
 `Dispatcher` with routes for all of them.
 It uses frozen dispatch tables while resolving handlers and behaviors from the current service-provider
-scope. This path does not reference `Dispatcher` or
-`Dispatcher.Extensions.Microsoft.DependencyInjection`.
+scope. Generated handler registration uses the typed methods from
+`Dispatcher.Extensions.Microsoft.DependencyInjection` and does not reference the reflection-based
+`Dispatcher.DependencyInjection` package.
 
 ## Dispatch messages
 
@@ -154,10 +156,8 @@ dotnet run --project samples/Reflection/Dispatcher.SampleApi
 
 The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/Reflection/Dispatcher.SampleApi/README.md).
 
-Two Native AOT samples demonstrate generated registration without changing the message contracts:
-
-- [module-owned registration](samples/NativeAot/ModuleOwned/Dispatcher.NativeAotSample), where the referenced Counter module registers its own services and generated handlers;
-- [host-owned registration](samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample), where the host explicitly calls `AddDispatcher`, the referenced assembly's generated handler method, and its dependency registrations.
+The [Native AOT sample](samples/NativeAot/HostOwned/Dispatcher.NativeAotHostSample) demonstrates
+two referenced modules with internal handlers composed into one host-generated dispatcher.
 
 ## Benchmarks
 

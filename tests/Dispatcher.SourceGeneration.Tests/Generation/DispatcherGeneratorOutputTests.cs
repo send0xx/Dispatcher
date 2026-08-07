@@ -79,12 +79,52 @@ public sealed class DispatcherGeneratorOutputTests
         var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains("DispatcherGeneratedExtensions", StringComparison.Ordinal))).ToString();
         Assert.Contains("AddGeneratedTestHandlers", generated, StringComparison.Ordinal);
-        Assert.Contains("ServiceDescriptor.Scoped", generated, StringComparison.Ordinal);
-        Assert.Contains("typeof(global::Dispatcher.IQueryHandler<", generated, StringComparison.Ordinal);
-        Assert.Contains("typeof(global::Dispatcher.ICommandHandler<", generated, StringComparison.Ordinal);
-        Assert.Contains("typeof(global::Dispatcher.INotificationHandler<", generated, StringComparison.Ordinal);
-        Assert.DoesNotContain("Dispatcher.Extensions.Microsoft.DependencyInjection", generated, StringComparison.Ordinal);
+        Assert.Contains("AddQueryHandler<", generated, StringComparison.Ordinal);
+        Assert.Contains("AddCommandHandler<", generated, StringComparison.Ordinal);
+        Assert.Contains("AddNotificationHandler<", generated, StringComparison.Ordinal);
+        Assert.Contains("Dispatcher.Extensions.Microsoft.DependencyInjection", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", generated, StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
+    public void Generates_closed_registrations_for_open_pipeline_behavior()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestQuery : IQuery<string>;
+            internal sealed class TestQueryHandler : IQueryHandler<TestQuery, string>
+            {
+                public ValueTask<string> HandleAsync(TestQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("value");
+            }
+
+            internal sealed class LoggingBehavior<TRequest, TResponse>
+                : IPipelineBehavior<TRequest, TResponse>
+                where TRequest : IRequest
+            {
+                public ValueTask<TResponse> HandleAsync(
+                    TRequest request,
+                    RequestHandlerDelegate<TResponse> next,
+                    CancellationToken cancellationToken) => next(cancellationToken);
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "GeneratedPipelineBehaviorServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains("typeof(global::LoggingBehavior<,>)", generated, StringComparison.Ordinal);
+        Assert.Contains(
+            "AddPipelineBehavior<global::TestQuery, string, global::LoggingBehavior<global::TestQuery, string>>",
+            generated,
+            StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }

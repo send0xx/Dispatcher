@@ -1,4 +1,4 @@
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.Tests.TestSupport;

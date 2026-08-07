@@ -6,7 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
     <ProjectReference Include="../Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
-    <ProjectReference Include="../../../src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
+    <ProjectReference Include="../../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>
 </Project>

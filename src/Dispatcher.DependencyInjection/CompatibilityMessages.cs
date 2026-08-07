@@ -1,4 +1,4 @@
-namespace Dispatcher.Extensions.Microsoft.DependencyInjection;
+namespace Dispatcher.DependencyInjection;
 
 internal static class CompatibilityMessages
 {

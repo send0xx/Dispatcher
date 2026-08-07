@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Dispatcher;
+using Dispatcher.NativeAotHostSample;
 using Dispatcher.NativeAotHostSample.Audit;
 using Dispatcher.NativeAotHostSample.Handlers;
 
@@ -11,6 +12,7 @@ builder.Services
     .AddDispatcher()
     .AddMessageHandlers()
     .AddAuditHandlers()
+    .AddPipelineBehavior(typeof(LoggingBehavior<,>))
     .AddSingleton<MessageStore>()
     .AddSingleton<AuditState>();
 builder.Services.ConfigureHttpJsonOptions(options =>

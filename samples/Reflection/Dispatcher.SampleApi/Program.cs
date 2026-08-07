@@ -1,5 +1,5 @@
 using Dispatcher;
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.DependencyInjection;
 using Dispatcher.SampleApi;
 using Dispatcher.SampleApi.Modules.Orders;
 using Dispatcher.SampleApi.Modules.Stock;
