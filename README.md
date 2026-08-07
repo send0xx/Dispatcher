@@ -16,9 +16,9 @@ Choose one implementation package. Use the Microsoft DI extension for the reflec
 or use source generation for a generated dispatcher:
 
 ```bash
-dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.1
+dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.2
 # or
-dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.1
+dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.2
 ```
 
 ## Define a query

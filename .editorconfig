@@ -377,4 +377,3 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 [src/{Dispatcher.Abstractions,Dispatcher}/**/*.cs]
 dotnet_diagnostic.IDE0130.severity = none
 resharper_check_namespace_highlighting = none
-
