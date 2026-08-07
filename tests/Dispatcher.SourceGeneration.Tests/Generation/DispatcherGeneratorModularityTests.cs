@@ -66,6 +66,10 @@ public sealed class DispatcherGeneratorModularityTests
         Assert.Contains("QueryCore<global::Orders.GetOrder", dispatcher, StringComparison.Ordinal);
         Assert.Contains("QueryCore<global::Stock.GetStock", dispatcher, StringComparison.Ordinal);
         Assert.Equal(1, Count(dispatcher, "NotificationCore<global::Orders.OrderCreated>"));
+        Assert.Contains(
+            "for (var index = 0; index < handlers.Count; index++)",
+            dispatcher,
+            StringComparison.Ordinal);
     }
 
     [Fact]

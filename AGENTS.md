@@ -66,7 +66,7 @@ Expected steady-state characteristics on .NET 10 are approximately:
 - Query or command without behaviors: zero managed allocations.
 - One behavior: approximately 96 B.
 - Three behaviors: approximately 304 B.
-- Notification with one handler: approximately 32 B from collection resolution.
+- Notification with one handler: zero managed allocations.
 
 Treat these numbers as regression indicators, not cross-machine performance guarantees.
 

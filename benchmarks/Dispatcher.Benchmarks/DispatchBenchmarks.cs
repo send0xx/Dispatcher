@@ -13,6 +13,7 @@ public class DispatchBenchmarks
     private static readonly IncrementCommand CommandWithResponse = new(41);
     private static readonly TouchCommand Command = new();
     private static readonly TouchedNotification Notification = new();
+    private static readonly TouchedTwiceNotification MultiHandlerNotification = new();
 
     private readonly PingQueryHandler _queryHandler = new();
     private ServiceProvider _provider = null!;
@@ -58,6 +59,10 @@ public class DispatchBenchmarks
     [Benchmark]
     public ValueTask NotificationWithOneHandler() =>
         _dispatcher.PublishAsync(Notification);
+
+    [Benchmark]
+    public ValueTask NotificationWithTwoHandlers() =>
+        _dispatcher.PublishAsync(MultiHandlerNotification);
 }
 
 [MemoryDiagnoser]
@@ -133,6 +138,20 @@ internal sealed record TouchedNotification : INotification;
 internal sealed class TouchedNotificationHandler : INotificationHandler<TouchedNotification>
 {
     public ValueTask HandleAsync(TouchedNotification notification, CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
+}
+
+internal sealed record TouchedTwiceNotification : INotification;
+
+internal sealed class FirstTouchedTwiceNotificationHandler : INotificationHandler<TouchedTwiceNotification>
+{
+    public ValueTask HandleAsync(TouchedTwiceNotification notification, CancellationToken cancellationToken) =>
+        ValueTask.CompletedTask;
+}
+
+internal sealed class SecondTouchedTwiceNotificationHandler : INotificationHandler<TouchedTwiceNotification>
+{
+    public ValueTask HandleAsync(TouchedTwiceNotification notification, CancellationToken cancellationToken) =>
         ValueTask.CompletedTask;
 }
 

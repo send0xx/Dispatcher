@@ -18,9 +18,10 @@ internal sealed class NotificationHandlerWrapper<TNotification> : NotificationHa
     {
         var handlers = serviceProvider.GetServices<INotificationHandler<TNotification>>();
 
-        foreach (var handler in handlers)
+        // ReSharper disable once ForCanBeConvertedToForeach
+        for (var index = 0; index < handlers.Count; index++)
         {
-            await handler.HandleAsync((TNotification)notification, cancellationToken).ConfigureAwait(false);
+            await handlers[index].HandleAsync((TNotification)notification, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -317,9 +317,10 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        TNotification notification, global::System.Threading.CancellationToken cancellationToken)");
         source.AppendLine("        where TNotification : global::Dispatcher.INotification");
         source.AppendLine("    {");
-        source.AppendLine("        foreach (var handler in GetServices<global::Dispatcher.INotificationHandler<TNotification>>())");
+        source.AppendLine("        var handlers = GetServices<global::Dispatcher.INotificationHandler<TNotification>>();");
+        source.AppendLine("        for (var index = 0; index < handlers.Count; index++)");
         source.AppendLine("        {");
-        source.AppendLine("            await handler.HandleAsync(notification, cancellationToken).ConfigureAwait(false);");
+        source.AppendLine("            await handlers[index].HandleAsync(notification, cancellationToken).ConfigureAwait(false);");
         source.AppendLine("        }");
         source.AppendLine("    }");
         source.AppendLine();

@@ -17,6 +17,7 @@ public class ImplementationBenchmarks
     private static readonly IncrementCommand CommandWithResponse = new(41);
     private static readonly TouchCommand Command = new();
     private static readonly TouchedNotification Notification = new();
+    private static readonly TouchedTwiceNotification MultiHandlerNotification = new();
 
     private ServiceProvider _reflectionProvider = null!;
     private ServiceProvider _generatedProvider = null!;
@@ -79,6 +80,14 @@ public class ImplementationBenchmarks
 
     [Benchmark]
     public ValueTask GeneratedNotification() => _generatedDispatcher.PublishAsync(Notification);
+
+    [Benchmark]
+    public ValueTask ReflectionNotificationWithTwoHandlers() =>
+        _reflectionDispatcher.PublishAsync(MultiHandlerNotification);
+
+    [Benchmark]
+    public ValueTask GeneratedNotificationWithTwoHandlers() =>
+        _generatedDispatcher.PublishAsync(MultiHandlerNotification);
 }
 
 [MemoryDiagnoser]
