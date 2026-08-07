@@ -64,3 +64,5 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 internal sealed record UnhandledNotification : INotification;
 internal sealed record MissingQuery : IQuery<int>;
 internal sealed class AlternativeGreetingHandler;
+internal interface ITransactional;
+internal sealed record TransactionalQuery : IQuery<string>, ITransactional;

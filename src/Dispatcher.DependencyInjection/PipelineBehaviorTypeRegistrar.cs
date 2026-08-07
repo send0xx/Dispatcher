@@ -19,17 +19,39 @@ internal static class PipelineBehaviorTypeRegistrar
                 nameof(behaviorType));
         }
 
-        var serviceTypes = behaviorType.GetInterfaces()
+        var behaviorInterfaces = behaviorType.GetInterfaces()
             .Where(IsBehaviorInterface)
-            .Select(type => behaviorType.IsGenericTypeDefinition ? type.GetGenericTypeDefinition() : type)
-            .Distinct()
             .ToArray();
 
-        if (serviceTypes.Length == 0)
+        if (behaviorInterfaces.Length == 0)
         {
             throw new ArgumentException(
                 $"Pipeline behavior '{behaviorType.FullName}' does not implement a supported behavior interface.",
                 nameof(behaviorType));
+        }
+
+        Type[] serviceTypes;
+        if (behaviorType.IsGenericTypeDefinition)
+        {
+            var arguments = behaviorType.GetGenericArguments();
+            var hasCanonicalShape = arguments.Length == 2 && behaviorInterfaces.Any(@interface =>
+            {
+                var interfaceArguments = @interface.GetGenericArguments();
+                return interfaceArguments[0] == arguments[0] && interfaceArguments[1] == arguments[1];
+            });
+            if (!hasCanonicalShape)
+            {
+                throw new ArgumentException(
+                    $"Open pipeline behavior '{behaviorType.FullName}' must implement " +
+                    "IPipelineBehavior<TRequest, TResponse> using its two generic parameters in order.",
+                    nameof(behaviorType));
+            }
+
+            serviceTypes = [typeof(IPipelineBehavior<,>)];
+        }
+        else
+        {
+            serviceTypes = behaviorInterfaces.Distinct().ToArray();
         }
 
         foreach (var serviceType in serviceTypes)

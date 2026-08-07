@@ -104,20 +104,46 @@ public static class TypedDispatcherServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        if (services.Any(descriptor =>
+        if (!services.Any(descriptor =>
                 descriptor.ServiceType == typeof(TService) &&
                 descriptor.ImplementationType == typeof(THandler)))
         {
-            return services;
+            services.Add(ServiceDescriptor.Describe(
+                typeof(TService),
+                typeof(THandler),
+                lifetime));
         }
 
-        services.Add(ServiceDescriptor.Describe(
-            typeof(TService),
-            typeof(THandler),
-            lifetime));
-        services.AddSingleton(registration);
+        if (!services.Any(descriptor =>
+                descriptor.ServiceType == typeof(HandlerRegistration) &&
+                descriptor.ImplementationInstance is HandlerRegistration existing &&
+                IsSameRegistration(existing, registration)))
+        {
+            services.AddSingleton(registration);
+        }
 
         return services;
+    }
+
+    private static bool IsSameRegistration(
+        HandlerRegistration existing,
+        HandlerRegistration registration)
+    {
+        if (existing.GetType() != registration.GetType() ||
+            existing.MessageType != registration.MessageType ||
+            existing.HandlerType != registration.HandlerType)
+        {
+            return false;
+        }
+
+        return (existing, registration) switch
+        {
+            (QueryHandlerRegistration first, QueryHandlerRegistration second) =>
+                first.ResponseType == second.ResponseType,
+            (CommandWithResponseHandlerRegistration first, CommandWithResponseHandlerRegistration second) =>
+                first.ResponseType == second.ResponseType,
+            _ => true
+        };
     }
 
     /// <summary>

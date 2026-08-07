@@ -29,6 +29,10 @@ internal static class IdentifierSanitizer
             builder.Append(SyntaxFacts.IsIdentifierPartCharacter(character) ? character : '_');
         }
 
-        return builder.ToString();
+        var identifier = builder.ToString();
+        return SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None ||
+            SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                ? "_" + identifier
+                : identifier;
     }
 }

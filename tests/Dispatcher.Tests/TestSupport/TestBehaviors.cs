@@ -72,3 +72,53 @@ internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuer
         CancellationToken cancellationToken) =>
         next(cancellationToken);
 }
+
+internal sealed class PartiallyClosedGreetingBehavior<TResponse>
+    : IPipelineBehavior<GreetingQuery, TResponse>
+{
+    public ValueTask<TResponse> HandleAsync(
+        GreetingQuery query,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class FixedResponseBehavior<TRequest> : IPipelineBehavior<TRequest, string>
+    where TRequest : IRequest
+{
+    public ValueTask<string> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class ReorderedBehavior<TResponse, TRequest> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest
+{
+    public ValueTask<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class OpenPassthroughBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest
+{
+    public ValueTask<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class TransactionalBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest, ITransactional
+{
+    public ValueTask<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}

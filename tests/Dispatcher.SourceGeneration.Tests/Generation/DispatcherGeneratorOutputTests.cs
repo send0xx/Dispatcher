@@ -179,4 +179,70 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
+
+    [Fact]
+    public void Applies_unmanaged_behavior_only_to_unmanaged_requests()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal readonly record struct UnmanagedQuery(int Value) : IQuery<int>;
+            internal sealed class UnmanagedQueryHandler : IQueryHandler<UnmanagedQuery, int>
+            {
+                public ValueTask<int> HandleAsync(UnmanagedQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult(query.Value);
+            }
+            internal readonly record struct ManagedQuery(string Value) : IQuery<int>;
+            internal sealed class ManagedQueryHandler : IQueryHandler<ManagedQuery, int>
+            {
+                public ValueTask<int> HandleAsync(ManagedQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult(query.Value.Length);
+            }
+            internal sealed class UnmanagedBehavior<TRequest, TResponse>
+                : IPipelineBehavior<TRequest, TResponse>
+                where TRequest : unmanaged, IRequest
+            {
+                public ValueTask<TResponse> HandleAsync(
+                    TRequest request,
+                    RequestHandlerDelegate<TResponse> next,
+                    CancellationToken cancellationToken) => next(cancellationToken);
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "GeneratedPipelineBehaviorServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "UnmanagedBehavior<global::UnmanagedQuery, int>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "UnmanagedBehavior<global::ManagedQuery, int>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
+    public void Prefixes_keyword_segments_in_generated_namespace()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+            """;
+
+        var result = GeneratorTestHarness.Run(source, assemblyName: "Company.class");
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        Assert.Contains(result.GeneratedTrees, tree =>
+            tree.ToString().Contains("namespace Company._class;", StringComparison.Ordinal));
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
 }

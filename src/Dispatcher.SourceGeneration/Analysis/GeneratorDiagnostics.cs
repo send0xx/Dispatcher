@@ -25,7 +25,8 @@ internal static class GeneratorDiagnostics
         "Message '{0}' handled by module '{1}' must be accessible to the generated host dispatcher");
     internal static readonly DiagnosticDescriptor UnsupportedOpenGenericBehavior = Create(
         "DSPG008", "Unsupported open generic pipeline behavior",
-        "Pipeline behavior '{0}' must have two type parameters, implement IPipelineBehavior<TRequest, TResponse>, and be applicable to every request");
+        "Pipeline behavior '{0}' must have two type parameters, implement " +
+        "IPipelineBehavior<TRequest, TResponse> using them in order, and expose a public constructor");
 
     private static DiagnosticDescriptor Create(string id, string title, string message) => new(
         id,

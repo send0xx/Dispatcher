@@ -89,7 +89,8 @@ internal static class PipelineBehaviorEmitter
         {
             var parameter = behavior.TypeParameters[index];
             var argument = arguments[index];
-            if (parameter.HasReferenceTypeConstraint && !argument.IsReferenceType ||
+            if (parameter.HasUnmanagedTypeConstraint && !argument.IsUnmanagedType ||
+                parameter.HasReferenceTypeConstraint && !argument.IsReferenceType ||
                 parameter.HasValueTypeConstraint && !argument.IsValueType ||
                 parameter.HasConstructorConstraint &&
                 argument is INamedTypeSymbol namedArgument &&

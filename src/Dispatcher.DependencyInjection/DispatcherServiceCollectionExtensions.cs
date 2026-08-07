@@ -120,7 +120,9 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="behaviorType">The behavior implementation type, which may be an open generic type.</param>
     /// <param name="lifetime">The behavior lifetime.</param>
     /// <returns>The service collection for chaining.</returns>
-    /// <exception cref="ArgumentException"><paramref name="behaviorType"/> is not a concrete behavior class.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="behaviorType"/> is not a supported concrete or open generic behavior class.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior(
