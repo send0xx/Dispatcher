@@ -2,7 +2,9 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Dispatcher.Benchmarks/Dispatcher.Benchmarks.csproj" />
   </Folder>
-  <Folder Name="/docs/" />
+  <Folder Name="/docs/">
+    <File Path="docs/RELEASING.md" />
+  </Folder>
   <Folder Name="/samples/NativeAot/">
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
@@ -32,6 +34,7 @@
     <File Path=".github/workflows/ci.yml" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
+    <File Path="CONTRIBUTING.md" />
     <File Path="LICENSE" />
     <File Path="README.md" />
   </Folder>

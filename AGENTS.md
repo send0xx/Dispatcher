@@ -17,10 +17,9 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
 - `tests/Dispatcher.Tests`: integration tests targeting .NET 8 and .NET 10.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
-- `docs/PLAN.md`: original v1 implementation plan and design history.
-- `docs/AOT.md`: proposed Native AOT and source-generation roadmap.
+- `docs`: repository documentation, including maintenance and release guides.
 
-All library types intentionally use the `Dispatcher` namespace, even when files are organized into folders.
+Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not automatically determine a type's namespace.
 
 ## Settled API decisions
 
@@ -32,7 +31,6 @@ All library types intentionally use the `Dispatcher` namespace, even when files 
 - Keep specialized query and command handler interfaces. Do not introduce a shared public `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.
 - Use one `IPipelineBehavior<TRequest,TResponse>` contract for queries and both command shapes.
 - `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as `next(cancellationToken)`.
-- Keep `Unit` in its own file. Its implementation follows the value semantics used by martinothamar/Mediator.
 - Keep `MessageType` naming in shared handler registration and exception types because registrations also describe notifications.
 - Public abstractions are organized into the current folders. Do not consolidate them into one file.
 
@@ -137,9 +135,8 @@ dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj -
 
 The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, registration idempotence, and frozen registries.
 
-## Future AOT and source generation
+## AOT and source generation
 
-- Read `docs/AOT.md` before starting AOT or generator work.
 - The current reflection implementation is intentionally not trimming or NativeAOT safe.
 - Preserve the separate `AddDispatcherHandlers` module seam so generated registrations can replace reflection later.
 - Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public command/query contracts unnecessarily.
@@ -147,7 +144,7 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - The generator injects its internal `GenerateDispatcherHandlersAttribute`; do not add generator-only attributes to runtime or abstractions assemblies.
 - Generated modules opt in with `GenerateDispatcherHandlersAttribute` and must use a unique, valid extension method name.
 - Keep generator diagnostics documented in `AnalyzerReleases.Unshipped.md` and covered by generator tests.
-- Add generated/AOT support as a separate implementation path and compare it against the reflection path before replacing existing behavior.
+- Keep generated/AOT support as a separate implementation path and compare it against the reflection path before replacing existing behavior.
 
 ## Repository hygiene
 

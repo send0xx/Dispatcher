@@ -1,8 +1,8 @@
 # Dispatcher
 
-Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and ordered pipeline behaviors without requiring messages to inherit from a common generic request type.
+Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
 
-Dispatcher targets .NET 8 and .NET 10 and supports two registration modes:
+Dispatcher supports two registration modes:
 
 - Reflection-based registration for a straightforward application setup.
 - Source-generated registration and dispatch for trimming and Native AOT.
@@ -54,7 +54,8 @@ builder.Services
     .AddDispatcherHandlers(typeof(Program).Assembly);
 ```
 
-`AddDispatcher()` registers infrastructure only and never scans assemblies implicitly. `AddDispatcherHandlers` includes internal handler classes, and registering the same assembly more than once is safe.
+`AddDispatcher()` registers infrastructure only and never scans assemblies implicitly.  
+`AddDispatcherHandlers()` registers internal handler classes. Registering the same assembly more than once is safe.
 
 Handler scanning accepts the same options type when a different handler lifetime is required:
 
@@ -319,51 +320,15 @@ dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
 
 The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the available latency, allocation, pipeline, and implementation comparisons.
 
-## Contributing
-
-Contributions and design discussions are welcome. Dispatcher deliberately keeps its public API and runtime small, so proposed abstractions or performance optimizations should demonstrate a concrete benefit and preserve handler and behavior lifetime semantics.
-
-Build and test changes from the repository root:
-
-```bash
-dotnet build Dispatcher.slnx -c Release
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net10.0
-dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
-```
-
-Run the .NET 8 test target as well when the .NET 8 runtime is installed:
-
-```bash
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net8.0
-```
-
-### GitHub Actions
-
-The [GitHub Actions workflow](.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, packs every library, and retains the packages as workflow artifacts for seven days.
-
-NuGet publishing runs only for version tags such as `v1.0.0-preview.4`. Before publishing, the job verifies that the tag matches the central `Version` in `Directory.Build.props` and pushes an explicit list of package files.
-
-Publishing uses NuGet trusted publishing, so the workflow obtains a short-lived API key through GitHub OIDC instead of storing a long-lived NuGet API key. In the NuGet.org account that owns the packages, create a trusted publishing policy with:
-
-- Repository owner: `send0xx`
-- Repository: `Dispatcher`
-- Workflow file: `ci.yml`
-- Environment: `nuget`
-
-Create a GitHub environment named `nuget` and add an environment secret named `NUGET_USER` containing the NuGet.org profile name, not an email address. Add required reviewers or deployment-branch restrictions when release approval is required.
-
-Create and push a release tag after the matching version change has been reviewed:
-
-```bash
-git tag v1.0.0-preview.4
-git push origin v1.0.0-preview.4
-```
-
-Before changing public contracts, registration semantics, pipelines, or source generation, review the repository guidance in [AGENTS.md](AGENTS.md) and the relevant tests. Measure performance changes with BenchmarkDotNet rather than using dry benchmark jobs as evidence.
-
 ## Current limitations
 
 - Reflection-based registration is not trimming or Native AOT safe; use `Send0xx.Dispatcher.SourceGeneration` for those deployment modes.
 - Queries and commands use exact concrete message types and require exactly one handler.
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.
+
+## Project
+
+Contributions and design discussions are welcome. See the [contribution guide](https://github.com/send0xx/Dispatcher/blob/main/CONTRIBUTING.md) to get started. Maintainers can find CI and NuGet publishing instructions in the [release guide](https://github.com/send0xx/Dispatcher/blob/main/docs/RELEASING.md).
+
+Dispatcher is licensed under the [MIT License](https://github.com/send0xx/Dispatcher/blob/main/LICENSE).
