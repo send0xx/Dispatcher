@@ -60,8 +60,26 @@ internal static class GeneratedDispatcherEmitter
         registration.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.DispatcherMethodName).AppendLine("(");
         registration.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        registration.Append("        => ").Append(result.DispatcherMethodName)
+            .AppendLine("(services, static _ => { });");
+        registration.AppendLine();
+        registration.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
+            .Append(result.DispatcherMethodName).AppendLine("(");
+        registration.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        registration.AppendLine("        global::System.Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure)");
         registration.AppendLine("    {");
         registration.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
+        registration.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(configure);");
+        registration.AppendLine("        var options = new global::Dispatcher.DependencyInjection.DispatcherOptions();");
+        registration.AppendLine("        configure(options);");
+        registration.AppendLine("        if (options.ServiceLifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton)");
+        registration.AppendLine("        {");
+        registration.AppendLine("            throw new global::System.ArgumentOutOfRangeException(");
+        registration.AppendLine("                nameof(configure),");
+        registration.AppendLine("                options.ServiceLifetime,");
+        registration.AppendLine("                \"A singleton dispatcher would capture the root service provider.\");");
+        registration.AppendLine("        }");
+        registration.AppendLine();
         registration.AppendLine("        foreach (var descriptor in services)");
         registration.AppendLine("        {");
         registration.Append("            if (descriptor.ServiceType == typeof(").Append(generatedTypeName).AppendLine("))");
@@ -70,8 +88,9 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine("            }");
         registration.AppendLine("        }");
         registration.AppendLine();
-        registration.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(typeof(")
-            .Append(generatedTypeName).Append("), typeof(").Append(generatedTypeName).AppendLine(")));");
+        registration.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(typeof(")
+            .Append(generatedTypeName).Append("), typeof(").Append(generatedTypeName)
+            .AppendLine("), options.ServiceLifetime));");
         AppendDispatcherContractRegistration(registration, "global::Dispatcher.IDispatcher", generatedTypeName);
         AppendDispatcherContractRegistration(registration, "global::Dispatcher.IQueryDispatcher", generatedTypeName);
         AppendDispatcherContractRegistration(registration, "global::Dispatcher.ICommandDispatcher", generatedTypeName);
@@ -361,10 +380,10 @@ internal static class GeneratedDispatcherEmitter
         string contractType,
         string generatedTypeName)
     {
-        source.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(typeof(")
+        source.Append("        services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(")
             .Append(contractType).AppendLine("), static provider =>");
         source.Append("            provider.GetService(typeof(").Append(generatedTypeName).AppendLine(")) ??");
         source.Append("            throw new global::System.InvalidOperationException(\"Service '")
-            .Append(generatedTypeName).AppendLine("' is not registered.\")));");
+            .Append(generatedTypeName).AppendLine("' is not registered.\"), options.ServiceLifetime));");
     }
 }

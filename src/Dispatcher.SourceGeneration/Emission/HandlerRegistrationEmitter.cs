@@ -21,8 +21,19 @@ internal static class HandlerRegistrationEmitter
             .Append(result.MethodName)
             .AppendLine("(");
         source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        source.Append("        => ").Append(result.MethodName)
+            .AppendLine("(services, static _ => { });");
+        source.AppendLine();
+        source.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
+            .Append(result.MethodName)
+            .AppendLine("(");
+        source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        source.AppendLine("        global::System.Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(configure);");
+        source.AppendLine("        var options = new global::Dispatcher.DependencyInjection.DispatcherOptions();");
+        source.AppendLine("        configure(options);");
 
         foreach (var handler in result.LocalHandlers)
         {
@@ -30,7 +41,7 @@ internal static class HandlerRegistrationEmitter
                 .Append(handler.MethodName)
                 .Append('<')
                 .Append(handler.TypeArguments)
-                .AppendLine(">(services);");
+                .AppendLine(">(services, handlerOptions => handlerOptions.ServiceLifetime = options.ServiceLifetime);");
         }
 
         source.AppendLine();

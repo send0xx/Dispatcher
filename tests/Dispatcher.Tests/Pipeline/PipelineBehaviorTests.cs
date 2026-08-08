@@ -74,7 +74,8 @@ public sealed class PipelineBehaviorTests
     public async Task Transient_behavior_is_resolved_for_every_dispatch()
     {
         var services = TestServices.CreateServices();
-        services.AddPipelineBehavior<TransientGreetingBehavior>(ServiceLifetime.Transient);
+        services.AddPipelineBehavior<TransientGreetingBehavior>(options =>
+            options.ServiceLifetime = ServiceLifetime.Transient);
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();

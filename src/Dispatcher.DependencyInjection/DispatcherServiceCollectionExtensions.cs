@@ -15,21 +15,54 @@ public static class DispatcherServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddDispatcher(this IServiceCollection services)
+    public static IServiceCollection AddDispatcher(this IServiceCollection services) =>
+        AddDispatcher(services, static _ => { });
+
+    /// <summary>
+    /// Registers Dispatcher services with the specified options. Handlers must be registered separately.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure Dispatcher services.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddDispatcher(
+        this IServiceCollection services,
+        Action<DispatcherOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new DispatcherOptions();
+        configure(options);
+        if (options.ServiceLifetime == ServiceLifetime.Singleton)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(configure),
+                options.ServiceLifetime,
+                "A singleton dispatcher would capture the root service provider.");
+        }
 
         services.TryAddSingleton(static provider =>
             DispatcherRegistry.CreatePrepared(provider.GetServices<HandlerRegistration>()));
-        services.TryAddScoped<Dispatcher>();
-        services.TryAddScoped<IDispatcher>(static provider =>
-            provider.GetRequiredService<Dispatcher>());
-        services.TryAddScoped<IQueryDispatcher>(static provider =>
-            provider.GetRequiredService<Dispatcher>());
-        services.TryAddScoped<ICommandDispatcher>(static provider =>
-            provider.GetRequiredService<Dispatcher>());
-        services.TryAddScoped<INotificationDispatcher>(static provider =>
-            provider.GetRequiredService<Dispatcher>());
+        services.TryAdd(ServiceDescriptor.Describe(
+            typeof(Dispatcher),
+            typeof(Dispatcher),
+            options.ServiceLifetime));
+        services.TryAdd(new ServiceDescriptor(
+            typeof(IDispatcher),
+            static provider => provider.GetRequiredService<Dispatcher>(),
+            options.ServiceLifetime));
+        services.TryAdd(new ServiceDescriptor(
+            typeof(IQueryDispatcher),
+            static provider => provider.GetRequiredService<Dispatcher>(),
+            options.ServiceLifetime));
+        services.TryAdd(new ServiceDescriptor(
+            typeof(ICommandDispatcher),
+            static provider => provider.GetRequiredService<Dispatcher>(),
+            options.ServiceLifetime));
+        services.TryAdd(new ServiceDescriptor(
+            typeof(INotificationDispatcher),
+            static provider => provider.GetRequiredService<Dispatcher>(),
+            options.ServiceLifetime));
 
         return services;
     }
@@ -39,31 +72,56 @@ public static class DispatcherServiceCollectionExtensions
     /// </summary>
     /// <typeparam name="TAssemblyMarker">A type whose assembly contains handlers.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
+    /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
+    public static IServiceCollection AddDispatcherHandlers<TAssemblyMarker>(this IServiceCollection services) =>
+        services.AddDispatcherHandlers(typeof(TAssemblyMarker).Assembly);
+
+    /// <summary>
+    /// Registers handlers found in the assembly containing <typeparamref name="TAssemblyMarker"/>
+    /// with the specified options.
+    /// </summary>
+    /// <typeparam name="TAssemblyMarker">A type whose assembly contains handlers.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers<TAssemblyMarker>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped) =>
-        services.AddDispatcherHandlers(typeof(TAssemblyMarker).Assembly, lifetime);
+        Action<DispatcherOptions> configure) =>
+        services.AddDispatcherHandlers(typeof(TAssemblyMarker).Assembly, configure);
 
     /// <summary>
     /// Registers handlers found in an assembly.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="assembly">The assembly to scan.</param>
-    /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
+    /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
+    public static IServiceCollection AddDispatcherHandlers(
+        this IServiceCollection services,
+        Assembly assembly) =>
+        services.AddDispatcherHandlers(static _ => { }, assembly);
+
+    /// <summary>
+    /// Registers handlers found in an assembly with the specified options.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="assembly">The assembly to scan.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
         Assembly assembly,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(assembly);
-        return services.AddDispatcherHandlers(lifetime, assembly);
+        return services.AddDispatcherHandlers(configure, assembly);
     }
 
     /// <summary>
@@ -77,26 +135,30 @@ public static class DispatcherServiceCollectionExtensions
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
         params Assembly[] assemblies) =>
-        services.AddDispatcherHandlers(ServiceLifetime.Scoped, assemblies);
+        services.AddDispatcherHandlers(static _ => { }, assemblies);
 
     /// <summary>
     /// Registers handlers found in one or more assemblies.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The lifetime assigned to discovered handlers.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>The service collection for chaining.</returns>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
         this IServiceCollection services,
-        ServiceLifetime lifetime,
+        Action<DispatcherOptions> configure,
         params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        return HandlerAssemblyScanner.Register(services, assemblies, lifetime);
+        var options = new DispatcherOptions();
+        configure(options);
+
+        return HandlerAssemblyScanner.Register(services, assemblies, options.ServiceLifetime);
     }
 
     /// <summary>
@@ -104,21 +166,48 @@ public static class DispatcherServiceCollectionExtensions
     /// </summary>
     /// <typeparam name="TBehavior">The behavior implementation type.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The behavior lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
+    public static IServiceCollection AddPipelineBehavior<TBehavior>(this IServiceCollection services) =>
+        services.AddPipelineBehavior(typeof(TBehavior));
+
+    /// <summary>
+    /// Registers a pipeline behavior with the specified options.
+    /// </summary>
+    /// <typeparam name="TBehavior">The behavior implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure behavior registration.</param>
     /// <returns>The service collection for chaining.</returns>
     [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior<TBehavior>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped) =>
-        services.AddPipelineBehavior(typeof(TBehavior), lifetime);
+        Action<DispatcherOptions> configure) =>
+        services.AddPipelineBehavior(typeof(TBehavior), configure);
 
     /// <summary>
     /// Registers a pipeline behavior.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="behaviorType">The behavior implementation type, which may be an open generic type.</param>
-    /// <param name="lifetime">The behavior lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="behaviorType"/> is not a supported concrete or open generic behavior class.
+    /// </exception>
+    [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
+    public static IServiceCollection AddPipelineBehavior(
+        this IServiceCollection services,
+        Type behaviorType) =>
+        services.AddPipelineBehavior(behaviorType, static _ => { });
+
+    /// <summary>
+    /// Registers a pipeline behavior with the specified options.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="behaviorType">The behavior implementation type, which may be an open generic type.</param>
+    /// <param name="configure">The options used to configure behavior registration.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentException">
     /// <paramref name="behaviorType"/> is not a supported concrete or open generic behavior class.
@@ -128,11 +217,18 @@ public static class DispatcherServiceCollectionExtensions
     public static IServiceCollection AddPipelineBehavior(
         this IServiceCollection services,
         Type behaviorType,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(behaviorType);
+        ArgumentNullException.ThrowIfNull(configure);
 
-        return PipelineBehaviorTypeRegistrar.Register(services, behaviorType, lifetime);
+        var options = new DispatcherOptions();
+        configure(options);
+
+        return PipelineBehaviorTypeRegistrar.Register(
+            services,
+            behaviorType,
+            options.ServiceLifetime);
     }
 }

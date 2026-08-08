@@ -56,6 +56,23 @@ builder.Services
 
 `AddDispatcher()` registers infrastructure only and never scans assemblies implicitly. `AddDispatcherHandlers` includes internal handler classes, and registering the same assembly more than once is safe.
 
+Handler scanning accepts the same options type when a different handler lifetime is required:
+
+```csharp
+builder.Services.AddDispatcherHandlers(
+    typeof(Program).Assembly,
+    options => options.ServiceLifetime = ServiceLifetime.Singleton);
+```
+
+Typed registration methods use the same shape:
+
+```csharp
+using Dispatcher.Extensions.Microsoft.DependencyInjection;
+
+builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>(options =>
+    options.ServiceLifetime = ServiceLifetime.Singleton);
+```
+
 Inject a focused dispatcher interface and send the query:
 
 ```csharp
@@ -73,6 +90,15 @@ app.MapGet("/greetings/{name}", async (
 ```
 
 Dispatcher and handlers are scoped by default. Resolve them inside a DI scope, as ASP.NET Core does for each request.
+
+The dispatcher itself can be registered as transient when an application needs a new instance for every resolution:
+
+```csharp
+builder.Services.AddDispatcher(options =>
+    options.ServiceLifetime = ServiceLifetime.Transient);
+```
+
+`DispatcherOptions` is in the `Dispatcher.DependencyInjection` namespace. Dispatcher registration supports `Scoped` and `Transient`; `Singleton` is rejected because it would capture the root service provider and could not safely resolve scoped handlers or pipeline behaviors. Handler registration supports all three Microsoft DI lifetimes. Behavior lifetimes are configured independently through their registration methods.
 
 ## Messages and handlers
 
@@ -222,6 +248,18 @@ builder.Services
     .AddDispatcher()
     .AddApplicationHandlers();
 ```
+
+The generated `AddDispatcher` method accepts the same lifetime options:
+
+```csharp
+builder.Services
+    .AddDispatcher(options =>
+        options.ServiceLifetime = ServiceLifetime.Transient)
+    .AddApplicationHandlers(options =>
+        options.ServiceLifetime = ServiceLifetime.Singleton);
+```
+
+Dispatcher and generated handler lifetimes are configured independently; the example uses a transient dispatcher and singleton handlers.
 
 Handlers may remain internal. The generator discovers queries, commands, notifications, and pipeline behaviors at compile time and emits explicit DI registrations and frozen dispatch tables.
 

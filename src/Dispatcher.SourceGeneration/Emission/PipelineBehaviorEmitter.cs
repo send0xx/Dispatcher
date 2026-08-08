@@ -37,12 +37,19 @@ internal static class PipelineBehaviorEmitter
         source.AppendLine("{");
         source.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddPipelineBehavior(");
         source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        source.AppendLine("        global::System.Type behaviorType)");
+        source.AppendLine("        => AddPipelineBehavior(services, behaviorType, static _ => { });");
+        source.AppendLine();
+        source.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddPipelineBehavior(");
+        source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
         source.AppendLine("        global::System.Type behaviorType,");
-        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime =");
-        source.AppendLine("            global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped)");
+        source.AppendLine("        global::System.Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(behaviorType);");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(configure);");
+        source.AppendLine("        var options = new global::Dispatcher.DependencyInjection.DispatcherOptions();");
+        source.AppendLine("        configure(options);");
 
         foreach (var behavior in result.OpenBehaviors)
         {
@@ -62,7 +69,7 @@ internal static class PipelineBehaviorEmitter
                     .Append(request.Request.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
                     .Append(response.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
                     .Append(behavior.Construct(request.Request, response).ToDisplayString(SymbolDisplayFormats.FullyQualified))
-                    .AppendLine(">(services, lifetime);");
+                    .AppendLine(">(services, behaviorOptions => behaviorOptions.ServiceLifetime = options.ServiceLifetime);");
             }
             source.AppendLine("            return services;");
             source.AppendLine("        }");

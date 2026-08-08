@@ -39,6 +39,37 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
+    public void Generates_configurable_dispatcher_lifetime_registration()
+    {
+        const string source = """
+            using Dispatcher;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "DispatcherServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "options.ServiceLifetime",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "A singleton dispatcher would capture the root service provider.",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
     public void Generates_typed_registrations_for_every_handler_shape()
     {
         const string source = """
@@ -85,6 +116,18 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("AddCommandHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("AddNotificationHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("Dispatcher.Extensions.Microsoft.DependencyInjection", generated, StringComparison.Ordinal);
+        Assert.Contains(
+            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "options.ServiceLifetime",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "handlerOptions.ServiceLifetime = options.ServiceLifetime",
+            generated,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", generated, StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
@@ -125,6 +168,14 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("typeof(global::LoggingBehavior<,>)", generated, StringComparison.Ordinal);
         Assert.Contains(
             "AddPipelineBehavior<global::TestQuery, string, global::LoggingBehavior<global::TestQuery, string>>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "behaviorOptions.ServiceLifetime = options.ServiceLifetime",
             generated,
             StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics()

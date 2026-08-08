@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.Extensions.Microsoft.DependencyInjection;
@@ -15,20 +16,33 @@ public static class TypedDispatcherServiceCollectionExtensions
     /// <typeparam name="TResponse">The response type.</typeparam>
     /// <typeparam name="THandler">The query handler implementation type.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The handler lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddQueryHandler<TQuery, TResponse,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        this IServiceCollection services)
+        where TQuery : IQuery<TResponse>
+        where THandler : class, IQueryHandler<TQuery, TResponse> =>
+        AddQueryHandler<TQuery, TResponse, THandler>(services, static _ => { });
+
+    /// <summary>
+    /// Registers a query handler with the specified options.
+    /// </summary>
+    /// <typeparam name="TQuery">The query type.</typeparam>
+    /// <typeparam name="TResponse">The response type.</typeparam>
+    /// <typeparam name="THandler">The query handler implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
         where TQuery : IQuery<TResponse>
-        where THandler : class, IQueryHandler<TQuery, TResponse>
-    {
-        return AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(
+        where THandler : class, IQueryHandler<TQuery, TResponse> =>
+        AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(
             services,
             QueryHandlerRegistration.Create<TQuery, TResponse, THandler>(),
-            lifetime);
-    }
+            GetLifetime(configure));
 
     /// <summary>
     /// Registers a result-bearing command handler.
@@ -37,20 +51,33 @@ public static class TypedDispatcherServiceCollectionExtensions
     /// <typeparam name="TResponse">The response type.</typeparam>
     /// <typeparam name="THandler">The command handler implementation type.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The handler lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddCommandHandler<TCommand, TResponse,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        this IServiceCollection services)
+        where TCommand : ICommand<TResponse>
+        where THandler : class, ICommandHandler<TCommand, TResponse> =>
+        AddCommandHandler<TCommand, TResponse, THandler>(services, static _ => { });
+
+    /// <summary>
+    /// Registers a result-bearing command handler with the specified options.
+    /// </summary>
+    /// <typeparam name="TCommand">The command type.</typeparam>
+    /// <typeparam name="TResponse">The response type.</typeparam>
+    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
         where TCommand : ICommand<TResponse>
-        where THandler : class, ICommandHandler<TCommand, TResponse>
-    {
-        return AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(
+        where THandler : class, ICommandHandler<TCommand, TResponse> =>
+        AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(
             services,
             CommandWithResponseHandlerRegistration.Create<TCommand, TResponse, THandler>(),
-            lifetime);
-    }
+            GetLifetime(configure));
 
     /// <summary>
     /// Registers a resultless command handler.
@@ -58,20 +85,32 @@ public static class TypedDispatcherServiceCollectionExtensions
     /// <typeparam name="TCommand">The command type.</typeparam>
     /// <typeparam name="THandler">The command handler implementation type.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The handler lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddCommandHandler<TCommand,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        this IServiceCollection services)
+        where TCommand : ICommand
+        where THandler : class, ICommandHandler<TCommand> =>
+        AddCommandHandler<TCommand, THandler>(services, static _ => { });
+
+    /// <summary>
+    /// Registers a resultless command handler with the specified options.
+    /// </summary>
+    /// <typeparam name="TCommand">The command type.</typeparam>
+    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddCommandHandler<TCommand,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
         where TCommand : ICommand
-        where THandler : class, ICommandHandler<TCommand>
-    {
-        return AddHandler<ICommandHandler<TCommand>, THandler>(
+        where THandler : class, ICommandHandler<TCommand> =>
+        AddHandler<ICommandHandler<TCommand>, THandler>(
             services,
             CommandHandlerRegistration.Create<TCommand, THandler>(),
-            lifetime);
-    }
+            GetLifetime(configure));
 
     /// <summary>
     /// Registers a notification handler.
@@ -79,19 +118,72 @@ public static class TypedDispatcherServiceCollectionExtensions
     /// <typeparam name="TNotification">The notification type.</typeparam>
     /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
     /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The handler lifetime.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddNotificationHandler<TNotification,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        this IServiceCollection services)
+        where TNotification : INotification
+        where THandler : class, INotificationHandler<TNotification> =>
+        AddNotificationHandler<TNotification, THandler>(services, static _ => { });
+
+    /// <summary>
+    /// Registers a notification handler with the specified options.
+    /// </summary>
+    /// <typeparam name="TNotification">The notification type.</typeparam>
+    /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure handler registration.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddNotificationHandler<TNotification,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        Action<DispatcherOptions> configure)
         where TNotification : INotification
-        where THandler : class, INotificationHandler<TNotification>
-    {
-        return AddHandler<INotificationHandler<TNotification>, THandler>(
+        where THandler : class, INotificationHandler<TNotification> =>
+        AddHandler<INotificationHandler<TNotification>, THandler>(
             services,
             NotificationHandlerRegistration.Create<TNotification, THandler>(),
-            lifetime);
+            GetLifetime(configure));
+
+    /// <summary>
+    /// Registers a pipeline behavior for a request and response type.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type.</typeparam>
+    /// <typeparam name="TResponse">The response type.</typeparam>
+    /// <typeparam name="TBehavior">The pipeline behavior implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
+        this IServiceCollection services)
+        where TRequest : IRequest
+        where TBehavior : class, IPipelineBehavior<TRequest, TResponse> =>
+        AddPipelineBehavior<TRequest, TResponse, TBehavior>(services, static _ => { });
+
+    /// <summary>
+    /// Registers a pipeline behavior for a request and response type with the specified options.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type.</typeparam>
+    /// <typeparam name="TResponse">The response type.</typeparam>
+    /// <typeparam name="TBehavior">The pipeline behavior implementation type.</typeparam>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configure">The options used to configure behavior registration.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
+        this IServiceCollection services,
+        Action<DispatcherOptions> configure)
+        where TRequest : IRequest
+        where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.Add(ServiceDescriptor.Describe(
+            typeof(IPipelineBehavior<TRequest, TResponse>),
+            typeof(TBehavior),
+            GetLifetime(configure)));
+
+        return services;
     }
 
     private static IServiceCollection AddHandler<TService,
@@ -125,6 +217,15 @@ public static class TypedDispatcherServiceCollectionExtensions
         return services;
     }
 
+    private static ServiceLifetime GetLifetime(Action<DispatcherOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new DispatcherOptions();
+        configure(options);
+        return options.ServiceLifetime;
+    }
+
     private static bool IsSameRegistration(
         HandlerRegistration existing,
         HandlerRegistration registration)
@@ -144,31 +245,5 @@ public static class TypedDispatcherServiceCollectionExtensions
                 first.ResponseType == second.ResponseType,
             _ => true
         };
-    }
-
-    /// <summary>
-    /// Registers a pipeline behavior for a request and response type.
-    /// </summary>
-    /// <typeparam name="TRequest">The request type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="TBehavior">The pipeline behavior implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="lifetime">The behavior lifetime.</param>
-    /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
-        this IServiceCollection services,
-        ServiceLifetime lifetime = ServiceLifetime.Scoped)
-        where TRequest : IRequest
-        where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
-    {
-        ArgumentNullException.ThrowIfNull(services);
-
-        services.Add(ServiceDescriptor.Describe(
-            typeof(IPipelineBehavior<TRequest, TResponse>),
-            typeof(TBehavior),
-            lifetime));
-
-        return services;
     }
 }

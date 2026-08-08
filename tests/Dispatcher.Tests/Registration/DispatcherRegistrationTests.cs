@@ -56,6 +56,77 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
+    public void Dispatcher_lifetime_is_scoped_by_default()
+    {
+        var services = new ServiceCollection();
+
+        services.AddDispatcher();
+
+        Assert.All(
+            services.Where(descriptor =>
+                descriptor.ServiceType == typeof(Dispatcher) ||
+                descriptor.ServiceType == typeof(IDispatcher) ||
+                descriptor.ServiceType == typeof(IQueryDispatcher) ||
+                descriptor.ServiceType == typeof(ICommandDispatcher) ||
+                descriptor.ServiceType == typeof(INotificationDispatcher)),
+            descriptor => Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime));
+    }
+
+    [Fact]
+    public void Dispatcher_can_be_registered_as_transient()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcher(options =>
+            options.ServiceLifetime = ServiceLifetime.Transient);
+        using var provider = TestServices.BuildProvider(services);
+
+        var first = provider.GetRequiredService<IDispatcher>();
+        var second = provider.GetRequiredService<IDispatcher>();
+
+        Assert.NotSame(first, second);
+        Assert.All(
+            services.Where(descriptor =>
+                descriptor.ServiceType == typeof(Dispatcher) ||
+                descriptor.ServiceType == typeof(IDispatcher) ||
+                descriptor.ServiceType == typeof(IQueryDispatcher) ||
+                descriptor.ServiceType == typeof(ICommandDispatcher) ||
+                descriptor.ServiceType == typeof(INotificationDispatcher)),
+            descriptor => Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime));
+    }
+
+    [Fact]
+    public void Dispatcher_rejects_singleton_lifetime()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            services.AddDispatcher(options =>
+                options.ServiceLifetime = ServiceLifetime.Singleton));
+    }
+
+    [Fact]
+    public void Handler_registration_uses_dispatcher_options()
+    {
+        var services = new ServiceCollection();
+
+        services.AddDispatcherHandlers<TestAssemblyMarker>(options =>
+            options.ServiceLifetime = ServiceLifetime.Singleton);
+
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            Assert.Single(
+                services,
+                descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
+                .Lifetime);
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            Assert.Single(
+                services,
+                descriptor => descriptor.ServiceType == typeof(ICommandHandler<SumCommand, int>))
+                .Lifetime);
+    }
+
+    [Fact]
     public void AddDispatcher_does_not_scan_handlers()
     {
         var services = new ServiceCollection();
@@ -143,6 +214,22 @@ public sealed class DispatcherRegistrationTests
         Assert.Equal(
             2,
             services.Count(descriptor => descriptor.ServiceType == typeof(HandlerRegistration)));
+    }
+
+    [Fact]
+    public void Typed_handler_registration_uses_dispatcher_options()
+    {
+        var services = new ServiceCollection();
+
+        services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>(options =>
+            options.ServiceLifetime = ServiceLifetime.Singleton);
+
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            Assert.Single(
+                services,
+                descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
+                .Lifetime);
     }
 
     [Fact]
