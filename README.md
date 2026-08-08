@@ -1,27 +1,84 @@
 # Dispatcher
 
-Dispatcher is a small CQRS library for .NET applications that use dependency injection. It supports queries, result-bearing and resultless commands, notifications, and ordered pipeline behaviors. Handler lookup uses `FrozenDictionary`; reflection is limited to handler registration at startup.
+Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and ordered pipeline behaviors without requiring messages to inherit from a common generic request type.
 
-The libraries target .NET 8 and .NET 10. The example application targets .NET 10.
+Dispatcher targets .NET 8 and .NET 10 and supports two registration modes:
 
-## Packages
+- Reflection-based registration for a straightforward application setup.
+- Source-generated registration and dispatch for trimming and Native AOT.
 
-- `Dispatcher.Abstractions` contains messages, handlers, behaviors, and dispatch interfaces.
-- `Dispatcher` contains the container-neutral runtime.
-- `Dispatcher.Extensions.Microsoft.DependencyInjection` provides typed, reflection-free Microsoft DI registrations.
-- `Dispatcher.DependencyInjection` provides the reflection-based Microsoft DI implementation.
-- `Dispatcher.SourceGeneration` generates a dispatcher and handler registrations without reflection.
+Dispatch itself does not use reflection. Handler routes are stored in frozen dictionaries, and handlers and pipeline behaviors are resolved from the current dependency-injection scope.
 
-Choose one implementation package. Use the Microsoft DI extension for the reflection-based runtime,
-or use source generation for a generated dispatcher:
+## Install
+
+For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.2
-# or
-dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.2
+dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.3
 ```
 
-## Define a query
+For source-generated registration and Native AOT, install instead:
+
+```bash
+dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.3
+```
+
+Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
+
+## Quick start
+
+Define a query and its handler:
+
+```csharp
+using Dispatcher;
+
+public sealed record GetGreetingQuery(string Name) : IQuery<string>;
+
+internal sealed class GetGreetingQueryHandler
+    : IQueryHandler<GetGreetingQuery, string>
+{
+    public ValueTask<string> HandleAsync(
+        GetGreetingQuery query,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult($"Hello, {query.Name}!");
+}
+```
+
+Register Dispatcher and scan the application assembly for handlers:
+
+```csharp
+using Dispatcher.DependencyInjection;
+
+builder.Services
+    .AddDispatcher()
+    .AddDispatcherHandlers(typeof(Program).Assembly);
+```
+
+`AddDispatcher()` registers infrastructure only and never scans assemblies implicitly. `AddDispatcherHandlers` includes internal handler classes, and registering the same assembly more than once is safe.
+
+Inject a focused dispatcher interface and send the query:
+
+```csharp
+app.MapGet("/greetings/{name}", async (
+    string name,
+    IQueryDispatcher queries,
+    CancellationToken cancellationToken) =>
+{
+    var greeting = await queries.QueryAsync(
+        new GetGreetingQuery(name),
+        cancellationToken);
+
+    return Results.Ok(greeting);
+});
+```
+
+Dispatcher and handlers are scoped by default. Resolve them inside a DI scope, as ASP.NET Core does for each request.
+
+## Messages and handlers
+
+### Queries
+
+A query always has a response:
 
 ```csharp
 public sealed record GetOrderQuery(Guid Id) : IQuery<Order?>;
@@ -31,12 +88,20 @@ internal sealed class GetOrderQueryHandler(OrderStore store)
 {
     public ValueTask<Order?> HandleAsync(
         GetOrderQuery query,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken = default) =>
         ValueTask.FromResult(store.Find(query.Id));
 }
 ```
 
-## Define commands
+Dispatch it with `QueryAsync`:
+
+```csharp
+var order = await queries.QueryAsync(new GetOrderQuery(id), cancellationToken);
+```
+
+### Commands
+
+A command may return a response:
 
 ```csharp
 public sealed record CreateOrderCommand(string ProductId, int Quantity)
@@ -47,10 +112,14 @@ internal sealed class CreateOrderCommandHandler
 {
     public ValueTask<Guid> HandleAsync(
         CreateOrderCommand command,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken = default) =>
         ValueTask.FromResult(Guid.NewGuid());
 }
+```
 
+Or it may be resultless:
+
+```csharp
 public sealed record ClearOrdersCommand : ICommand;
 
 internal sealed class ClearOrdersCommandHandler
@@ -58,73 +127,54 @@ internal sealed class ClearOrdersCommandHandler
 {
     public ValueTask HandleAsync(
         ClearOrdersCommand command,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken = default) =>
         ValueTask.CompletedTask;
 }
 ```
 
-## Register Dispatcher and module handlers
-
-Register infrastructure once in the application:
+Execute both forms with `ExecuteAsync`:
 
 ```csharp
-services.AddDispatcher();
-services.AddOrdersModule();
-services.AddStockModule();
+var orderId = await commands.ExecuteAsync(
+    new CreateOrderCommand("keyboard", 2),
+    cancellationToken);
+
+await commands.ExecuteAsync(new ClearOrdersCommand(), cancellationToken);
 ```
 
-Each module registers its own assembly. Reflection includes internal handler types:
+### Notifications
+
+Notifications can have zero or more handlers:
 
 ```csharp
-public static IServiceCollection AddOrdersModule(this IServiceCollection services)
+public sealed record OrderCreated(Guid OrderId) : INotification;
+
+internal sealed class RecordOrderCreated
+    : INotificationHandler<OrderCreated>
 {
-    services.AddSingleton<OrderStore>();
-    return services.AddDispatcherHandlers<OrdersModuleMarker>();
+    public ValueTask HandleAsync(
+        OrderCreated notification,
+        CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Order {notification.OrderId} was created.");
+        return ValueTask.CompletedTask;
+    }
 }
 ```
 
-`AddDispatcher()` never scans assemblies implicitly. Handler registration can occur before or after it, and registering the same assembly again is ignored.
-
-The dispatcher, handlers, and behaviors are scoped by default. Resolve and use dispatcher interfaces inside a DI scope, as ASP.NET Core does for each request. Avoid overriding the dispatcher with a singleton registration because scoped handlers and behaviors must be resolved from their owning scope.
-
-For trimming and Native AOT, reference only `Dispatcher.SourceGeneration`. Each module opts into
-handler registration, while the host opts into the single dispatcher:
+Publish a notification with `PublishAsync`:
 
 ```csharp
-[assembly: GenerateDispatcherHandlers("AddOrdersHandlers")]
-
-[assembly: GenerateDispatcher("AddDispatcher")]
-```
-
-```csharp
-services.AddOrdersHandlers().AddStockHandlers().AddDispatcher();
-```
-
-Each module generates registrations inside its own assembly, allowing its handlers to remain
-internal. The host generator discovers opted-in referenced modules and emits one internal
-`Dispatcher` with routes for all of them.
-It uses frozen dispatch tables while resolving handlers and behaviors from the current service-provider
-scope. Generated handler registration uses the typed methods from
-`Dispatcher.Extensions.Microsoft.DependencyInjection` and does not reference the reflection-based
-`Dispatcher.DependencyInjection` package.
-
-## Dispatch messages
-
-```csharp
-var order = await queries.QueryAsync(new GetOrderQuery(id), cancellationToken);
-var orderId = await commands.ExecuteAsync(
-    new CreateOrderCommand("keyboard", 2), cancellationToken);
-await commands.ExecuteAsync(new ClearOrdersCommand(), cancellationToken);
 await publisher.PublishAsync(new OrderCreated(orderId), cancellationToken);
 ```
 
-Queries and commands require exactly one handler. A missing handler throws `HandlerNotFoundException`; duplicate handlers throw `DuplicateHandlerException`. Notifications allow multiple handlers, run sequentially in registration order, and are a no-op when no handler exists.
+Notification handlers run sequentially in registration order. Publishing a notification with no handlers is a no-op.
 
-Dispatch uses exact concrete message types. Polymorphic routing is not included in this version.
+Queries and commands require exactly one handler. A missing handler throws `HandlerNotFoundException`, and duplicate handlers throw `DuplicateHandlerException`. Dispatch uses the exact concrete message type; polymorphic routing is not currently supported.
 
 ## Pipeline behaviors
 
-Implement the behavior contract matching the message shape and call `next` to continue:
+Pipeline behaviors apply cross-cutting work around queries and commands:
 
 ```csharp
 internal sealed class LoggingBehavior<TRequest, TResponse>
@@ -134,32 +184,94 @@ internal sealed class LoggingBehavior<TRequest, TResponse>
     public async ValueTask<TResponse> HandleAsync(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Executing {typeof(TRequest).Name}");
         return await next(cancellationToken);
     }
 }
-
-services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
 ```
 
-The same `IPipelineBehavior<TRequest, TResponse>` contract applies to queries and every command. A resultless `ICommand` is represented as `ICommand<Unit>` inside the pipeline, while its handler and `ExecuteAsync` overload remain resultless for normal application code. The first registered behavior is outermost, and a behavior may short-circuit by returning without calling `next`.
+Register an open generic behavior:
 
-## Sample
-
-Run the beginner-friendly Minimal API:
-
-```bash
-dotnet run --project samples/DependencyInjection/Dispatcher.SampleApi
+```csharp
+builder.Services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
 ```
 
-The sample uses internal handlers in separate Orders and Stock modules. Its FluentValidation command behavior returns HTTP 400 validation problems and its `OrderCreated` notification reserves stock across module boundaries. See [the sample walkthrough](samples/DependencyInjection/Dispatcher.SampleApi/README.md).
+The first registered behavior is the outermost. Behaviors may short-circuit by returning without calling `next`, and they may pass a replacement cancellation token to `next`.
 
-The [Native AOT sample](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates
-two referenced modules with internal handlers composed into one host-generated dispatcher.
+The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and both command shapes. A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain resultless.
 
-## Benchmarks
+## Source generation and Native AOT
+
+`Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch.
+
+In a single-project application, opt in at assembly level and give the generated extension methods unique names:
+
+```csharp
+using Dispatcher;
+
+[assembly: GenerateDispatcherHandlers("AddApplicationHandlers")]
+[assembly: GenerateDispatcher("AddDispatcher")]
+```
+
+Register the generated dispatcher and handlers:
+
+```csharp
+builder.Services
+    .AddDispatcher()
+    .AddApplicationHandlers();
+```
+
+Handlers may remain internal. The generator discovers queries, commands, notifications, and pipeline behaviors at compile time and emits explicit DI registrations and frozen dispatch tables.
+
+For applications split across assemblies, each referenced assembly can generate its own handler-registration method while the host generates the dispatcher:
+
+```csharp
+// In a referenced handlers assembly
+[assembly: GenerateDispatcherHandlers("AddOrderHandlers")]
+```
+
+```csharp
+// In the host assembly
+[assembly: GenerateDispatcher("AddDispatcher")]
+
+builder.Services
+    .AddDispatcher()
+    .AddOrderHandlers();
+```
+
+Modular composition is supported, but it is not required. See the Native AOT sample for a complete application in which the host composes internal handlers from two referenced assemblies.
+
+## Samples
+
+All samples target .NET 10. Start with the [samples overview](samples/README.md), or go directly to one of these applications:
+
+- [Dependency-injection Minimal API](samples/DependencyInjection/Dispatcher.SampleApi) demonstrates reflection-based handler scanning, queries, commands, notifications, FluentValidation pipeline behavior, and internal handlers in Orders and Stock assemblies. Run it with:
+
+  ```bash
+  dotnet run --project samples/DependencyInjection/Dispatcher.SampleApi
+  ```
+
+- [Native AOT Minimal API](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates generated handler registration, a host-generated dispatcher, an open generic logging behavior, source-generated JSON metadata, and internal handlers composed from two referenced assemblies. Publish it with:
+
+  ```bash
+  dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample -c Release
+  ```
+
+## Packages
+
+- `Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
+- `Dispatcher` contains the container-neutral runtime, handler registry, wrappers, and exceptions.
+- `Dispatcher.Extensions.Microsoft.DependencyInjection` contains typed, reflection-free Microsoft DI registrations.
+- `Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
+- `Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
+
+Most applications should reference either `Dispatcher.DependencyInjection` or `Dispatcher.SourceGeneration`, not every package individually.
+
+## Performance
+
+The direct handler path avoids pipeline construction when no behavior applies. The runtime resolves behaviors for every dispatch so scoped and transient lifetimes remain correct, and notification handlers execute without a reflection-based dispatch path.
 
 Run the .NET 10 BenchmarkDotNet suite in Release mode:
 
@@ -167,11 +279,31 @@ Run the .NET 10 BenchmarkDotNet suite in Release mode:
 dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
 ```
 
-It reports latency and managed allocations for each message shape and for pipelines
-containing zero, one, or three behaviors. See [the benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md).
+The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the available latency, allocation, pipeline, and implementation comparisons.
+
+## Contributing
+
+Contributions and design discussions are welcome. Dispatcher deliberately keeps its public API and runtime small, so proposed abstractions or performance optimizations should demonstrate a concrete benefit and preserve handler and behavior lifetime semantics.
+
+Build and test changes from the repository root:
+
+```bash
+dotnet build Dispatcher.slnx -c Release
+dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
+```
+
+Run the .NET 8 test target as well when the .NET 8 runtime is installed:
+
+```bash
+dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net8.0
+```
+
+Before changing public contracts, registration semantics, pipelines, or source generation, review the repository guidance in [AGENTS.md](AGENTS.md) and the relevant tests. Measure performance changes with BenchmarkDotNet rather than using dry benchmark jobs as evidence.
 
 ## Current limitations
 
-Reflection-based handler and behavior registration is not trimming or Native AOT safe. Typed and generated handler registration and typed closed behavior registration are AOT compatible.
-
-Future maintenance notes are available in the [v1 implementation plan](docs/PLAN.md) and [Native AOT roadmap](docs/AOT.md).
+- Reflection-based registration is not trimming or Native AOT safe; use `Dispatcher.SourceGeneration` for those deployment modes.
+- Queries and commands use exact concrete message types and require exactly one handler.
+- Notifications execute sequentially rather than concurrently.
+- Pipeline behaviors apply to queries and commands, not notifications.

@@ -2,10 +2,7 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Dispatcher.Benchmarks/Dispatcher.Benchmarks.csproj" />
   </Folder>
-  <Folder Name="/docs/">
-    <File Path="docs/AOT.md" />
-    <File Path="docs/PLAN.md" />
-  </Folder>
+  <Folder Name="/docs/" />
   <Folder Name="/samples/NativeAot/">
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
