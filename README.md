@@ -337,6 +337,24 @@ Run the .NET 8 test target as well when the .NET 8 runtime is installed:
 dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net8.0
 ```
 
+### GitHub Actions
+
+The [GitHub Actions workflow](.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, packs every library, and retains the packages as workflow artifacts for seven days.
+
+NuGet publishing runs only for version tags such as `v1.0.0-preview.3`. Before publishing, the job verifies that the tag matches the central `Version` in `Directory.Build.props` and pushes an explicit list of package files.
+
+Create a GitHub environment named `nuget`, then configure:
+
+- Environment secret `NUGET_API_KEY`: required NuGet API key.
+- Environment variable `NUGET_SOURCE_URL`: optional package endpoint; it defaults to NuGet.org.
+
+Add required reviewers or deployment-branch restrictions to the `nuget` environment when release approval is required. Create and push a release tag after the matching version change has been reviewed:
+
+```bash
+git tag v1.0.0-preview.3
+git push origin v1.0.0-preview.3
+```
+
 Before changing public contracts, registration semantics, pipelines, or source generation, review the repository guidance in [AGENTS.md](AGENTS.md) and the relevant tests. Measure performance changes with BenchmarkDotNet rather than using dry benchmark jobs as evidence.
 
 ## Current limitations
