@@ -10,7 +10,7 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
 - `src/Dispatcher`: container-neutral runtime, frozen handler registry, wrappers, and exceptions.
-- `src/Dispatcher.Extensions.Microsoft.DependencyInjection`: typed, reflection-free Microsoft DI registrations.
+- `src/Dispatcher.DependencyInjection.Extensions`: typed, reflection-free Microsoft DI registrations.
 - `src/Dispatcher.DependencyInjection`: reflection-based Microsoft DI dispatcher registration and handler scanning.
 - `src/Dispatcher.SourceGeneration`: generated dispatcher implementation and handler registration.
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
@@ -130,7 +130,7 @@ For package-affecting changes, pack all libraries and inspect their dependencies
 ```bash
 dotnet pack src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj -c Release -o artifacts/packages
 dotnet pack src/Dispatcher/Dispatcher.csproj -c Release -o artifacts/packages
-dotnet pack src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj -c Release -o artifacts/packages
+dotnet pack src/Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj -c Release -o artifacts/packages
 dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj -c Release -o artifacts/packages
 dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj -c Release -o artifacts/packages
 ```

@@ -67,7 +67,7 @@ builder.Services.AddDispatcherHandlers(
 Typed registration methods use the same shape:
 
 ```csharp
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.DependencyInjection.Extensions;
 
 builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>(options =>
     options.ServiceLifetime = ServiceLifetime.Singleton);
@@ -301,7 +301,7 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 
 - `Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
 - `Dispatcher` contains the container-neutral runtime, handler registry, wrappers, and exceptions.
-- `Dispatcher.Extensions.Microsoft.DependencyInjection` contains typed, reflection-free Microsoft DI registrations.
+- `Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
 - `Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
 - `Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
 

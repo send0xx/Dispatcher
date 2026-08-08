@@ -65,7 +65,7 @@ internal static class PipelineBehaviorEmitter
                     continue;
                 }
 
-                source.Append("            global::Dispatcher.Extensions.Microsoft.DependencyInjection.TypedDispatcherServiceCollectionExtensions.AddPipelineBehavior<")
+                source.Append("            global::Dispatcher.DependencyInjection.Extensions.TypedDispatcherServiceCollectionExtensions.AddPipelineBehavior<")
                     .Append(request.Request.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
                     .Append(response.ToDisplayString(SymbolDisplayFormats.FullyQualified)).Append(", ")
                     .Append(behavior.Construct(request.Request, response).ToDisplayString(SymbolDisplayFormats.FullyQualified))

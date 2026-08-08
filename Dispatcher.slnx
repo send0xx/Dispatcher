@@ -18,7 +18,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
-    <Project Path="src/Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
+    <Project Path="src/Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj" />
     <Project Path="src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
     <Project Path="src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
     <Project Path="src/Dispatcher/Dispatcher.csproj" />

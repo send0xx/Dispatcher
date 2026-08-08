@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using Dispatcher;
 using Dispatcher.DependencyInjection;
-using Dispatcher.Extensions.Microsoft.DependencyInjection;
+using Dispatcher.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 [assembly: GenerateDispatcherHandlers("AddGeneratedBenchmarkHandlers")]

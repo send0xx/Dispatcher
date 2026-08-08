@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Dispatcher.Extensions.Microsoft.DependencyInjection/Dispatcher.Extensions.Microsoft.DependencyInjection.csproj" />
+    <ProjectReference Include="../Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/" />
