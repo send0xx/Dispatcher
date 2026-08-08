@@ -343,12 +343,16 @@ The [GitHub Actions workflow](.github/workflows/ci.yml) builds the complete solu
 
 NuGet publishing runs only for version tags such as `v1.0.0-preview.4`. Before publishing, the job verifies that the tag matches the central `Version` in `Directory.Build.props` and pushes an explicit list of package files.
 
-Create a GitHub environment named `nuget`, then configure:
+Publishing uses NuGet trusted publishing, so the workflow obtains a short-lived API key through GitHub OIDC instead of storing a long-lived NuGet API key. In the NuGet.org account that owns the packages, create a trusted publishing policy with:
 
-- Environment secret `NUGET_API_KEY`: required NuGet API key.
-- Environment variable `NUGET_SOURCE_URL`: optional package endpoint; it defaults to NuGet.org.
+- Repository owner: `send0xx`
+- Repository: `Dispatcher`
+- Workflow file: `ci.yml`
+- Environment: `nuget`
 
-Add required reviewers or deployment-branch restrictions to the `nuget` environment when release approval is required. Create and push a release tag after the matching version change has been reviewed:
+Create a GitHub environment named `nuget` and add an environment secret named `NUGET_USER` containing the NuGet.org profile name, not an email address. Add required reviewers or deployment-branch restrictions when release approval is required.
+
+Create and push a release tag after the matching version change has been reviewed:
 
 ```bash
 git tag v1.0.0-preview.4
