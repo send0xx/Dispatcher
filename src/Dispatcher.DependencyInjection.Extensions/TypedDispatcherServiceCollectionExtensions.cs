@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.DependencyInjection.Extensions;
