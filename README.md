@@ -14,13 +14,13 @@ Dispatch itself does not use reflection. Handler routes are stored in frozen dic
 For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Dispatcher.DependencyInjection --version 1.0.0-preview.3
+dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.4
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Dispatcher.SourceGeneration --version 1.0.0-preview.3
+dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.4
 ```
 
 Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
@@ -230,7 +230,7 @@ The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and b
 
 ## Source generation and Native AOT
 
-`Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch.
+`Send0xx.Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch.
 
 In a single-project application, opt in at assembly level and give the generated extension methods unique names:
 
@@ -299,13 +299,13 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 
 ## Packages
 
-- `Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
-- `Dispatcher` contains the container-neutral runtime, handler registry, wrappers, and exceptions.
-- `Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
-- `Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
-- `Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
+- `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
+- `Send0xx.Dispatcher` contains the container-neutral runtime, handler registry, wrappers, and exceptions.
+- `Send0xx.Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
+- `Send0xx.Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
+- `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
 
-Most applications should reference either `Dispatcher.DependencyInjection` or `Dispatcher.SourceGeneration`, not every package individually.
+Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. Package IDs use the `Send0xx` prefix, while the public types remain in the `Dispatcher` namespace.
 
 ## Performance
 
@@ -341,7 +341,7 @@ dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build
 
 The [GitHub Actions workflow](.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, packs every library, and retains the packages as workflow artifacts for seven days.
 
-NuGet publishing runs only for version tags such as `v1.0.0-preview.3`. Before publishing, the job verifies that the tag matches the central `Version` in `Directory.Build.props` and pushes an explicit list of package files.
+NuGet publishing runs only for version tags such as `v1.0.0-preview.4`. Before publishing, the job verifies that the tag matches the central `Version` in `Directory.Build.props` and pushes an explicit list of package files.
 
 Create a GitHub environment named `nuget`, then configure:
 
@@ -351,15 +351,15 @@ Create a GitHub environment named `nuget`, then configure:
 Add required reviewers or deployment-branch restrictions to the `nuget` environment when release approval is required. Create and push a release tag after the matching version change has been reviewed:
 
 ```bash
-git tag v1.0.0-preview.3
-git push origin v1.0.0-preview.3
+git tag v1.0.0-preview.4
+git push origin v1.0.0-preview.4
 ```
 
 Before changing public contracts, registration semantics, pipelines, or source generation, review the repository guidance in [AGENTS.md](AGENTS.md) and the relevant tests. Measure performance changes with BenchmarkDotNet rather than using dry benchmark jobs as evidence.
 
 ## Current limitations
 
-- Reflection-based registration is not trimming or Native AOT safe; use `Dispatcher.SourceGeneration` for those deployment modes.
+- Reflection-based registration is not trimming or Native AOT safe; use `Send0xx.Dispatcher.SourceGeneration` for those deployment modes.
 - Queries and commands use exact concrete message types and require exactly one handler.
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.

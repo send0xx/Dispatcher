@@ -5,11 +5,11 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-    <Version>1.0.0-preview.3</Version>
+    <Version>1.0.0-preview.4</Version>
     <Authors>send0xx</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageTags>cqrs;dispatcher;mediator;dependency-injection</PackageTags>
+    <PackageTags>dispatcher;cqrs;mediator;commands;queries;notifications;dependency-injection;source-generator</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageReadmeFile>README.md</PackageReadmeFile>

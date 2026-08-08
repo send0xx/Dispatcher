@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <PackageId>Dispatcher.Abstractions</PackageId>
-    <Description>Contracts for the Dispatcher CQRS library.</Description>
+    <PackageId>Send0xx.Dispatcher.Abstractions</PackageId>
+    <Title>Dispatcher CQRS abstractions for .NET</Title>
+    <Description>Contracts for a lightweight .NET CQRS dispatcher, including commands, queries, notifications, handlers, and pipeline behaviors.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>

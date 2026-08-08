@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <PackageId>Dispatcher.DependencyInjection.Extensions</PackageId>
-    <Description>Typed Microsoft dependency injection registrations for Dispatcher.</Description>
+    <PackageId>Send0xx.Dispatcher.DependencyInjection.Extensions</PackageId>
+    <Title>Dispatcher typed dependency injection extensions</Title>
+    <Description>Typed, reflection-free Microsoft dependency injection registrations for the Dispatcher CQRS library.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>

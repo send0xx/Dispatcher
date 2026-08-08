@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <PackageId>Dispatcher.DependencyInjection</PackageId>
-    <Description>Reflection-based Microsoft dependency injection integration for Dispatcher.</Description>
+    <PackageId>Send0xx.Dispatcher.DependencyInjection</PackageId>
+    <Title>Dispatcher dependency injection integration</Title>
+    <Description>Microsoft dependency injection integration for the Dispatcher CQRS library with reflection-based handler scanning.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>false</IsAotCompatible>
     <IsPackable>true</IsPackable>

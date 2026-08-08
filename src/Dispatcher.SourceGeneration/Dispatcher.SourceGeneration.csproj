@@ -7,8 +7,9 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
     <IsPackable>true</IsPackable>
-    <PackageId>Dispatcher.SourceGeneration</PackageId>
-    <Description>Generated Dispatcher implementation and handler registration.</Description>
+    <PackageId>Send0xx.Dispatcher.SourceGeneration</PackageId>
+    <Title>Dispatcher source generation</Title>
+    <Description>Source-generated CQRS dispatcher and handler registration for trimming and Native AOT.</Description>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <PublishAot>false</PublishAot>
     <SelfContained>false</SelfContained>

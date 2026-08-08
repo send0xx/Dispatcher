@@ -80,25 +80,25 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Pack Dispatcher.Abstractions
+      - name: Pack Send0xx.Dispatcher.Abstractions
         run: dotnet pack src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj -c Release -o artifacts/packages
 
-      - name: Pack Dispatcher
+      - name: Pack Send0xx.Dispatcher
         run: dotnet pack src/Dispatcher/Dispatcher.csproj -c Release -o artifacts/packages
 
-      - name: Pack Dispatcher.DependencyInjection.Extensions
+      - name: Pack Send0xx.Dispatcher.DependencyInjection.Extensions
         run: >-
           dotnet pack src/Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj
           -c Release
           -o artifacts/packages
 
-      - name: Pack Dispatcher.DependencyInjection
+      - name: Pack Send0xx.Dispatcher.DependencyInjection
         run: >-
           dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj
           -c Release
           -o artifacts/packages
 
-      - name: Pack Dispatcher.SourceGeneration
+      - name: Pack Send0xx.Dispatcher.SourceGeneration
         run: >-
           dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj
           -c Release
@@ -160,11 +160,11 @@ jobs:
           fi
 
           for PACKAGE_ID in \
-            Dispatcher.Abstractions \
-            Dispatcher \
-            Dispatcher.DependencyInjection.Extensions \
-            Dispatcher.DependencyInjection \
-            Dispatcher.SourceGeneration
+            Send0xx.Dispatcher.Abstractions \
+            Send0xx.Dispatcher \
+            Send0xx.Dispatcher.DependencyInjection.Extensions \
+            Send0xx.Dispatcher.DependencyInjection \
+            Send0xx.Dispatcher.SourceGeneration
           do
             PACKAGE_PATH="artifacts/packages/${PACKAGE_ID}.${PACKAGE_VERSION}.nupkg"
             if [[ ! -f "$PACKAGE_PATH" ]]; then
