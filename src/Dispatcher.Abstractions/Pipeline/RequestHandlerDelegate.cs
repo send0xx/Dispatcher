@@ -7,4 +7,4 @@ namespace Dispatcher;
 /// <param name="cancellationToken">A token that can cancel the operation.</param>
 /// <returns>The pipeline response.</returns>
 public delegate ValueTask<TResponse> RequestHandlerDelegate<TResponse>(
-    CancellationToken cancellationToken);
+    CancellationToken cancellationToken = default);

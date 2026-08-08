@@ -48,7 +48,9 @@ public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegis
     }
 
     /// <inheritdoc />
-    public ValueTask ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
+    public ValueTask ExecuteAsync(
+        ICommand command,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 

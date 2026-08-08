@@ -14,7 +14,9 @@ public interface ICommandHandler<in TCommand, TResponse>
     /// <param name="command">The command to handle.</param>
     /// <param name="cancellationToken">A token that can cancel the operation.</param>
     /// <returns>The command response.</returns>
-    ValueTask<TResponse> HandleAsync(TCommand command, CancellationToken cancellationToken);
+    ValueTask<TResponse> HandleAsync(
+        TCommand command,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -30,5 +32,7 @@ public interface ICommandHandler<in TCommand>
     /// <param name="command">The command to handle.</param>
     /// <param name="cancellationToken">A token that can cancel the operation.</param>
     /// <returns>An operation that represents command handling.</returns>
-    ValueTask HandleAsync(TCommand command, CancellationToken cancellationToken);
+    ValueTask HandleAsync(
+        TCommand command,
+        CancellationToken cancellationToken = default);
 }

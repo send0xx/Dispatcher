@@ -14,5 +14,7 @@ public interface IQueryHandler<in TQuery, TResponse>
     /// <param name="query">The query to handle.</param>
     /// <param name="cancellationToken">A token that can cancel the operation.</param>
     /// <returns>The query response.</returns>
-    ValueTask<TResponse> HandleAsync(TQuery query, CancellationToken cancellationToken);
+    ValueTask<TResponse> HandleAsync(
+        TQuery query,
+        CancellationToken cancellationToken = default);
 }

@@ -13,5 +13,7 @@ public interface INotificationHandler<in TNotification>
     /// <param name="notification">The notification to handle.</param>
     /// <param name="cancellationToken">A token that can cancel the operation.</param>
     /// <returns>An operation that represents notification handling.</returns>
-    ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken);
+    ValueTask HandleAsync(
+        TNotification notification,
+        CancellationToken cancellationToken = default);
 }

@@ -18,5 +18,5 @@ public interface IPipelineBehavior<in TRequest, TResponse>
     ValueTask<TResponse> HandleAsync(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken = default);
 }
