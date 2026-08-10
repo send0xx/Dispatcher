@@ -237,6 +237,7 @@ In a single-project application, opt in at assembly level and give the generated
 
 ```csharp
 using Dispatcher;
+using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcherHandlers("AddApplicationHandlers")]
 [assembly: GenerateDispatcher("AddDispatcher")]
@@ -268,11 +269,15 @@ For applications split across assemblies, each referenced assembly can generate 
 
 ```csharp
 // In a referenced handlers assembly
+using Dispatcher.SourceGeneration;
+
 [assembly: GenerateDispatcherHandlers("AddOrderHandlers")]
 ```
 
 ```csharp
 // In the host assembly
+using Dispatcher.SourceGeneration;
+
 [assembly: GenerateDispatcher("AddDispatcher")]
 
 builder.Services
@@ -306,7 +311,7 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 - `Send0xx.Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
 - `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
 
-Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. Package IDs use the `Send0xx` prefix, while the public types remain in the `Dispatcher` namespace.
+Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. Package IDs use the `Send0xx` prefix. Core APIs remain in the `Dispatcher` namespace, while generator opt-in attributes and generated dispatcher registration extensions use `Dispatcher.SourceGeneration`.
 
 ## Performance
 

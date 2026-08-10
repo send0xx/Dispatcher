@@ -12,6 +12,7 @@ public sealed class DispatcherGeneratorModularityTests
         var orders = GeneratorTestHarness.CompileModule(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddOrdersHandlers")]
             namespace Orders;
             public sealed record GetOrder : IQuery<string>;
@@ -31,6 +32,7 @@ public sealed class DispatcherGeneratorModularityTests
         var stock = GeneratorTestHarness.CompileModule(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             using Orders;
             [assembly: GenerateDispatcherHandlers("AddStockHandlers")]
             namespace Stock;
@@ -52,6 +54,7 @@ public sealed class DispatcherGeneratorModularityTests
         var result = GeneratorTestHarness.Run(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddDispatcher")]
             """,
             additionalReferences: [orders, stock],
@@ -77,6 +80,7 @@ public sealed class DispatcherGeneratorModularityTests
     {
         const string contract = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             namespace Contracts;
             public sealed record SharedQuery : IQuery<string>;
             """;
@@ -87,6 +91,7 @@ public sealed class DispatcherGeneratorModularityTests
         var result = GeneratorTestHarness.Run(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddDispatcher")]
             """,
             additionalReferences: [contracts, first, second],
@@ -101,6 +106,7 @@ public sealed class DispatcherGeneratorModularityTests
         var module = GeneratorTestHarness.CompileModule(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddModuleHandlers")]
             internal sealed record HiddenQuery : IQuery<string>;
             internal sealed class HiddenHandler : IQueryHandler<HiddenQuery, string>
@@ -114,6 +120,7 @@ public sealed class DispatcherGeneratorModularityTests
         var result = GeneratorTestHarness.Run(
             """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddDispatcher")]
             """,
             additionalReferences: [module],
@@ -129,6 +136,7 @@ public sealed class DispatcherGeneratorModularityTests
         MetadataReference contracts) => GeneratorTestHarness.CompileModule(
         $$"""
         using Dispatcher;
+        using Dispatcher.SourceGeneration;
         using Contracts;
         [assembly: GenerateDispatcherHandlers("{{methodName}}")]
         internal sealed class {{handlerName}} : IQueryHandler<SharedQuery, string>

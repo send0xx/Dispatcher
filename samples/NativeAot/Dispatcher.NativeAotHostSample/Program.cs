@@ -3,6 +3,7 @@ using Dispatcher;
 using Dispatcher.NativeAotHostSample;
 using Dispatcher.NativeAotHostSample.Audit;
 using Dispatcher.NativeAotHostSample.Handlers;
+using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcher("AddDispatcher")]
 

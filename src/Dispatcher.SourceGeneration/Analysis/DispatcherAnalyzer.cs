@@ -7,8 +7,10 @@ namespace Dispatcher.SourceGeneration.Analysis;
 
 internal static class DispatcherAnalyzer
 {
-    private const string AttributeMetadataName = "Dispatcher.GenerateDispatcherHandlersAttribute";
-    private const string DispatcherAttributeMetadataName = "Dispatcher.GenerateDispatcherAttribute";
+    private const string AttributeMetadataName =
+        "Dispatcher.SourceGeneration.GenerateDispatcherHandlersAttribute";
+    private const string DispatcherAttributeMetadataName =
+        "Dispatcher.SourceGeneration.GenerateDispatcherAttribute";
     private const string QueryHandlerMetadataName = "Dispatcher.IQueryHandler`2";
     private const string CommandHandlerMetadataName = "Dispatcher.ICommandHandler`2";
     private const string CommandWithoutResponseHandlerMetadataName = "Dispatcher.ICommandHandler`1";
@@ -282,7 +284,7 @@ internal static class DispatcherAnalyzer
     private static bool HasGeneratedHandlerRegistration(IAssemblySymbol assembly) =>
         assembly.GetAttributes().Any(attribute =>
             attribute.AttributeClass?.ToDisplayString() ==
-            "Dispatcher.GenerateDispatcherHandlersAttribute");
+            "Dispatcher.SourceGeneration.GenerateDispatcherHandlersAttribute");
 
     private static HandlerModel CreateHandlerModel(
         INamedTypeSymbol implementation,
@@ -415,5 +417,4 @@ internal static class DispatcherAnalyzer
             }
         }
     }
-
 }

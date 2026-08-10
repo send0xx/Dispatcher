@@ -11,6 +11,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -43,6 +44,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
             """;
 
@@ -74,6 +76,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddCompleteDispatcher")]
 
@@ -111,6 +114,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains("DispatcherGeneratedExtensions", StringComparison.Ordinal))).ToString();
+        Assert.Contains("namespace Dispatcher.SourceGeneration;", generated, StringComparison.Ordinal);
         Assert.Contains("AddGeneratedTestHandlers", generated, StringComparison.Ordinal);
         Assert.Contains("AddQueryHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("AddCommandHandler<", generated, StringComparison.Ordinal);
@@ -138,6 +142,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -165,6 +170,7 @@ public sealed class DispatcherGeneratorOutputTests
             tree.ToString().Contains(
                 "GeneratedPipelineBehaviorServiceCollectionExtensions",
                 StringComparison.Ordinal))).ToString();
+        Assert.Contains("namespace Dispatcher.SourceGeneration;", generated, StringComparison.Ordinal);
         Assert.Contains("typeof(global::LoggingBehavior<,>)", generated, StringComparison.Ordinal);
         Assert.Contains(
             "AddPipelineBehavior<global::TestQuery, string, global::LoggingBehavior<global::TestQuery, string>>",
@@ -187,6 +193,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -236,6 +243,7 @@ public sealed class DispatcherGeneratorOutputTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal readonly record struct UnmanagedQuery(int Value) : IQuery<int>;
@@ -281,10 +289,11 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
-    public void Prefixes_keyword_segments_in_generated_namespace()
+    public void Generates_source_generation_types_in_expected_namespaces()
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddTestDispatcher")]
             """;
 
@@ -292,7 +301,23 @@ public sealed class DispatcherGeneratorOutputTests
 
         Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains("namespace Company._class;", StringComparison.Ordinal));
+            tree.ToString().Contains(
+                "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
+                StringComparison.Ordinal) &&
+            tree.ToString().Contains("GenerateDispatcherHandlersAttribute", StringComparison.Ordinal));
+        Assert.Contains(result.GeneratedTrees, tree =>
+            tree.ToString().Contains(
+                "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
+                StringComparison.Ordinal) &&
+            tree.ToString().Contains("GenerateDispatcherAttribute", StringComparison.Ordinal));
+        Assert.Contains(result.GeneratedTrees, tree =>
+            tree.ToString().Contains(
+                "namespace Dispatcher.SourceGeneration;\n\npublic static class DispatcherServiceCollectionExtensions",
+                StringComparison.Ordinal));
+        Assert.Contains(result.GeneratedTrees, tree =>
+            tree.ToString().Contains(
+                "namespace Dispatcher;\n\ninternal sealed class Dispatcher",
+                StringComparison.Ordinal));
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Dispatcher;
+using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcherHandlers("AddMessageHandlers")]
 

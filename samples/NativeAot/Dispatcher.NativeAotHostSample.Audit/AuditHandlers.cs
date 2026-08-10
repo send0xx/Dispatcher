@@ -1,5 +1,5 @@
-using Dispatcher;
 using Dispatcher.NativeAotHostSample.Handlers;
+using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcherHandlers("AddAuditHandlers")]
 

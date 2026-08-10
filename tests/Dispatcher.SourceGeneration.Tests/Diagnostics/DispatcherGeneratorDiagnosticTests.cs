@@ -10,6 +10,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             internal sealed record TestQuery : IQuery<string>;
             internal sealed class FirstHandler : IQueryHandler<TestQuery, string>
@@ -32,6 +33,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             internal sealed record MissingQuery : IQuery<int>;
             """;
@@ -44,6 +46,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             internal sealed record GenericQuery<T> : IQuery<T>;
             internal sealed class GenericHandler<T> : IQueryHandler<GenericQuery<T>, T>
@@ -61,6 +64,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("not valid")]
             """;
 
@@ -72,6 +76,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("not valid")]
             """;
 
@@ -83,6 +88,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             internal sealed record TestQuery : IQuery<string>;
             internal sealed class TestHandler : IQueryHandler<TestQuery, string>
@@ -101,6 +107,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
     {
         const string source = """
             using Dispatcher;
+            using Dispatcher.SourceGeneration;
             [assembly: GenerateDispatcher("AddDispatcher")]
             internal sealed class InvalidBehavior<TRequest>
                 : IPipelineBehavior<TRequest, string>

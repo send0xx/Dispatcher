@@ -5,17 +5,6 @@ namespace Dispatcher.SourceGeneration;
 
 internal static class IdentifierSanitizer
 {
-    internal static string SanitizeNamespace(string value)
-    {
-        var segments = value.Split('.');
-        for (var index = 0; index < segments.Length; index++)
-        {
-            segments[index] = SanitizeIdentifier(segments[index]);
-        }
-
-        return string.Join(".", segments);
-    }
-
     internal static string SanitizeIdentifier(string value)
     {
         var builder = new StringBuilder(value.Length + 1);
