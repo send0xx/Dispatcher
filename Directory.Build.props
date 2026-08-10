@@ -9,6 +9,10 @@
     <Authors>send0xx</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/send0xx/Dispatcher</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/send0xx/Dispatcher</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageTags>dispatcher;cqrs;mediator;commands;queries;notifications;dependency-injection;source-generator</PackageTags>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
