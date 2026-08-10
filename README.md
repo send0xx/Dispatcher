@@ -1,5 +1,8 @@
 # Dispatcher
 
+[![NuGet](https://img.shields.io/nuget/v/Send0xx.Dispatcher.svg)](https://www.nuget.org/packages/Send0xx.Dispatcher/)
+[![CI](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml)
+
 Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
 
 Dispatcher supports two registration modes:
