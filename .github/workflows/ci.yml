@@ -21,10 +21,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up .NET
+      - name: Set up .NET 8 and .NET 10
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - name: Restore
         run: dotnet restore Dispatcher.slnx
