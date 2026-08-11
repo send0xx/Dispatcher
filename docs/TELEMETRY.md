@@ -108,7 +108,7 @@ The telemetry wrapper is internal infrastructure. It is selected once while regi
 
 When both signals are disabled, registration must select today's uninstrumented wrappers and generated methods. No nullable telemetry field or `if (telemetry != null)` check should be added to the existing hot path.
 
-When either signal is enabled, registration selects instrumented wrappers that surround the complete operation. The enabled implementation should retain the synchronous `ValueTask` fast path and use an async helper only when the inner operation is incomplete.
+When either signal is enabled, registration selects instrumented wrappers that surround the complete operation. The enabled implementation awaits the inner `ValueTask` directly; synchronously completed operations use the compiler-generated fast path without an explicit `GetAwaiter().GetResult()` call.
 
 ### Why not only a pipeline behavior?
 

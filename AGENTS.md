@@ -118,6 +118,7 @@ dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
 For normal changes, run:
 
 ```bash
+dotnet format Dispatcher.slnx --verify-no-changes
 dotnet build Dispatcher.slnx -c Release
 dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net10.0
 ```
