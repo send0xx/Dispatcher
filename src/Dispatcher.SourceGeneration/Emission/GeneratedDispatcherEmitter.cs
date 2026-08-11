@@ -76,11 +76,11 @@ internal static class GeneratedDispatcherEmitter
         registration.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.DispatcherMethodName).AppendLine("(");
         registration.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
-        registration.AppendLine("        global::System.Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure)");
+        registration.AppendLine("        global::System.Action<global::Dispatcher.DispatcherOptions> configure)");
         registration.AppendLine("    {");
         registration.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
         registration.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(configure);");
-        registration.AppendLine("        var options = new global::Dispatcher.DependencyInjection.DispatcherOptions();");
+        registration.AppendLine("        var options = new global::Dispatcher.DispatcherOptions();");
         registration.AppendLine("        configure(options);");
         registration.AppendLine("        if (options.ServiceLifetime == global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton)");
         registration.AppendLine("        {");

@@ -43,12 +43,12 @@ internal static class PipelineBehaviorEmitter
         source.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddPipelineBehavior(");
         source.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
         source.AppendLine("        global::System.Type behaviorType,");
-        source.AppendLine("        global::System.Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure)");
+        source.AppendLine("        global::System.Action<global::Dispatcher.DispatcherOptions> configure)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(behaviorType);");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(configure);");
-        source.AppendLine("        var options = new global::Dispatcher.DependencyInjection.DispatcherOptions();");
+        source.AppendLine("        var options = new global::Dispatcher.DispatcherOptions();");
         source.AppendLine("        configure(options);");
 
         foreach (var behavior in result.OpenBehaviors)

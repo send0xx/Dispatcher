@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dispatcher.DependencyInjection;
+namespace Dispatcher;
 
 /// <summary>
 /// Configures Dispatcher service registration.

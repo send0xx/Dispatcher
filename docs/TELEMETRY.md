@@ -48,6 +48,10 @@ public sealed class DispatcherTelemetryOptions
 }
 ```
 
+Both options types belong to the `Dispatcher` namespace and the `Send0xx.Dispatcher`
+package so reflection-based and source-generated registration share the same API without
+the options being owned by either DI implementation package.
+
 Example:
 
 ```csharp

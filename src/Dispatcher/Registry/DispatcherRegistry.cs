@@ -42,9 +42,29 @@ public sealed class DispatcherRegistry
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     /// <exception cref="InvalidOperationException">A registration does not contain the required dispatch metadata.</exception>
     public static DispatcherRegistry CreatePrepared(IEnumerable<HandlerRegistration> registrations)
-        => CreatePrepared(registrations, telemetry: null);
+        => CreatePreparedCore(registrations, telemetry: null);
 
-    internal static DispatcherRegistry CreatePrepared(
+    /// <summary>
+    /// Creates a registry from typed handler registrations with telemetry instrumentation.
+    /// </summary>
+    /// <param name="registrations">The handler registrations to include.</param>
+    /// <param name="telemetry">The telemetry service used to instrument routed handlers.</param>
+    /// <returns>The dispatcher registry.</returns>
+    /// <remarks>The caller retains ownership of <paramref name="telemetry"/> and must dispose it.</remarks>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="registrations"/> or <paramref name="telemetry"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
+    /// <exception cref="InvalidOperationException">A registration does not contain the required dispatch metadata.</exception>
+    public static DispatcherRegistry CreatePrepared(
+        IEnumerable<HandlerRegistration> registrations,
+        DispatcherTelemetry telemetry)
+    {
+        ArgumentNullException.ThrowIfNull(telemetry);
+        return CreatePreparedCore(registrations, telemetry);
+    }
+
+    private static DispatcherRegistry CreatePreparedCore(
         IEnumerable<HandlerRegistration> registrations,
         DispatcherTelemetry? telemetry)
     {

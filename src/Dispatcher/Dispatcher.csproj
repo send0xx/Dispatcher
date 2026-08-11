@@ -3,13 +3,14 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <PackageId>Send0xx.Dispatcher</PackageId>
     <Title>Dispatcher - CQRS for .NET</Title>
-    <Description>A lightweight container-neutral CQRS dispatcher for .NET with commands, queries, notifications, handlers, and pipeline behaviors.</Description>
+    <Description>CQRS runtime infrastructure for .NET with handler metadata, dispatch wrappers, and shared Microsoft DI and telemetry options.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/" />

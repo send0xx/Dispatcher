@@ -44,15 +44,14 @@ public static class DispatcherServiceCollectionExtensions
         var telemetryOptions = options.Telemetry;
         if (telemetryOptions.EnableMetrics || telemetryOptions.EnableTracing)
         {
-            var enableMetrics = telemetryOptions.EnableMetrics;
-            var enableTracing = telemetryOptions.EnableTracing;
-            var meterName = telemetryOptions.MeterName;
-            var activitySourceName = telemetryOptions.ActivitySourceName;
-            services.TryAddSingleton(_ => new DispatcherTelemetry(
-                enableMetrics,
-                enableTracing,
-                meterName,
-                activitySourceName));
+            var telemetryConfiguration = new DispatcherTelemetryOptions
+            {
+                EnableMetrics = telemetryOptions.EnableMetrics,
+                EnableTracing = telemetryOptions.EnableTracing,
+                MeterName = telemetryOptions.MeterName,
+                ActivitySourceName = telemetryOptions.ActivitySourceName
+            };
+            services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
             services.TryAddSingleton(static provider =>
                 DispatcherRegistry.CreatePrepared(
                     provider.GetServices<HandlerRegistration>(),

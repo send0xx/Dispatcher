@@ -3,7 +3,13 @@ using System.Diagnostics.Metrics;
 
 namespace Dispatcher;
 
-internal sealed class DispatcherTelemetry : IDisposable
+/// <summary>
+/// Provides tracing and metrics instrumentation used by a Dispatcher registry.
+/// </summary>
+/// <remarks>
+/// Applications normally configure this service through <see cref="DispatcherOptions.Telemetry"/>.
+/// </remarks>
+public sealed class DispatcherTelemetry : IDisposable
 {
     private static readonly string InstrumentationVersion =
         typeof(IDispatcher).Assembly.GetName().Version?.ToString() ?? string.Empty;
@@ -12,24 +18,27 @@ internal sealed class DispatcherTelemetry : IDisposable
     private readonly Meter? _meter;
     private readonly Histogram<double>? _operationDuration;
 
-    internal DispatcherTelemetry(
-        bool enableMetrics,
-        bool enableTracing,
-        string meterName,
-        string activitySourceName)
+    /// <summary>
+    /// Initializes Dispatcher telemetry from the specified configuration.
+    /// </summary>
+    /// <param name="options">The telemetry configuration.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    public DispatcherTelemetry(DispatcherTelemetryOptions options)
     {
-        if (enableMetrics)
+        ArgumentNullException.ThrowIfNull(options);
+
+        if (options.EnableMetrics)
         {
-            _meter = new Meter(meterName, InstrumentationVersion);
+            _meter = new Meter(options.MeterName, InstrumentationVersion);
             _operationDuration = _meter.CreateHistogram<double>(
                 "dispatcher.operation.duration",
                 unit: "s",
                 description: "Duration of a routed Dispatcher operation.");
         }
 
-        if (enableTracing)
+        if (options.EnableTracing)
         {
-            _activitySource = new ActivitySource(activitySourceName, InstrumentationVersion);
+            _activitySource = new ActivitySource(options.ActivitySourceName, InstrumentationVersion);
         }
     }
 
@@ -44,6 +53,9 @@ internal sealed class DispatcherTelemetry : IDisposable
             operationName,
             messageKind);
 
+    /// <summary>
+    /// Releases the activity source and meter owned by this instance.
+    /// </summary>
     public void Dispose()
     {
         _activitySource?.Dispose();

@@ -102,7 +102,7 @@ builder.Services.AddDispatcher(options =>
     options.ServiceLifetime = ServiceLifetime.Transient);
 ```
 
-`DispatcherOptions` is in the `Dispatcher.DependencyInjection` namespace. Dispatcher registration supports `Scoped` and `Transient`; `Singleton` is rejected because it would capture the root service provider and could not safely resolve scoped handlers or pipeline behaviors. Handler registration supports all three Microsoft DI lifetimes. Behavior lifetimes are configured independently through their registration methods.
+`DispatcherOptions` and `DispatcherTelemetryOptions` are in the `Dispatcher` namespace and are provided by the core `Send0xx.Dispatcher` package. Dispatcher registration supports `Scoped` and `Transient`; `Singleton` is rejected because it would capture the root service provider and could not safely resolve scoped handlers or pipeline behaviors. Handler registration supports all three Microsoft DI lifetimes. Behavior lifetimes are configured independently through their registration methods.
 
 ## Messages and handlers
 
@@ -347,7 +347,7 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 ## Packages
 
 - `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
-- `Send0xx.Dispatcher` contains the container-neutral runtime, handler registry, wrappers, and exceptions.
+- `Send0xx.Dispatcher` contains the runtime, handler registry, wrappers, exceptions, and shared registration and telemetry options. It references Microsoft DI abstractions because `DispatcherOptions.ServiceLifetime` uses `ServiceLifetime`.
 - `Send0xx.Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
 - `Send0xx.Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
 - `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.

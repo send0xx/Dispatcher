@@ -56,7 +56,7 @@ public sealed class DispatcherGeneratorOutputTests
                 "DispatcherServiceCollectionExtensions",
                 StringComparison.Ordinal))).ToString();
         Assert.Contains(
-            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            "Action<global::Dispatcher.DispatcherOptions> configure",
             generated,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -160,7 +160,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("AddNotificationHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("Dispatcher.DependencyInjection.Extensions", generated, StringComparison.Ordinal);
         Assert.Contains(
-            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            "Action<global::Dispatcher.DispatcherOptions> configure",
             generated,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -216,7 +216,7 @@ public sealed class DispatcherGeneratorOutputTests
             generated,
             StringComparison.Ordinal);
         Assert.Contains(
-            "Action<global::Dispatcher.DependencyInjection.DispatcherOptions> configure",
+            "Action<global::Dispatcher.DispatcherOptions> configure",
             generated,
             StringComparison.Ordinal);
         Assert.Contains(

@@ -1,4 +1,4 @@
-namespace Dispatcher.DependencyInjection;
+namespace Dispatcher;
 
 /// <summary>
 /// Configures tracing and metrics emitted by Dispatcher.
