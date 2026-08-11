@@ -19,6 +19,14 @@ internal sealed class TokenQueryHandler : IQueryHandler<TokenQuery, Cancellation
         ValueTask.FromResult(cancellationToken);
 }
 
+internal sealed record DelayedQuery : IQuery<string>;
+
+internal sealed class DelayedQueryHandler(TestState state) : IQueryHandler<DelayedQuery, string>
+{
+    public ValueTask<string> HandleAsync(DelayedQuery query, CancellationToken cancellationToken) =>
+        new(state.DelayedQueryCompletion.Task);
+}
+
 internal sealed record SumCommand(int Left, int Right) : ICommand<int>;
 
 internal sealed class SumCommandHandler(TestState state) : ICommandHandler<SumCommand, int>

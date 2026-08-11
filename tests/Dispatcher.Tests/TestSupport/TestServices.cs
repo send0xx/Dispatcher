@@ -31,5 +31,7 @@ internal sealed class TestState
 {
     internal string? Recorded { get; set; }
     internal List<string> Events { get; } = [];
+    internal TaskCompletionSource<string> DelayedQueryCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
     internal int BehaviorInstances { get; set; }
 }

@@ -90,7 +90,7 @@ internal static class GeneratedTelemetryEmitter
         source.Append("    ").Append(generatedTypeName).AppendLine(" inner,");
         source.AppendLine("    global::Dispatcher.GeneratedDispatcherTelemetry telemetry) : global::Dispatcher.IDispatcher");
         source.AppendLine("{");
-        source.AppendLine("    public global::System.Threading.Tasks.ValueTask<TResponse> QueryAsync<TResponse>(");
+        source.AppendLine("    public async global::System.Threading.Tasks.ValueTask<TResponse> QueryAsync<TResponse>(");
         source.AppendLine("        global::Dispatcher.IQuery<TResponse> query,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("    {");
@@ -98,7 +98,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        var messageType = query.GetType();");
         source.Append("        if (!").Append(generatedTypeName).AppendLine(".HasQueryHandler(messageType, typeof(TResponse)))");
         source.AppendLine("        {");
-        source.AppendLine("            return inner.QueryAsync(query, cancellationToken);");
+        source.AppendLine("            return await inner.QueryAsync(query, cancellationToken).ConfigureAwait(false);");
         source.AppendLine("        }");
         AppendResponseInvocation(
             source,
@@ -106,7 +106,7 @@ internal static class GeneratedTelemetryEmitter
             "inner.QueryAsync(query, cancellationToken)");
         source.AppendLine("    }");
         source.AppendLine();
-        source.AppendLine("    public global::System.Threading.Tasks.ValueTask<TResponse> ExecuteAsync<TResponse>(");
+        source.AppendLine("    public async global::System.Threading.Tasks.ValueTask<TResponse> ExecuteAsync<TResponse>(");
         source.AppendLine("        global::Dispatcher.ICommand<TResponse> command,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("    {");
@@ -114,7 +114,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        var messageType = command.GetType();");
         source.Append("        if (!").Append(generatedTypeName).AppendLine(".HasResponseCommandHandler(messageType, typeof(TResponse)))");
         source.AppendLine("        {");
-        source.AppendLine("            return inner.ExecuteAsync(command, cancellationToken);");
+        source.AppendLine("            return await inner.ExecuteAsync(command, cancellationToken).ConfigureAwait(false);");
         source.AppendLine("        }");
         AppendResponseInvocation(
             source,
@@ -122,7 +122,7 @@ internal static class GeneratedTelemetryEmitter
             "inner.ExecuteAsync(command, cancellationToken)");
         source.AppendLine("    }");
         source.AppendLine();
-        source.AppendLine("    public global::System.Threading.Tasks.ValueTask ExecuteAsync(");
+        source.AppendLine("    public async global::System.Threading.Tasks.ValueTask ExecuteAsync(");
         source.AppendLine("        global::Dispatcher.ICommand command,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("    {");
@@ -130,7 +130,8 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        var messageType = command.GetType();");
         source.Append("        if (!").Append(generatedTypeName).AppendLine(".HasCommandHandler(messageType))");
         source.AppendLine("        {");
-        source.AppendLine("            return inner.ExecuteAsync(command, cancellationToken);");
+        source.AppendLine("            await inner.ExecuteAsync(command, cancellationToken).ConfigureAwait(false);");
+        source.AppendLine("            return;");
         source.AppendLine("        }");
         AppendInvocation(
             source,
@@ -138,7 +139,7 @@ internal static class GeneratedTelemetryEmitter
             "inner.ExecuteAsync(command, cancellationToken)");
         source.AppendLine("    }");
         source.AppendLine();
-        source.AppendLine("    public global::System.Threading.Tasks.ValueTask PublishAsync<TNotification>(");
+        source.AppendLine("    public async global::System.Threading.Tasks.ValueTask PublishAsync<TNotification>(");
         source.AppendLine("        TNotification notification,");
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("        where TNotification : global::Dispatcher.INotification");
@@ -147,14 +148,14 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        var messageType = notification.GetType();");
         source.Append("        if (!").Append(generatedTypeName).AppendLine(".HasNotificationHandlers(messageType))");
         source.AppendLine("        {");
-        source.AppendLine("            return inner.PublishAsync(notification, cancellationToken);");
+        source.AppendLine("            await inner.PublishAsync(notification, cancellationToken).ConfigureAwait(false);");
+        source.AppendLine("            return;");
         source.AppendLine("        }");
         AppendInvocation(
             source,
             "telemetry.NotificationRoutes[messageType]",
             "inner.PublishAsync(notification, cancellationToken)");
         source.AppendLine("    }");
-        AppendAwaitedMethods(source);
         source.AppendLine("}");
     }
 
@@ -166,14 +167,10 @@ internal static class GeneratedTelemetryEmitter
         source.Append("        var telemetryScope = ").Append(routeExpression).AppendLine(".Start();");
         source.AppendLine("        try");
         source.AppendLine("        {");
-        source.Append("            var response = ").Append(invocationExpression).AppendLine(";");
-        source.AppendLine("            if (!response.IsCompletedSuccessfully)");
-        source.AppendLine("            {");
-        source.AppendLine("                return Awaited(response, telemetryScope);");
-        source.AppendLine("            }");
-        source.AppendLine("            var result = response.Result;");
+        source.Append("            var result = await ").Append(invocationExpression)
+            .AppendLine(".ConfigureAwait(false);");
         source.AppendLine("            telemetryScope.Complete();");
-        source.AppendLine("            return global::System.Threading.Tasks.ValueTask.FromResult(result);");
+        source.AppendLine("            return result;");
         source.AppendLine("        }");
         source.AppendLine("        catch (global::System.Exception exception)");
         source.AppendLine("        {");
@@ -190,49 +187,8 @@ internal static class GeneratedTelemetryEmitter
         source.Append("        var telemetryScope = ").Append(routeExpression).AppendLine(".Start();");
         source.AppendLine("        try");
         source.AppendLine("        {");
-        source.Append("            var response = ").Append(invocationExpression).AppendLine(";");
-        source.AppendLine("            if (!response.IsCompletedSuccessfully)");
-        source.AppendLine("            {");
-        source.AppendLine("                return Awaited(response, telemetryScope);");
-        source.AppendLine("            }");
-        source.AppendLine("            response.GetAwaiter().GetResult();");
-        source.AppendLine("            telemetryScope.Complete();");
-        source.AppendLine("            return global::System.Threading.Tasks.ValueTask.CompletedTask;");
-        source.AppendLine("        }");
-        source.AppendLine("        catch (global::System.Exception exception)");
-        source.AppendLine("        {");
-        source.AppendLine("            telemetryScope.Fail(exception);");
-        source.AppendLine("            throw;");
-        source.AppendLine("        }");
-    }
-
-    private static void AppendAwaitedMethods(StringBuilder source)
-    {
-        source.AppendLine();
-        source.AppendLine("    private static async global::System.Threading.Tasks.ValueTask<TResponse> Awaited<TResponse>(");
-        source.AppendLine("        global::System.Threading.Tasks.ValueTask<TResponse> response,");
-        source.AppendLine("        global::Dispatcher.GeneratedDispatcherTelemetryScope telemetryScope)");
-        source.AppendLine("    {");
-        source.AppendLine("        try");
-        source.AppendLine("        {");
-        source.AppendLine("            var result = await response.ConfigureAwait(false);");
-        source.AppendLine("            telemetryScope.Complete();");
-        source.AppendLine("            return result;");
-        source.AppendLine("        }");
-        source.AppendLine("        catch (global::System.Exception exception)");
-        source.AppendLine("        {");
-        source.AppendLine("            telemetryScope.Fail(exception);");
-        source.AppendLine("            throw;");
-        source.AppendLine("        }");
-        source.AppendLine("    }");
-        source.AppendLine();
-        source.AppendLine("    private static async global::System.Threading.Tasks.ValueTask Awaited(");
-        source.AppendLine("        global::System.Threading.Tasks.ValueTask response,");
-        source.AppendLine("        global::Dispatcher.GeneratedDispatcherTelemetryScope telemetryScope)");
-        source.AppendLine("    {");
-        source.AppendLine("        try");
-        source.AppendLine("        {");
-        source.AppendLine("            await response.ConfigureAwait(false);");
+        source.Append("            await ").Append(invocationExpression)
+            .AppendLine(".ConfigureAwait(false);");
         source.AppendLine("            telemetryScope.Complete();");
         source.AppendLine("        }");
         source.AppendLine("        catch (global::System.Exception exception)");
@@ -240,7 +196,6 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("            telemetryScope.Fail(exception);");
         source.AppendLine("            throw;");
         source.AppendLine("        }");
-        source.AppendLine("    }");
     }
 
     private static void AppendRoute(StringBuilder source)

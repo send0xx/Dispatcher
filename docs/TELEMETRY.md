@@ -304,9 +304,9 @@ Acceptance criteria:
 - Enabled overhead and allocations are documented rather than assigned a target before measurement.
 
 Measured on .NET 10.0.10 on Apple M5 Pro Arm64, a synchronously completing query was
-allocation-free at 21.15 ns with telemetry disabled. Enabled telemetry without listeners
-remained allocation-free at 23–25 ns. With active listeners, metrics measured 44.93 ns
-and 0 B, tracing measured 119.66 ns and 608 B, and both measured 141.17 ns and 608 B.
+allocation-free at 21.22 ns with telemetry disabled. Enabled telemetry without listeners
+remained allocation-free at 26–30 ns. With active listeners, metrics measured 46.41 ns
+and 0 B, tracing measured 126.13 ns and 608 B, and both measured 146.73 ns and 608 B.
 The benchmark project contains the reproducible matrix; these values are regression
 indicators rather than cross-machine guarantees.
 

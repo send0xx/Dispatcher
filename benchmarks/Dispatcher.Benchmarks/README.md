@@ -32,13 +32,13 @@ Reference results on .NET 10.0.10, Apple M5 Pro, Arm64:
 
 | Mode | Mean | Allocated |
 | --- | ---: | ---: |
-| Disabled | 21.15 ns | 0 B |
-| Metrics, no listener | 23.19 ns | 0 B |
-| Tracing, no listener | 24.79 ns | 0 B |
-| Metrics and tracing, no listeners | 24.73 ns | 0 B |
-| Metrics with listener | 44.93 ns | 0 B |
-| Tracing with listener | 119.66 ns | 608 B |
-| Metrics and tracing with listeners | 141.17 ns | 608 B |
+| Disabled | 21.22 ns | 0 B |
+| Metrics, no listener | 26.50 ns | 0 B |
+| Tracing, no listener | 28.89 ns | 0 B |
+| Metrics and tracing, no listeners | 29.46 ns | 0 B |
+| Metrics with listener | 46.41 ns | 0 B |
+| Tracing with listener | 126.13 ns | 608 B |
+| Metrics and tracing with listeners | 146.73 ns | 608 B |
 
 These numbers are regression indicators for this machine, not cross-machine guarantees.
 

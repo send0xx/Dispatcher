@@ -15,13 +15,37 @@ public sealed class DispatcherTelemetryTests
     {
         var telemetry = new DispatcherOptions().Telemetry;
 
-        Assert.Same(typeof(HandlerRegistration).Assembly, typeof(DispatcherOptions).Assembly);
-        Assert.Same(typeof(HandlerRegistration).Assembly, typeof(DispatcherTelemetryOptions).Assembly);
-        Assert.Same(typeof(DispatcherRegistry).Assembly, typeof(DispatcherTelemetry).Assembly);
         Assert.False(telemetry.EnableMetrics);
         Assert.False(telemetry.EnableTracing);
         Assert.Equal("Dispatcher", telemetry.MeterName);
         Assert.Equal("Dispatcher", telemetry.ActivitySourceName);
+    }
+
+    [Fact]
+    public async Task Async_dispatch_restores_the_parent_activity()
+    {
+        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        using var capture = new TelemetryCapture(instrumentationName, meterName: null);
+        await using var provider = CreateProvider(options =>
+        {
+            options.Telemetry.EnableTracing = true;
+            options.Telemetry.ActivitySourceName = instrumentationName;
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
+        using var parent = new Activity("parent").Start();
+
+        var response = dispatcher.QueryAsync(new DelayedQuery());
+
+        Assert.False(response.IsCompleted);
+        Assert.Same(parent, Activity.Current);
+
+        state.DelayedQueryCompletion.SetResult("completed");
+
+        Assert.Equal("completed", await response);
+        Assert.Same(parent, Activity.Current);
+        Assert.Same(parent, Assert.Single(capture.Activities).Parent);
     }
 
     [Fact]

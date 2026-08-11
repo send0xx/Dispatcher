@@ -86,12 +86,6 @@ jobs:
       - name: Pack Send0xx.Dispatcher
         run: dotnet pack src/Dispatcher/Dispatcher.csproj -c Release -o artifacts/packages
 
-      - name: Pack Send0xx.Dispatcher.DependencyInjection.Extensions
-        run: >-
-          dotnet pack src/Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj
-          -c Release
-          -o artifacts/packages
-
       - name: Pack Send0xx.Dispatcher.DependencyInjection
         run: >-
           dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj
@@ -167,7 +161,6 @@ jobs:
           for PACKAGE_ID in \
             Send0xx.Dispatcher.Abstractions \
             Send0xx.Dispatcher \
-            Send0xx.Dispatcher.DependencyInjection.Extensions \
             Send0xx.Dispatcher.DependencyInjection \
             Send0xx.Dispatcher.SourceGeneration
           do
