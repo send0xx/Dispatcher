@@ -112,6 +112,9 @@ dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
 
 ## Verification
 
+- Tests should verify observable behavior, public contracts, or a concrete regression scenario.
+- Do not add tests that merely restate implementation details already evident from the source, such as assembly ownership, concrete internal collection types, or the presence or absence of internal members. Those details should be reviewed in the implementation itself rather than locked down through reflection-based tests.
+
 For normal changes, run:
 
 ```bash
@@ -134,7 +137,7 @@ dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.cs
 dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj -c Release -o artifacts/packages
 ```
 
-The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, registration idempotence, and frozen registries.
+The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, and registration idempotence.
 
 ## AOT and source generation
 
