@@ -94,7 +94,7 @@ public sealed class DispatcherGeneratorOutputTests
             tree.ToString().Contains(
                 "internal sealed class TelemetryDispatcher",
                 StringComparison.Ordinal))).ToString();
-        Assert.Contains("GeneratedDispatcherTelemetry", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class DispatcherTelemetry", dispatcher, StringComparison.Ordinal);
         Assert.Contains("dispatcher.operation.duration", dispatcher, StringComparison.Ordinal);
         Assert.Contains("activity.AddException(exception);", dispatcher, StringComparison.Ordinal);
         Assert.Contains("activity.AddEvent(new global::System.Diagnostics.ActivityEvent", dispatcher, StringComparison.Ordinal);

@@ -107,8 +107,8 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine("            var meterName = telemetry.MeterName;");
         registration.AppendLine("            var activitySourceName = telemetry.ActivitySourceName;");
         registration.AppendLine("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
-        registration.AppendLine("                typeof(global::Dispatcher.GeneratedDispatcherTelemetry),");
-        registration.AppendLine("                _ => new global::Dispatcher.GeneratedDispatcherTelemetry(");
+        registration.AppendLine("                typeof(global::Dispatcher.DispatcherTelemetry),");
+        registration.AppendLine("                _ => new global::Dispatcher.DispatcherTelemetry(");
         registration.AppendLine("                    enableMetrics,");
         registration.AppendLine("                    enableTracing,");
         registration.AppendLine("                    meterName,");

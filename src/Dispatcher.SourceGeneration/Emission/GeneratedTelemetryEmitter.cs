@@ -27,7 +27,7 @@ internal static class GeneratedTelemetryEmitter
     {
         source.AppendLine();
         source.AppendLine();
-        source.AppendLine("internal sealed class GeneratedDispatcherTelemetry : global::System.IDisposable");
+        source.AppendLine("internal sealed class DispatcherTelemetry : global::System.IDisposable");
         source.AppendLine("{");
         source.AppendLine("    private static readonly string InstrumentationVersion =");
         source.AppendLine("        typeof(global::Dispatcher.IDispatcher).Assembly.GetName().Version?.ToString() ?? string.Empty;");
@@ -39,7 +39,7 @@ internal static class GeneratedTelemetryEmitter
         AppendRouteDictionaryDeclaration(source, "CommandRoutes");
         AppendRouteDictionaryDeclaration(source, "NotificationRoutes");
         source.AppendLine();
-        source.AppendLine("    internal GeneratedDispatcherTelemetry(");
+        source.AppendLine("    internal DispatcherTelemetry(");
         source.AppendLine("        bool enableMetrics,");
         source.AppendLine("        bool enableTracing,");
         source.AppendLine("        string meterName,");
@@ -88,7 +88,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine();
         source.AppendLine("internal sealed class TelemetryDispatcher(");
         source.Append("    ").Append(generatedTypeName).AppendLine(" inner,");
-        source.AppendLine("    global::Dispatcher.GeneratedDispatcherTelemetry telemetry) : global::Dispatcher.IDispatcher");
+        source.AppendLine("    global::Dispatcher.DispatcherTelemetry telemetry) : global::Dispatcher.IDispatcher");
         source.AppendLine("{");
         source.AppendLine("    public async global::System.Threading.Tasks.ValueTask<TResponse> QueryAsync<TResponse>(");
         source.AppendLine("        global::Dispatcher.IQuery<TResponse> query,");
@@ -201,7 +201,7 @@ internal static class GeneratedTelemetryEmitter
     private static void AppendRoute(StringBuilder source)
     {
         source.AppendLine();
-        source.AppendLine("internal sealed class GeneratedDispatcherTelemetryRoute");
+        source.AppendLine("internal sealed class DispatcherTelemetryRoute");
         source.AppendLine("{");
         source.AppendLine("    private readonly global::System.Diagnostics.ActivitySource? activitySource;");
         source.AppendLine("    private readonly global::System.Diagnostics.Metrics.Histogram<double>? operationDuration;");
@@ -211,7 +211,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("    private readonly global::System.Collections.Generic.KeyValuePair<string, object?> messageKindTag;");
         source.AppendLine("    private readonly global::System.Collections.Generic.KeyValuePair<string, object?>[] activityTags;");
         source.AppendLine();
-        source.AppendLine("    internal GeneratedDispatcherTelemetryRoute(");
+        source.AppendLine("    internal DispatcherTelemetryRoute(");
         source.AppendLine("        global::System.Diagnostics.ActivitySource? activitySource,");
         source.AppendLine("        global::System.Diagnostics.Metrics.Histogram<double>? operationDuration,");
         source.AppendLine("        global::System.Type messageType,");
@@ -228,7 +228,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        activityTags = [operationTag, messageTypeTag, messageKindTag];");
         source.AppendLine("    }");
         source.AppendLine();
-        source.AppendLine("    internal global::Dispatcher.GeneratedDispatcherTelemetryScope Start()");
+        source.AppendLine("    internal global::Dispatcher.DispatcherTelemetryScope Start()");
         source.AppendLine("    {");
         source.AppendLine("        var activity = activitySource?.StartActivity(");
         source.AppendLine("            spanName,");
@@ -236,7 +236,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("            default(global::System.Diagnostics.ActivityContext),");
         source.AppendLine("            activityTags);");
         source.AppendLine("        var metricsEnabled = operationDuration?.Enabled == true;");
-        source.AppendLine("        return new global::Dispatcher.GeneratedDispatcherTelemetryScope(");
+        source.AppendLine("        return new global::Dispatcher.DispatcherTelemetryScope(");
         source.AppendLine("            this,");
         source.AppendLine("            activity,");
         source.AppendLine("            metricsEnabled ? global::System.Diagnostics.Stopwatch.GetTimestamp() : 0,");
@@ -288,8 +288,8 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("    }");
         source.AppendLine("}");
         source.AppendLine();
-        source.AppendLine("internal readonly struct GeneratedDispatcherTelemetryScope(");
-        source.AppendLine("    global::Dispatcher.GeneratedDispatcherTelemetryRoute route,");
+        source.AppendLine("internal readonly struct DispatcherTelemetryScope(");
+        source.AppendLine("    global::Dispatcher.DispatcherTelemetryRoute route,");
         source.AppendLine("    global::System.Diagnostics.Activity? activity,");
         source.AppendLine("    long startTimestamp,");
         source.AppendLine("    bool metricsEnabled)");
@@ -315,7 +315,7 @@ internal static class GeneratedTelemetryEmitter
         source.AppendLine("        {");
         source.AppendLine("            if (activity is not null)");
         source.AppendLine("            {");
-        source.AppendLine("                global::Dispatcher.GeneratedDispatcherTelemetryRoute.RecordException(activity, exception);");
+        source.AppendLine("                global::Dispatcher.DispatcherTelemetryRoute.RecordException(activity, exception);");
         source.AppendLine("            }");
         source.AppendLine("            if (metricsEnabled)");
         source.AppendLine("            {");
@@ -333,7 +333,7 @@ internal static class GeneratedTelemetryEmitter
     private static void AppendRouteDictionaryDeclaration(StringBuilder source, string name)
     {
         source.AppendLine();
-        source.Append("    internal global::System.Collections.Frozen.FrozenDictionary<global::System.Type, global::Dispatcher.GeneratedDispatcherTelemetryRoute> ")
+        source.Append("    internal global::System.Collections.Frozen.FrozenDictionary<global::System.Type, global::Dispatcher.DispatcherTelemetryRoute> ")
             .Append(name).AppendLine(" { get; }");
     }
 
@@ -345,13 +345,13 @@ internal static class GeneratedTelemetryEmitter
         string messageKind)
     {
         source.Append("        ").Append(name).AppendLine(" =");
-        source.AppendLine("            new global::System.Collections.Generic.Dictionary<global::System.Type, global::Dispatcher.GeneratedDispatcherTelemetryRoute>");
+        source.AppendLine("            new global::System.Collections.Generic.Dictionary<global::System.Type, global::Dispatcher.DispatcherTelemetryRoute>");
         source.AppendLine("            {");
         foreach (var handler in handlers)
         {
             var messageType = handler.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
             source.Append("                [typeof(").Append(messageType)
-                .Append(")] = new global::Dispatcher.GeneratedDispatcherTelemetryRoute(activitySource, operationDuration, typeof(")
+                .Append(")] = new global::Dispatcher.DispatcherTelemetryRoute(activitySource, operationDuration, typeof(")
                 .Append(messageType).Append("), \"").Append(operationName).Append("\", \"")
                 .Append(messageKind).AppendLine("\"),");
         }
