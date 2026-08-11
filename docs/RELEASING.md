@@ -34,6 +34,5 @@ The tag must use the `v<version>` form and exactly match the package version. Th
 
 - `Send0xx.Dispatcher.Abstractions`
 - `Send0xx.Dispatcher`
-- `Send0xx.Dispatcher.DependencyInjection.Extensions`
 - `Send0xx.Dispatcher.DependencyInjection`
 - `Send0xx.Dispatcher.SourceGeneration`

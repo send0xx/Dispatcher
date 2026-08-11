@@ -3,7 +3,7 @@
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <PackageId>Send0xx.Dispatcher</PackageId>
     <Title>Dispatcher - CQRS for .NET</Title>
-    <Description>Shared CQRS handler registration metadata and configuration for Dispatcher implementations.</Description>
+    <Description>Shared CQRS handler registration metadata, configuration, and typed Microsoft DI registration extensions for Dispatcher implementations.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <IsPackable>true</IsPackable>

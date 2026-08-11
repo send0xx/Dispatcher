@@ -15,7 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
-    <ProjectReference Include="../../src/Dispatcher.DependencyInjection.Extensions/Dispatcher.DependencyInjection.Extensions.csproj" />
+    <ProjectReference Include="../../src/Dispatcher/Dispatcher.csproj" />
     <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
   </ItemGroup>
 </Project>

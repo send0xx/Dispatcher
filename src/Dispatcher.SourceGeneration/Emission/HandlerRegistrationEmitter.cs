@@ -37,7 +37,7 @@ internal static class HandlerRegistrationEmitter
 
         foreach (var handler in result.LocalHandlers)
         {
-            source.Append("        global::Dispatcher.DependencyInjection.Extensions.TypedDispatcherServiceCollectionExtensions.")
+            source.Append("        global::Dispatcher.TypedDispatcherServiceCollectionExtensions.")
                 .Append(handler.MethodName)
                 .Append('<')
                 .Append(handler.TypeArguments)

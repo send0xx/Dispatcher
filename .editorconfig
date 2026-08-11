@@ -374,6 +374,6 @@ dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
 # Dispatcher libraries intentionally use a flat public namespace.
-[src/{Dispatcher.Abstractions,Dispatcher}/**/*.cs]
+[src/{Dispatcher.Abstractions,Dispatcher,Dispatcher.DependencyInjection}/**/*.cs]
 dotnet_diagnostic.IDE0130.severity = none
 resharper_check_namespace_highlighting = none

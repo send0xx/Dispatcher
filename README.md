@@ -71,7 +71,7 @@ builder.Services.AddDispatcherHandlers(
 Typed registration methods use the same shape:
 
 ```csharp
-using Dispatcher.DependencyInjection.Extensions;
+using Dispatcher;
 
 builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>(options =>
     options.ServiceLifetime = ServiceLifetime.Singleton);
@@ -346,9 +346,16 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 
 ## Packages
 
+The implementation packages have parallel dependency paths:
+
+```text
+Send0xx.Dispatcher.SourceGeneration    ─┐
+                                        ├─> Send0xx.Dispatcher ─> Send0xx.Dispatcher.Abstractions
+Send0xx.Dispatcher.DependencyInjection ─┘
+```
+
 - `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
-- `Send0xx.Dispatcher` contains shared handler-registration metadata and Dispatcher and telemetry options. It references Microsoft DI abstractions because `DispatcherOptions.ServiceLifetime` uses `ServiceLifetime`.
-- `Send0xx.Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
+- `Send0xx.Dispatcher` contains shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options. It references Microsoft DI abstractions because these public APIs use Microsoft DI types.
 - `Send0xx.Dispatcher.DependencyInjection` contains the reflection-based Dispatcher implementation, registry, wrappers, handler scanning, pipelines, and telemetry runtime.
 - `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
 

@@ -1,5 +1,5 @@
 using Dispatcher.DependencyInjection;
-using Dispatcher.DependencyInjection.Extensions;
+using Dispatcher;
 using Dispatcher.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

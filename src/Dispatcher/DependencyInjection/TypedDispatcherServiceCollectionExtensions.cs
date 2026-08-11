@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dispatcher.DependencyInjection.Extensions;
+namespace Dispatcher;
 
 /// <summary>
 /// Provides typed Dispatcher registration methods for Microsoft dependency injection.

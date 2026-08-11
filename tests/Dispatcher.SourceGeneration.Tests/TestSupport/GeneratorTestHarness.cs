@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Dispatcher.DependencyInjection.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
@@ -84,7 +83,7 @@ internal static class GeneratorTestHarness
         if (includeRuntimeIntegration)
         {
             yield return MetadataReference.CreateFromFile(
-                typeof(TypedDispatcherServiceCollectionExtensions).Assembly.Location);
+                typeof(DispatcherOptions).Assembly.Location);
         }
     }
 
