@@ -160,7 +160,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("AddQueryHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("AddCommandHandler<", generated, StringComparison.Ordinal);
         Assert.Contains("AddNotificationHandler<", generated, StringComparison.Ordinal);
-        Assert.Contains("Dispatcher.TypedDispatcherServiceCollectionExtensions", generated, StringComparison.Ordinal);
+        Assert.Contains("Dispatcher.ServiceCollectionExtensions", generated, StringComparison.Ordinal);
         Assert.Contains(
             "Action<global::Dispatcher.DispatcherOptions> configure",
             generated,

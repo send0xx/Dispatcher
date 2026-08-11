@@ -6,7 +6,7 @@ namespace Dispatcher;
 /// <summary>
 /// Provides typed Dispatcher registration methods for Microsoft dependency injection.
 /// </summary>
-public static class TypedDispatcherServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers a query handler.
