@@ -8,7 +8,7 @@ namespace Dispatcher.DependencyInjection;
 /// <summary>
 /// Provides Microsoft dependency injection registration methods for Dispatcher.
 /// </summary>
-public static class DispatcherServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers Dispatcher services. Handlers must be registered separately.
