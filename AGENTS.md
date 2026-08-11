@@ -9,9 +9,9 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 ## Solution structure
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
-- `src/Dispatcher`: container-neutral runtime, frozen handler registry, wrappers, and exceptions.
+- `src/Dispatcher`: shared handler-registration metadata and Dispatcher and telemetry options.
 - `src/Dispatcher.DependencyInjection.Extensions`: typed, reflection-free Microsoft DI registrations.
-- `src/Dispatcher.DependencyInjection`: reflection-based Microsoft DI dispatcher registration and handler scanning.
+- `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime, registration, and handler scanning.
 - `src/Dispatcher.SourceGeneration`: generated dispatcher implementation and handler registration.
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
@@ -45,7 +45,10 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI registrations of `IPipelineBehavior<,>` must continue to work.
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
-- The runtime package must not depend on Microsoft.Extensions.DependencyInjection. Its direct use of the BCL `IServiceProvider` is intentional.
+- `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
+- Public handler registrations in `src/Dispatcher` are metadata only. They must not reference reflection wrapper factories.
+- Reflection wrapper factories and executable wrappers belong to `src/Dispatcher.DependencyInjection` and are constructed from registration metadata when the singleton registry is created.
+- The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
 - Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
 ## Pipeline implementation
@@ -75,7 +78,7 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Duplicate query or command handlers fail when the singleton registry is created.
 - Notifications allow zero or more handlers and execute sequentially in registration order.
 - Dispatch uses exact concrete message types; polymorphic routing is not currently supported.
-- Reflection is limited to startup registration. Dispatch must not use reflection.
+- Reflection, including closed wrapper construction from registration metadata, is limited to startup. Dispatch must not use reflection.
 
 ## Documentation style
 
@@ -138,6 +141,7 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 ## AOT and source generation
 
 - The current reflection implementation is intentionally not trimming or NativeAOT safe.
+- The source-generated package must not reference the reflection-based `Dispatcher.DependencyInjection` implementation.
 - Preserve the separate `AddDispatcherHandlers` module seam so generated registrations can replace reflection later.
 - Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public command/query contracts unnecessarily.
 - Internal handlers across module assemblies must remain supported.

@@ -272,7 +272,7 @@ and metrics include `dispatcher.operation.name`, `dispatcher.message.type`, and
 
 ## Source generation and Native AOT
 
-`Send0xx.Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch.
+`Send0xx.Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch, and the package does not reference the reflection-based Dispatcher implementation.
 
 In a single-project application, opt in at assembly level and give the generated extension methods unique names:
 
@@ -347,9 +347,9 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
 ## Packages
 
 - `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
-- `Send0xx.Dispatcher` contains the runtime, handler registry, wrappers, exceptions, and shared registration and telemetry options. It references Microsoft DI abstractions because `DispatcherOptions.ServiceLifetime` uses `ServiceLifetime`.
+- `Send0xx.Dispatcher` contains shared handler-registration metadata and Dispatcher and telemetry options. It references Microsoft DI abstractions because `DispatcherOptions.ServiceLifetime` uses `ServiceLifetime`.
 - `Send0xx.Dispatcher.DependencyInjection.Extensions` contains typed, reflection-free Microsoft DI registrations.
-- `Send0xx.Dispatcher.DependencyInjection` contains reflection-based Microsoft DI registration and handler scanning.
+- `Send0xx.Dispatcher.DependencyInjection` contains the reflection-based Dispatcher implementation, registry, wrappers, handler scanning, pipelines, and telemetry runtime.
 - `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
 
 Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. Package IDs use the `Send0xx` prefix. Core APIs remain in the `Dispatcher` namespace, while generator opt-in attributes and generated dispatcher registration extensions use `Dispatcher.SourceGeneration`.

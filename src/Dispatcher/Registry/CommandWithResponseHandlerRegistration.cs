@@ -22,8 +22,6 @@ public sealed record CommandWithResponseHandlerRegistration : HandlerRegistratio
     /// </summary>
     public Type ResponseType { get; }
 
-    internal RequestHandlerWrapperFactory? WrapperFactory { get; init; }
-
     /// <summary>
     /// Creates a result-bearing command handler registration.
     /// </summary>
@@ -34,8 +32,5 @@ public sealed record CommandWithResponseHandlerRegistration : HandlerRegistratio
     public static CommandWithResponseHandlerRegistration Create<TCommand, TResponse, THandler>()
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
-        new(typeof(TCommand), typeof(TResponse), typeof(THandler))
-        {
-            WrapperFactory = new CommandWithResponseHandlerWrapperFactory<TCommand, TResponse>()
-        };
+        new(typeof(TCommand), typeof(TResponse), typeof(THandler));
 }

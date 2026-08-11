@@ -99,6 +99,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("activity.AddException(exception);", dispatcher, StringComparison.Ordinal);
         Assert.Contains("activity.AddEvent(new global::System.Diagnostics.ActivityEvent", dispatcher, StringComparison.Ordinal);
         Assert.Contains("HasQueryHandler(messageType, typeof(TResponse))", dispatcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("CS0436", dispatcher, StringComparison.Ordinal);
 
         var registration = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains(
@@ -106,6 +107,7 @@ public sealed class DispatcherGeneratorOutputTests
                 StringComparison.Ordinal))).ToString();
         Assert.Contains("telemetry.EnableMetrics || telemetry.EnableTracing", registration, StringComparison.Ordinal);
         Assert.Contains("typeof(global::Dispatcher.TelemetryDispatcher)", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("CS0436", registration, StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }

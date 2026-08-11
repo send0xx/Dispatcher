@@ -15,6 +15,8 @@ public static class DispatcherServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
     public static IServiceCollection AddDispatcher(this IServiceCollection services) =>
         AddDispatcher(services, static _ => { });
 
@@ -24,6 +26,8 @@ public static class DispatcherServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configure">The options used to configure Dispatcher services.</param>
     /// <returns>The service collection for chaining.</returns>
+    [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
     public static IServiceCollection AddDispatcher(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
@@ -53,14 +57,14 @@ public static class DispatcherServiceCollectionExtensions
             };
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
             services.TryAddSingleton(static provider =>
-                DispatcherRegistry.CreatePrepared(
+                DispatcherRegistry.Create(
                     provider.GetServices<HandlerRegistration>(),
                     provider.GetRequiredService<DispatcherTelemetry>()));
         }
         else
         {
             services.TryAddSingleton(static provider =>
-                DispatcherRegistry.CreatePrepared(provider.GetServices<HandlerRegistration>()));
+                DispatcherRegistry.Create(provider.GetServices<HandlerRegistration>()));
         }
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),

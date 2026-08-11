@@ -9,6 +9,30 @@ namespace Dispatcher.Tests.Registry;
 public sealed class DispatcherRegistryTests
 {
     [Fact]
+    public void Reflection_runtime_types_share_the_dependency_injection_assembly()
+    {
+        Assert.Same(typeof(global::Dispatcher.Dispatcher).Assembly, typeof(DispatcherRegistry).Assembly);
+        Assert.NotSame(typeof(HandlerRegistration).Assembly, typeof(DispatcherRegistry).Assembly);
+    }
+
+    [Fact]
+    public void Handler_registrations_contain_metadata_only()
+    {
+        Type[] registrationTypes =
+        [
+            typeof(QueryHandlerRegistration),
+            typeof(CommandWithResponseHandlerRegistration),
+            typeof(CommandHandlerRegistration),
+            typeof(NotificationHandlerRegistration)
+        ];
+
+        Assert.All(registrationTypes, registrationType =>
+            Assert.DoesNotContain(
+                registrationType.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic),
+                property => property.Name.Contains("Wrapper", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public void Duplicate_request_handlers_are_rejected_when_registry_is_built()
     {
         var registrations = new[]

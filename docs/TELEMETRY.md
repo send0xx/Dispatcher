@@ -123,21 +123,30 @@ A hybrid design—request behavior plus a separate notification wrapper—would 
 
 ## Runtime implementation shape
 
-The reflection/runtime path decorates prepared handler wrappers only when telemetry is enabled:
+The reflection implementation decorates handler wrappers only when telemetry is enabled:
 
 - Query wrapper around `QueryHandlerWrapper<TResponse>`.
 - Result-bearing command wrapper around `CommandWithResponseHandlerWrapper<TResponse>`.
 - Resultless command wrapper around `CommandHandlerWrapperBase`.
 - Notification wrapper around `NotificationHandlerWrapper`.
 
-Typed handler registrations store a wrapper factory. At registry creation, each factory
-creates either the existing plain wrapper or a telemetry decorator around that wrapper.
-This keeps telemetry selection out of the handler wrapper API: wrappers continue to
-handle dispatch only and do not expose a `WithTelemetry`-style configuration method.
-Typed registration remains reflection-free; the reflection registration path constructs
-the closed factory type once during startup.
+Handler registrations in `Send0xx.Dispatcher` contain only public message, response, and
+handler type metadata. When the singleton registry is created, the reflection-based
+`Send0xx.Dispatcher.DependencyInjection` implementation uses that metadata to construct
+its internal closed wrapper factories. Each factory creates either the existing plain
+wrapper or a telemetry decorator around that wrapper. This startup reflection is confined
+to the reflection implementation; dispatch remains reflection-free. The generated
+implementation consumes compile-time routes instead and never constructs these wrappers.
 
-The singleton registry may retain the telemetry recorder because the recorder contains only singleton `ActivitySource`, `Meter`, and instruments. It must not retain a scoped provider, handler, behavior, or executable pipeline.
+Keeping wrappers and factories internal to `Send0xx.Dispatcher.DependencyInjection`
+avoids exposing implementation details merely to pass factories across package boundaries.
+It also keeps telemetry selection out of the handler wrapper API: wrappers handle dispatch
+and do not expose a `WithTelemetry`-style configuration method.
+
+The singleton registry retains immutable route instrumentation through its wrappers, while
+the singleton `DispatcherTelemetry` service owns the `ActivitySource`, `Meter`, and
+instruments. Neither may retain a scoped provider, handler, behavior, or executable
+pipeline.
 
 The existing plain wrapper instances remain unchanged and are placed into the frozen dictionaries when telemetry is disabled. This is the key to the zero-cost disabled path and also ensures resolving the public concrete `Dispatcher` cannot bypass instrumentation for routed messages.
 
@@ -237,7 +246,7 @@ The OpenTelemetry semantic-convention guidance recommends defining clear span bo
 | Request behavior plus notification special case | Yes | Yes | Requires special DI ordering | Viable, but duplicates semantics and implementation. |
 | Nullable telemetry field checked in every dispatch | Yes | No | Yes | Reject because disabled dispatch pays a branch/indirection. |
 | Interface-level dispatcher decorator | Yes, including zero handlers | Yes | Yes | Simple, but direct concrete `Dispatcher` resolution can bypass it. |
-| Conditional prepared/generated wrappers | Yes, for routed notifications | Yes | Yes | Recommended. Preserves the concrete runtime dispatcher and current disabled path. |
+| Conditional reflection/generated wrappers | Yes, for routed notifications | Yes | Yes | Recommended. Preserves the concrete runtime dispatcher and current disabled path. |
 
 ## Registration and lifetime rules
 

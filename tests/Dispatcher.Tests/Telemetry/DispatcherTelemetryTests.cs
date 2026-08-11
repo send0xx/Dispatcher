@@ -15,8 +15,9 @@ public sealed class DispatcherTelemetryTests
     {
         var telemetry = new DispatcherOptions().Telemetry;
 
-        Assert.Same(typeof(DispatcherRegistry).Assembly, typeof(DispatcherOptions).Assembly);
-        Assert.Same(typeof(DispatcherRegistry).Assembly, typeof(DispatcherTelemetryOptions).Assembly);
+        Assert.Same(typeof(HandlerRegistration).Assembly, typeof(DispatcherOptions).Assembly);
+        Assert.Same(typeof(HandlerRegistration).Assembly, typeof(DispatcherTelemetryOptions).Assembly);
+        Assert.Same(typeof(DispatcherRegistry).Assembly, typeof(DispatcherTelemetry).Assembly);
         Assert.False(telemetry.EnableMetrics);
         Assert.False(telemetry.EnableTracing);
         Assert.Equal("Dispatcher", telemetry.MeterName);

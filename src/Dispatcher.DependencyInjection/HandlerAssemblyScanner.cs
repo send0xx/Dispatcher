@@ -59,8 +59,7 @@ internal static class HandlerAssemblyScanner
                          .OrderBy(type => type.FullName, StringComparer.Ordinal))
             {
                 services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
-                services.AddSingleton(DispatcherRegistry.PrepareRegistration(
-                    CreateRegistration(serviceType, implementationType)));
+                services.AddSingleton(CreateRegistration(serviceType, implementationType));
             }
         }
     }

@@ -15,8 +15,6 @@ public sealed record NotificationHandlerRegistration : HandlerRegistration
     {
     }
 
-    internal NotificationHandlerWrapperFactory? WrapperFactory { get; init; }
-
     /// <summary>
     /// Creates a notification handler registration.
     /// </summary>
@@ -26,8 +24,5 @@ public sealed record NotificationHandlerRegistration : HandlerRegistration
     public static NotificationHandlerRegistration Create<TNotification, THandler>()
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
-        new(typeof(TNotification), typeof(THandler))
-        {
-            WrapperFactory = new NotificationHandlerWrapperFactory<TNotification>()
-        };
+        new(typeof(TNotification), typeof(THandler));
 }

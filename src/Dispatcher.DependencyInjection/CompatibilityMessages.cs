@@ -2,13 +2,21 @@ namespace Dispatcher.DependencyInjection;
 
 internal static class CompatibilityMessages
 {
+    internal const string DispatcherDynamicCode =
+        "The reflection-based Dispatcher requires runtime generic construction. " +
+        "Use Dispatcher.SourceGeneration for Native AOT applications.";
+
+    internal const string DispatcherTrimming =
+        "The reflection-based Dispatcher is not trimming safe. " +
+        "Use Dispatcher.SourceGeneration for trimmed applications.";
+
     internal const string HandlerDynamicCode =
         "Reflection-based handler discovery requires runtime generic construction. " +
-        "Use typed handler registration for Native AOT applications.";
+        "Use Dispatcher.SourceGeneration for Native AOT applications.";
 
     internal const string HandlerTrimming =
         "Reflection-based handler discovery is not trimming safe. " +
-        "Use typed handler registration for trimmed applications.";
+        "Use Dispatcher.SourceGeneration for trimmed applications.";
 
     internal const string BehaviorDynamicCode =
         "Reflection-based behavior registration is not Native AOT safe. " +
