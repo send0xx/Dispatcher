@@ -63,6 +63,22 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 
 internal sealed record UnhandledNotification : INotification;
 internal sealed record MissingQuery : IQuery<int>;
+internal sealed record FaultingQuery : IQuery<int>;
+
+internal sealed class FaultingQueryHandler : IQueryHandler<FaultingQuery, int>
+{
+    public ValueTask<int> HandleAsync(FaultingQuery query, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("telemetry failure");
+}
+
+internal sealed record CancellingCommand : ICommand;
+
+internal sealed class CancellingCommandHandler : ICommandHandler<CancellingCommand>
+{
+    public ValueTask HandleAsync(CancellingCommand command, CancellationToken cancellationToken) =>
+        ValueTask.FromException(new OperationCanceledException(cancellationToken));
+}
+
 internal sealed class AlternativeGreetingHandler;
 internal interface ITransactional;
 internal sealed record TransactionalQuery : IQuery<string>, ITransactional;

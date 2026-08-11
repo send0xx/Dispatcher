@@ -22,7 +22,7 @@ public sealed record QueryHandlerRegistration : HandlerRegistration
     /// </summary>
     public Type ResponseType { get; }
 
-    internal RequestHandlerWrapper? Wrapper { get; init; }
+    internal RequestHandlerWrapperFactory? WrapperFactory { get; init; }
 
     /// <summary>
     /// Creates a query handler registration.
@@ -36,6 +36,6 @@ public sealed record QueryHandlerRegistration : HandlerRegistration
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
         new(typeof(TQuery), typeof(TResponse), typeof(THandler))
         {
-            Wrapper = new QueryHandlerWrapper<TQuery, TResponse>()
+            WrapperFactory = new QueryHandlerWrapperFactory<TQuery, TResponse>()
         };
 }

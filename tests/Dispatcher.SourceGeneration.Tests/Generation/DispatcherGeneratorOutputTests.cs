@@ -72,6 +72,45 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
+    public void Generates_conditional_telemetry_dispatcher_and_exception_events()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestQuery : IQuery<string>;
+            internal sealed class TestQueryHandler : IQueryHandler<TestQuery, string>
+            {
+                public ValueTask<string> HandleAsync(TestQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("value");
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "internal sealed class TelemetryDispatcher",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains("GeneratedDispatcherTelemetry", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("dispatcher.operation.duration", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("activity.AddException(exception);", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("activity.AddEvent(new global::System.Diagnostics.ActivityEvent", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("HasQueryHandler(messageType, typeof(TResponse))", dispatcher, StringComparison.Ordinal);
+
+        var registration = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "public static class DispatcherServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains("telemetry.EnableMetrics || telemetry.EnableTracing", registration, StringComparison.Ordinal);
+        Assert.Contains("typeof(global::Dispatcher.TelemetryDispatcher)", registration, StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
     public void Generates_typed_registrations_for_every_handler_shape()
     {
         const string source = """

@@ -42,6 +42,11 @@ public sealed class DispatcherRegistry
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     /// <exception cref="InvalidOperationException">A registration does not contain the required dispatch metadata.</exception>
     public static DispatcherRegistry CreatePrepared(IEnumerable<HandlerRegistration> registrations)
+        => CreatePrepared(registrations, telemetry: null);
+
+    internal static DispatcherRegistry CreatePrepared(
+        IEnumerable<HandlerRegistration> registrations,
+        DispatcherTelemetry? telemetry)
     {
         ArgumentNullException.ThrowIfNull(registrations);
 
@@ -55,19 +60,20 @@ public sealed class DispatcherRegistry
             switch (registration)
             {
                 case NotificationHandlerRegistration notification:
+                    var notificationFactory = notification.WrapperFactory ??
+                        throw MissingPreparedWrapper(notification.MessageType);
                     notifications.TryAdd(
                         notification.MessageType,
-                        notification.Wrapper ??
-                        throw MissingPreparedWrapper(notification.MessageType));
+                        notificationFactory.Create(telemetry));
                     break;
                 case QueryHandlerRegistration query:
-                    AddRequest(requests, query, query.Wrapper);
+                    AddRequest(requests, query, query.WrapperFactory, telemetry);
                     break;
                 case CommandWithResponseHandlerRegistration command:
-                    AddRequest(requests, command, command.Wrapper);
+                    AddRequest(requests, command, command.WrapperFactory, telemetry);
                     break;
                 case CommandHandlerRegistration command:
-                    AddRequest(requests, command, command.Wrapper);
+                    AddRequest(requests, command, command.WrapperFactory, telemetry);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -95,34 +101,34 @@ public sealed class DispatcherRegistry
 
         return registration switch
         {
-            QueryHandlerRegistration { Wrapper: not null } query => query,
+            QueryHandlerRegistration { WrapperFactory: not null } query => query,
             QueryHandlerRegistration query => query with
             {
-                Wrapper = (RequestHandlerWrapper)CreateWrapper(
-                    typeof(QueryHandlerWrapper<,>),
+                WrapperFactory = (RequestHandlerWrapperFactory)CreateWrapperFactory(
+                    typeof(QueryHandlerWrapperFactory<,>),
                     query.MessageType,
                     query.ResponseType)
             },
-            CommandWithResponseHandlerRegistration { Wrapper: not null } command => command,
+            CommandWithResponseHandlerRegistration { WrapperFactory: not null } command => command,
             CommandWithResponseHandlerRegistration command => command with
             {
-                Wrapper = (RequestHandlerWrapper)CreateWrapper(
-                    typeof(CommandWithResponseHandlerWrapper<,>),
+                WrapperFactory = (RequestHandlerWrapperFactory)CreateWrapperFactory(
+                    typeof(CommandWithResponseHandlerWrapperFactory<,>),
                     command.MessageType,
                     command.ResponseType)
             },
-            CommandHandlerRegistration { Wrapper: not null } command => command,
+            CommandHandlerRegistration { WrapperFactory: not null } command => command,
             CommandHandlerRegistration command => command with
             {
-                Wrapper = (RequestHandlerWrapper)CreateWrapper(
-                    typeof(CommandHandlerWrapper<>),
+                WrapperFactory = (RequestHandlerWrapperFactory)CreateWrapperFactory(
+                    typeof(CommandHandlerWrapperFactory<>),
                     command.MessageType)
             },
-            NotificationHandlerRegistration { Wrapper: not null } notification => notification,
+            NotificationHandlerRegistration { WrapperFactory: not null } notification => notification,
             NotificationHandlerRegistration notification => notification with
             {
-                Wrapper = (NotificationHandlerWrapper)CreateWrapper(
-                    typeof(NotificationHandlerWrapper<>),
+                WrapperFactory = (NotificationHandlerWrapperFactory)CreateWrapperFactory(
+                    typeof(NotificationHandlerWrapperFactory<>),
                     notification.MessageType)
             },
             _ => throw new ArgumentOutOfRangeException(
@@ -135,10 +141,11 @@ public sealed class DispatcherRegistry
     private static void AddRequest(
         Dictionary<Type, (RequestHandlerWrapper Wrapper, Type HandlerType)> requests,
         HandlerRegistration registration,
-        RequestHandlerWrapper? wrapper)
+        RequestHandlerWrapperFactory? wrapperFactory,
+        DispatcherTelemetry? telemetry)
     {
-        var preparedWrapper = wrapper ??
-            throw MissingPreparedWrapper(registration.MessageType);
+        var preparedWrapper = (wrapperFactory ??
+            throw MissingPreparedWrapper(registration.MessageType)).Create(telemetry);
 
         if (requests.TryAdd(registration.MessageType, (preparedWrapper, registration.HandlerType)))
         {
@@ -154,8 +161,8 @@ public sealed class DispatcherRegistry
 
     [RequiresDynamicCode("Creating wrappers from runtime handler metadata requires dynamic generic construction.")]
     [RequiresUnreferencedCode("Creating wrappers from runtime handler metadata is not trimming safe.")]
-    private static object CreateWrapper(Type wrapperType, params Type[] genericArguments) =>
-        Activator.CreateInstance(wrapperType.MakeGenericType(genericArguments))!;
+    private static object CreateWrapperFactory(Type factoryType, params Type[] genericArguments) =>
+        Activator.CreateInstance(factoryType.MakeGenericType(genericArguments))!;
 
     private static InvalidOperationException MissingPreparedWrapper(Type messageType) =>
         new($"Registration for '{messageType.FullName}' was not created by a typed registration method.");

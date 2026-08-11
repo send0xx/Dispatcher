@@ -46,7 +46,15 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("    }");
         AppendDispatcherMethods(source, generatedTypeName);
         AppendCoreMethods(source);
+        AppendRouteAvailabilityMethods(source);
         source.AppendLine("}");
+        GeneratedTelemetryEmitter.Append(
+            source,
+            generatedTypeName,
+            queries,
+            responseCommands,
+            commands,
+            notifications);
         context.AddSource(className + ".g.cs", SourceText.From(source.ToString(), Encoding.UTF8));
 
         const string extensionsName = "DispatcherServiceCollectionExtensions";
@@ -93,10 +101,52 @@ internal static class GeneratedDispatcherEmitter
         registration.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(typeof(")
             .Append(generatedTypeName).Append("), typeof(").Append(generatedTypeName)
             .AppendLine("), options.ServiceLifetime));");
-        AppendDispatcherContractRegistration(registration, "global::Dispatcher.IDispatcher", generatedTypeName);
-        AppendDispatcherContractRegistration(registration, "global::Dispatcher.IQueryDispatcher", generatedTypeName);
-        AppendDispatcherContractRegistration(registration, "global::Dispatcher.ICommandDispatcher", generatedTypeName);
-        AppendDispatcherContractRegistration(registration, "global::Dispatcher.INotificationDispatcher", generatedTypeName);
+        registration.AppendLine("        var telemetry = options.Telemetry;");
+        registration.AppendLine("        if (telemetry.EnableMetrics || telemetry.EnableTracing)");
+        registration.AppendLine("        {");
+        registration.AppendLine("            var enableMetrics = telemetry.EnableMetrics;");
+        registration.AppendLine("            var enableTracing = telemetry.EnableTracing;");
+        registration.AppendLine("            var meterName = telemetry.MeterName;");
+        registration.AppendLine("            var activitySourceName = telemetry.ActivitySourceName;");
+        registration.AppendLine("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
+        registration.AppendLine("                typeof(global::Dispatcher.GeneratedDispatcherTelemetry),");
+        registration.AppendLine("                _ => new global::Dispatcher.GeneratedDispatcherTelemetry(");
+        registration.AppendLine("                    enableMetrics,");
+        registration.AppendLine("                    enableTracing,");
+        registration.AppendLine("                    meterName,");
+        registration.AppendLine("                    activitySourceName)));");
+        registration.AppendLine("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(");
+        registration.AppendLine("                typeof(global::Dispatcher.TelemetryDispatcher),");
+        registration.AppendLine("                typeof(global::Dispatcher.TelemetryDispatcher),");
+        registration.AppendLine("                options.ServiceLifetime));");
+        AppendDispatcherContractRegistration(
+            registration,
+            "global::Dispatcher.IDispatcher",
+            "global::Dispatcher.TelemetryDispatcher",
+            12);
+        AppendDispatcherContractRegistration(
+            registration,
+            "global::Dispatcher.IQueryDispatcher",
+            "global::Dispatcher.TelemetryDispatcher",
+            12);
+        AppendDispatcherContractRegistration(
+            registration,
+            "global::Dispatcher.ICommandDispatcher",
+            "global::Dispatcher.TelemetryDispatcher",
+            12);
+        AppendDispatcherContractRegistration(
+            registration,
+            "global::Dispatcher.INotificationDispatcher",
+            "global::Dispatcher.TelemetryDispatcher",
+            12);
+        registration.AppendLine("        }");
+        registration.AppendLine("        else");
+        registration.AppendLine("        {");
+        AppendDispatcherContractRegistration(registration, "global::Dispatcher.IDispatcher", generatedTypeName, 12);
+        AppendDispatcherContractRegistration(registration, "global::Dispatcher.IQueryDispatcher", generatedTypeName, 12);
+        AppendDispatcherContractRegistration(registration, "global::Dispatcher.ICommandDispatcher", generatedTypeName, 12);
+        AppendDispatcherContractRegistration(registration, "global::Dispatcher.INotificationDispatcher", generatedTypeName, 12);
+        registration.AppendLine("        }");
         registration.AppendLine();
         registration.AppendLine("        return services;");
         registration.AppendLine("    }");
@@ -362,6 +412,22 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("    }");
     }
 
+    private static void AppendRouteAvailabilityMethods(StringBuilder source)
+    {
+        source.AppendLine();
+        source.AppendLine("    internal static bool HasQueryHandler(global::System.Type messageType, global::System.Type responseType) =>");
+        source.AppendLine("        QueryHandlers.TryGetValue(messageType, out var entry) && entry.ResponseType == responseType;");
+        source.AppendLine();
+        source.AppendLine("    internal static bool HasResponseCommandHandler(global::System.Type messageType, global::System.Type responseType) =>");
+        source.AppendLine("        ResponseCommandHandlers.TryGetValue(messageType, out var entry) && entry.ResponseType == responseType;");
+        source.AppendLine();
+        source.AppendLine("    internal static bool HasCommandHandler(global::System.Type messageType) =>");
+        source.AppendLine("        CommandHandlers.ContainsKey(messageType);");
+        source.AppendLine();
+        source.AppendLine("    internal static bool HasNotificationHandlers(global::System.Type messageType) =>");
+        source.AppendLine("        NotificationHandlers.ContainsKey(messageType);");
+    }
+
     private static void AppendPipelineBody(StringBuilder source, string requestName, string handlerInvocation)
     {
         source.Append("        global::Dispatcher.RequestHandlerDelegate<TResponse> pipeline = token => ")
@@ -380,12 +446,14 @@ internal static class GeneratedDispatcherEmitter
     private static void AppendDispatcherContractRegistration(
         StringBuilder source,
         string contractType,
-        string generatedTypeName)
+        string generatedTypeName,
+        int indentation = 8)
     {
-        source.Append("        services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(")
+        var indent = new string(' ', indentation);
+        source.Append(indent).Append("services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(")
             .Append(contractType).AppendLine("), static provider =>");
-        source.Append("            provider.GetService(typeof(").Append(generatedTypeName).AppendLine(")) ??");
-        source.Append("            throw new global::System.InvalidOperationException(\"Service '")
+        source.Append(indent).Append("    provider.GetService(typeof(").Append(generatedTypeName).AppendLine(")) ??");
+        source.Append(indent).Append("    throw new global::System.InvalidOperationException(\"Service '")
             .Append(generatedTypeName).AppendLine("' is not registered.\"), options.ServiceLifetime));");
     }
 }

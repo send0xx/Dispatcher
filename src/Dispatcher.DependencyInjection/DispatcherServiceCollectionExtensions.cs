@@ -41,8 +41,28 @@ public static class DispatcherServiceCollectionExtensions
                 "A singleton dispatcher would capture the root service provider.");
         }
 
-        services.TryAddSingleton(static provider =>
-            DispatcherRegistry.CreatePrepared(provider.GetServices<HandlerRegistration>()));
+        var telemetryOptions = options.Telemetry;
+        if (telemetryOptions.EnableMetrics || telemetryOptions.EnableTracing)
+        {
+            var enableMetrics = telemetryOptions.EnableMetrics;
+            var enableTracing = telemetryOptions.EnableTracing;
+            var meterName = telemetryOptions.MeterName;
+            var activitySourceName = telemetryOptions.ActivitySourceName;
+            services.TryAddSingleton(_ => new DispatcherTelemetry(
+                enableMetrics,
+                enableTracing,
+                meterName,
+                activitySourceName));
+            services.TryAddSingleton(static provider =>
+                DispatcherRegistry.CreatePrepared(
+                    provider.GetServices<HandlerRegistration>(),
+                    provider.GetRequiredService<DispatcherTelemetry>()));
+        }
+        else
+        {
+            services.TryAddSingleton(static provider =>
+                DispatcherRegistry.CreatePrepared(provider.GetServices<HandlerRegistration>()));
+        }
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),
             typeof(Dispatcher),

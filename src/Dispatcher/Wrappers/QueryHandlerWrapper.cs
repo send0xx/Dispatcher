@@ -46,3 +46,50 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : QueryHandlerWrapp
         return behaviors[0].HandleAsync(query, pipeline, cancellationToken);
     }
 }
+
+internal sealed class TelemetryQueryHandlerWrapper<TResponse>(
+    QueryHandlerWrapper<TResponse> inner,
+    DispatcherTelemetryRoute route) : QueryHandlerWrapper<TResponse>
+{
+    public override ValueTask<TResponse> HandleAsync(
+        IQuery<TResponse> query,
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken)
+    {
+        var telemetryScope = route.Start();
+        try
+        {
+            var response = inner.HandleAsync(query, serviceProvider, cancellationToken);
+            if (!response.IsCompletedSuccessfully)
+            {
+                return Awaited(response, telemetryScope);
+            }
+
+            var result = response.Result;
+            telemetryScope.Complete();
+            return ValueTask.FromResult(result);
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+
+    private static async ValueTask<TResponse> Awaited(
+        ValueTask<TResponse> response,
+        DispatcherTelemetryScope telemetryScope)
+    {
+        try
+        {
+            var result = await response.ConfigureAwait(false);
+            telemetryScope.Complete();
+            return result;
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+}

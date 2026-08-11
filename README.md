@@ -232,6 +232,44 @@ The first registered behavior is the outermost. Behaviors may short-circuit by r
 
 The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and both command shapes. A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain resultless.
 
+## OpenTelemetry
+
+Dispatcher can emit tracing activities and an operation-duration histogram through the
+built-in .NET diagnostics APIs. Both signals are disabled by default, and disabled
+telemetry adds no work to the dispatch path.
+
+Enable either signal through `DispatcherOptions.Telemetry`:
+
+```csharp
+builder.Services.AddDispatcher(options =>
+{
+    options.Telemetry.EnableTracing = true;
+    options.Telemetry.EnableMetrics = true;
+});
+```
+
+The default activity source and meter name is `Dispatcher`. Register those names with
+the application's OpenTelemetry providers:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource("Dispatcher"))
+    .WithMetrics(metrics => metrics.AddMeter("Dispatcher"));
+```
+
+Use `ActivitySourceName` and `MeterName` to choose application-specific names; pass the
+same values to `AddSource` and `AddMeter`. Dispatcher itself does not depend on the
+OpenTelemetry SDK or an exporter.
+
+Telemetry surrounds the complete routed operation, outside user pipeline behaviors and
+around all sequential notification handlers. Missing query or command handlers and
+notifications with no handlers do not emit telemetry. Failures, including cancellation,
+set `error.type`, mark the activity as an error, and add a standard exception event.
+
+The emitted histogram is `dispatcher.operation.duration`, measured in seconds. Traces
+and metrics include `dispatcher.operation.name`, `dispatcher.message.type`, and
+`dispatcher.message.kind`.
+
 ## Source generation and Native AOT
 
 `Send0xx.Dispatcher.SourceGeneration` generates typed handler registrations and a dispatcher implementation. Reflection is not used for registration or dispatch.

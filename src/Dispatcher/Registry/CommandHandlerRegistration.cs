@@ -15,7 +15,7 @@ public sealed record CommandHandlerRegistration : HandlerRegistration
     {
     }
 
-    internal RequestHandlerWrapper? Wrapper { get; init; }
+    internal RequestHandlerWrapperFactory? WrapperFactory { get; init; }
 
     /// <summary>
     /// Creates a resultless command handler registration.
@@ -28,6 +28,6 @@ public sealed record CommandHandlerRegistration : HandlerRegistration
         where THandler : class, ICommandHandler<TCommand> =>
         new(typeof(TCommand), typeof(THandler))
         {
-            Wrapper = new CommandHandlerWrapper<TCommand>()
+            WrapperFactory = new CommandHandlerWrapperFactory<TCommand>()
         };
 }

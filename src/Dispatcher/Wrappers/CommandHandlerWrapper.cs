@@ -97,3 +97,96 @@ internal sealed class CommandHandlerWrapper<TCommand> : CommandHandlerWrapperBas
         await behaviors[0].HandleAsync(command, pipeline, cancellationToken).ConfigureAwait(false);
     }
 }
+
+internal sealed class TelemetryCommandWithResponseHandlerWrapper<TResponse>(
+    CommandWithResponseHandlerWrapper<TResponse> inner,
+    DispatcherTelemetryRoute route) : CommandWithResponseHandlerWrapper<TResponse>
+{
+    public override ValueTask<TResponse> HandleAsync(
+        ICommand<TResponse> command,
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken)
+    {
+        var telemetryScope = route.Start();
+        try
+        {
+            var response = inner.HandleAsync(command, serviceProvider, cancellationToken);
+            if (!response.IsCompletedSuccessfully)
+            {
+                return Awaited(response, telemetryScope);
+            }
+
+            var result = response.Result;
+            telemetryScope.Complete();
+            return ValueTask.FromResult(result);
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+
+    private static async ValueTask<TResponse> Awaited(
+        ValueTask<TResponse> response,
+        DispatcherTelemetryScope telemetryScope)
+    {
+        try
+        {
+            var result = await response.ConfigureAwait(false);
+            telemetryScope.Complete();
+            return result;
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+}
+
+internal sealed class TelemetryCommandHandlerWrapper(
+    CommandHandlerWrapperBase inner,
+    DispatcherTelemetryRoute route) : CommandHandlerWrapperBase
+{
+    public override ValueTask HandleAsync(
+        ICommand command,
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken)
+    {
+        var telemetryScope = route.Start();
+        try
+        {
+            var response = inner.HandleAsync(command, serviceProvider, cancellationToken);
+            if (!response.IsCompletedSuccessfully)
+            {
+                return Awaited(response, telemetryScope);
+            }
+
+            response.GetAwaiter().GetResult();
+            telemetryScope.Complete();
+            return ValueTask.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+
+    private static async ValueTask Awaited(
+        ValueTask response,
+        DispatcherTelemetryScope telemetryScope)
+    {
+        try
+        {
+            await response.ConfigureAwait(false);
+            telemetryScope.Complete();
+        }
+        catch (Exception exception)
+        {
+            telemetryScope.Fail(exception);
+            throw;
+        }
+    }
+}

@@ -22,7 +22,7 @@ public sealed record CommandWithResponseHandlerRegistration : HandlerRegistratio
     /// </summary>
     public Type ResponseType { get; }
 
-    internal RequestHandlerWrapper? Wrapper { get; init; }
+    internal RequestHandlerWrapperFactory? WrapperFactory { get; init; }
 
     /// <summary>
     /// Creates a result-bearing command handler registration.
@@ -36,6 +36,6 @@ public sealed record CommandWithResponseHandlerRegistration : HandlerRegistratio
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
         new(typeof(TCommand), typeof(TResponse), typeof(THandler))
         {
-            Wrapper = new CommandWithResponseHandlerWrapper<TCommand, TResponse>()
+            WrapperFactory = new CommandWithResponseHandlerWrapperFactory<TCommand, TResponse>()
         };
 }
