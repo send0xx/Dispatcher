@@ -75,6 +75,54 @@ public sealed class GeneratedTelemetryTests
     }
 
     [Fact]
+    public async Task Dispatches_derived_resultless_command_to_base_handler()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new GeneratedDerivedResultlessCommand("value"));
+
+        Assert.Equal(
+            ["base-resultless-command"],
+            scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
+
+    [Fact]
+    public async Task Polymorphic_route_uses_pipeline_behavior_for_handled_base_type()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher()
+            .AddPipelineBehavior(typeof(GeneratedRecordingBehavior<,>));
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GeneratedDerivedQuery("Ada"));
+
+        Assert.Equal("Base hello, Ada", result);
+        Assert.Equal(
+            ["behavior-before-GeneratedBaseQuery", "base-query", "behavior-after-GeneratedBaseQuery"],
+            scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
+
+    [Fact]
     public async Task Exact_handlers_take_precedence_over_base_handlers()
     {
         var services = new ServiceCollection();
@@ -158,6 +206,37 @@ public sealed class GeneratedBaseCommandHandler(GeneratedTestState state)
     {
         state.Events.Add("base-command");
         return ValueTask.FromResult(command.Left + command.Right);
+    }
+}
+
+public abstract record GeneratedBaseResultlessCommand(string Value) : ICommand;
+public sealed record GeneratedDerivedResultlessCommand(string Value) : GeneratedBaseResultlessCommand(Value);
+
+public sealed class GeneratedBaseResultlessCommandHandler(GeneratedTestState state)
+    : ICommandHandler<GeneratedBaseResultlessCommand>
+{
+    public ValueTask HandleAsync(
+        GeneratedBaseResultlessCommand command,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("base-resultless-command");
+        return ValueTask.CompletedTask;
+    }
+}
+
+public sealed class GeneratedRecordingBehavior<TRequest, TResponse>(GeneratedTestState state)
+    : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest
+{
+    public async ValueTask<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add($"behavior-before-{typeof(TRequest).Name}");
+        var result = await next(cancellationToken);
+        state.Events.Add($"behavior-after-{typeof(TRequest).Name}");
+        return result;
     }
 }
 
