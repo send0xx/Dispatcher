@@ -76,6 +76,63 @@ public sealed class DispatcherGeneratorModularityTests
     }
 
     [Fact]
+    public void Host_dispatcher_discovers_routes_from_a_shared_contracts_assembly()
+    {
+        var contracts = GeneratorTestHarness.CompileModule(
+            """
+            using Dispatcher;
+            namespace Contracts;
+            public sealed record SharedQuery : IQuery<string>;
+            public abstract record BaseQuery(string Value) : IQuery<string>;
+            public sealed record DerivedQuery(string Value) : BaseQuery(Value);
+            """,
+            "Contracts");
+        var handlers = GeneratorTestHarness.CompileModule(
+            """
+            using Contracts;
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddSharedHandlers")]
+            internal sealed class SharedQueryHandler : IQueryHandler<SharedQuery, string>
+            {
+                public ValueTask<string> HandleAsync(SharedQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("shared");
+            }
+            internal sealed class BaseQueryHandler : IQueryHandler<BaseQuery, string>
+            {
+                public ValueTask<string> HandleAsync(BaseQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult(query.Value);
+            }
+            """,
+            "Shared.Handlers",
+            [contracts]);
+
+        var result = GeneratorTestHarness.Run(
+            """
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddDispatcher")]
+            """,
+            additionalReferences: [contracts, handlers],
+            assemblyName: "Shared.Host");
+
+        AssertNoErrors(result);
+        var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "[typeof(global::Contracts.SharedQuery)] = (typeof(string)",
+            dispatcher,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "[typeof(global::Contracts.DerivedQuery)] = (typeof(string)",
+            dispatcher,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "QueryCore<global::Contracts.BaseQuery, string>((global::Contracts.BaseQuery)message",
+            dispatcher,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Reports_duplicate_request_handlers_across_modules()
     {
         const string contract = """

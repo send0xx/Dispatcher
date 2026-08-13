@@ -1,4 +1,4 @@
-using Dispatcher.NativeAotHostSample.Handlers;
+using Dispatcher.NativeAotHostSample.Contracts;
 using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcherHandlers("AddAuditHandlers")]
@@ -25,10 +25,10 @@ internal sealed class GetAuditCountQueryHandler(AuditState state)
 }
 
 internal sealed class AuditMessageAddedHandler(AuditState state)
-    : INotificationHandler<MessageAdded>
+    : INotificationHandler<MessageEvent>
 {
     public ValueTask HandleAsync(
-        MessageAdded notification,
+        MessageEvent notification,
         CancellationToken cancellationToken)
     {
         state.Record();

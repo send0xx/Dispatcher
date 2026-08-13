@@ -193,6 +193,7 @@ internal static class DispatcherAnalyzer
             : CreateDispatchRoutes(
                 compilation,
                 allTypes,
+                orderedDispatchHandlers,
                 routeSelector,
                 diagnostics,
                 cancellationToken);
@@ -212,6 +213,7 @@ internal static class DispatcherAnalyzer
     private static ImmutableArray<DispatchRouteModel> CreateDispatchRoutes(
         Compilation compilation,
         ImmutableArray<INamedTypeSymbol> localTypes,
+        ImmutableArray<HandlerModel> handlers,
         HandlerRouteSelector routeSelector,
         ImmutableArray<Diagnostic>.Builder diagnostics,
         CancellationToken cancellationToken)
@@ -225,10 +227,28 @@ internal static class DispatcherAnalyzer
 
         var messageTypes = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
         AddConcreteMessageTypes(localTypes, request, notification, messageTypes);
-        foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols
-                     .Where(HasGeneratedHandlerRegistration))
+        var messageAssemblies = new HashSet<IAssemblySymbol>(SymbolEqualityComparer.Default);
+        messageAssemblies.UnionWith(compilation.SourceModule.ReferencedAssemblySymbols
+            .Where(HasGeneratedHandlerRegistration));
+        foreach (var handledType in handlers
+                     .Select(static handler => handler.MessageType)
+                     .OfType<INamedTypeSymbol>())
+        {
+            messageAssemblies.Add(handledType.ContainingAssembly);
+            if (IsConcreteMessageType(handledType, request, notification))
+            {
+                messageTypes.Add(handledType);
+            }
+        }
+
+        foreach (var assembly in messageAssemblies)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (SymbolEqualityComparer.Default.Equals(assembly, compilation.Assembly))
+            {
+                continue;
+            }
+
             AddConcreteMessageTypes(
                 GetAllTypes(assembly.GlobalNamespace),
                 request,
@@ -268,17 +288,22 @@ internal static class DispatcherAnalyzer
         INamedTypeSymbol notification,
         HashSet<INamedTypeSymbol> messageTypes)
     {
-        foreach (var type in types.Where(type =>
-                     type.Arity == 0 &&
-                     !type.IsAbstract &&
-                     type.TypeKind is TypeKind.Class or TypeKind.Struct &&
-                     type.AllInterfaces.Any(@interface =>
-                         SymbolEqualityComparer.Default.Equals(@interface, request) ||
-                         SymbolEqualityComparer.Default.Equals(@interface, notification))))
+        foreach (var type in types.Where(type => IsConcreteMessageType(type, request, notification)))
         {
             messageTypes.Add(type);
         }
     }
+
+    private static bool IsConcreteMessageType(
+        INamedTypeSymbol type,
+        INamedTypeSymbol request,
+        INamedTypeSymbol notification) =>
+        type.Arity == 0 &&
+        !type.IsAbstract &&
+        type.TypeKind is TypeKind.Class or TypeKind.Struct &&
+        type.AllInterfaces.Any(@interface =>
+            SymbolEqualityComparer.Default.Equals(@interface, request) ||
+            SymbolEqualityComparer.Default.Equals(@interface, notification));
 
     private static ImmutableArray<INamedTypeSymbol> GetOpenPipelineBehaviors(
         ImmutableArray<INamedTypeSymbol> allTypes,

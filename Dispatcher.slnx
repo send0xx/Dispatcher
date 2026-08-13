@@ -6,6 +6,7 @@
     <File Path="docs/RELEASING.md" />
   </Folder>
   <Folder Name="/samples/NativeAot/">
+    <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj" />
@@ -14,6 +15,7 @@
     <File Path="samples/README.md" />
   </Folder>
   <Folder Name="/samples/DependencyInjection/">
+    <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Contracts/Dispatcher.SampleApi.Contracts.csproj" />
     <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
     <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
     <Project Path="samples/DependencyInjection/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj" />
@@ -26,6 +28,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj" />
+    <Project Path="tests/Dispatcher.Tests.Contracts/Dispatcher.Tests.Contracts.csproj" />
+    <Project Path="tests/Dispatcher.Tests.Handlers/Dispatcher.Tests.Handlers.csproj" />
     <Project Path="tests/Dispatcher.Tests/Dispatcher.Tests.csproj" />
   </Folder>
   <Folder Name="/_/">

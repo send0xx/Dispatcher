@@ -214,15 +214,25 @@ commands invoke the single handler for the selected message type, including that
 pipeline behaviors. Unrelated equally specific candidates make the route ambiguous and fail
 during registry creation or source generation.
 
-Reflection assembly scanning and source generation discover concrete route targets automatically.
-When handlers are registered only through the typed registration methods, add message-only metadata
-for each derived concrete type that needs a precomputed fallback route:
+Reflection assembly scanning discovers concrete route targets declared in handler assemblies and in
+the assemblies that declare their handled message types. Source generation uses the same assemblies,
+plus concrete messages declared by the generated host. This supports shared contracts assemblies
+without scanning every application and framework reference.
+
+The reflection implementation cannot discover a derived message declared in an otherwise unrelated
+assembly. When handlers are registered only through the typed registration methods, or when a derived
+type lives outside the discovered assemblies, add message-only metadata for each concrete type that
+needs a precomputed fallback route:
 
 ```csharp
 builder.Services
     .AddQueryHandler<BaseQuery, Result, BaseQueryHandler>()
     .AddSingleton(new MessageRegistration(typeof(DerivedQuery)));
 ```
+
+`MessageRegistration` is consumed by the reflection-based registry only. Source-generated routes must
+be known at build time from the generated host, a generated handler module, or an assembly that declares
+one of the handled message types.
 
 ## Pipeline behaviors
 
@@ -354,13 +364,13 @@ Modular composition is supported, but it is not required. See the Native AOT sam
 
 All samples target .NET 10. Start with the [samples overview](samples/README.md), or go directly to one of these applications:
 
-- [Dependency-injection Minimal API](samples/DependencyInjection/Dispatcher.SampleApi) demonstrates reflection-based handler scanning, queries, commands, notifications, FluentValidation pipeline behavior, and internal handlers in Orders and Stock assemblies. Run it with:
+- [Dependency-injection Minimal API](samples/DependencyInjection/Dispatcher.SampleApi) demonstrates shared contracts, reflection-based handler scanning, polymorphic routes, FluentValidation pipeline behavior, and internal handlers in Orders and Stock assemblies. Run it with:
 
   ```bash
   dotnet run --project samples/DependencyInjection/Dispatcher.SampleApi
   ```
 
-- [Native AOT Minimal API](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates generated handler registration, a host-generated dispatcher, an open generic logging behavior, source-generated JSON metadata, and internal handlers composed from two referenced assemblies. Publish it with:
+- [Native AOT Minimal API](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates shared contracts, generated polymorphic routes, a host-generated dispatcher, an open generic logging behavior, source-generated JSON metadata, and internal handlers composed from two referenced assemblies. Publish it with:
 
   ```bash
   dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample -c Release

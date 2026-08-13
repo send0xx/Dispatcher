@@ -1,6 +1,7 @@
 using Dispatcher;
 using Dispatcher.DependencyInjection;
 using Dispatcher.SampleApi;
+using Dispatcher.SampleApi.Contracts;
 using Dispatcher.SampleApi.Modules.Orders;
 using Dispatcher.SampleApi.Modules.Stock;
 

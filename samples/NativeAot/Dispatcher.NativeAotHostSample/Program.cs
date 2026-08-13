@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Dispatcher;
 using Dispatcher.NativeAotHostSample;
 using Dispatcher.NativeAotHostSample.Audit;
+using Dispatcher.NativeAotHostSample.Contracts;
 using Dispatcher.NativeAotHostSample.Handlers;
 using Dispatcher.SourceGeneration;
 

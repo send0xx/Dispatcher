@@ -4,6 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
     <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="true" />

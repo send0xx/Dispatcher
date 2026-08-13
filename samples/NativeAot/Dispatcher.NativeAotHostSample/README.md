@@ -1,7 +1,8 @@
 # Dispatcher Native AOT host-registration sample
 
-This .NET 10 Minimal API references two modules containing public messages and internal handlers.
-The host owns composition and one generated dispatcher explicitly:
+This .NET 10 Minimal API references a shared contracts assembly and two modules containing internal
+handlers. `GetAuditCountQuery` remains beside its handler to demonstrate that colocated messages are
+supported alongside shared contracts. The host owns composition and one generated dispatcher explicitly:
 
 ```csharp
 builder.Services
@@ -13,11 +14,11 @@ builder.Services
 ```
 
 Each module generates its own handler registrations so its handler implementations remain internal.
-The host generates one dispatcher whose routes include both modules. The reflection implementation
-is not used. The generator closes `LoggingBehavior<,>` over every known query and command without
-runtime generic construction. After adding a message, its command
-handler publishes `MessageAdded`; internal notification handlers in both the Messages and Audit
-modules receive it.
+The host generates one dispatcher whose routes include both modules and their shared contracts. The
+reflection implementation is not used. `ListMessagesQuery` routes to the base `MessagesQuery` handler.
+After adding a message, its command handler publishes `MessageAdded`, which routes to the base
+`MessageEvent` handlers in both the Messages and Audit modules. The generator also closes
+`LoggingBehavior<,>` over every known query and command without runtime generic construction.
 
 Publish a native executable for the current platform:
 

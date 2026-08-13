@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
+    <ProjectReference Include="../Dispatcher.SampleApi.Contracts/Dispatcher.SampleApi.Contracts.csproj" />
     <ProjectReference Include="../../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
     <PackageReference Include="FluentValidation" />
   </ItemGroup>

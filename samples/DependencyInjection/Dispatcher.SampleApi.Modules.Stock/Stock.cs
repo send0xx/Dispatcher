@@ -1,14 +1,8 @@
 using System.Collections.Concurrent;
-using Dispatcher.SampleApi.Modules.Orders;
+using Dispatcher.SampleApi.Contracts;
 using FluentValidation;
 
 namespace Dispatcher.SampleApi.Modules.Stock;
-
-public sealed record StockLevel(string ProductId, int Quantity);
-
-public sealed record GetStockQuery(string ProductId) : IQuery<StockLevel>;
-
-public sealed record SetStockCommand(string ProductId, int Quantity) : ICommand;
 
 internal sealed class SetStockCommandValidator : AbstractValidator<SetStockCommand>
 {
@@ -19,9 +13,9 @@ internal sealed class SetStockCommandValidator : AbstractValidator<SetStockComma
     }
 }
 
-internal sealed class GetStockQueryHandler(StockStore store) : IQueryHandler<GetStockQuery, StockLevel>
+internal sealed class GetStockQueryHandler(StockStore store) : IQueryHandler<StockQuery, StockLevel>
 {
-    public ValueTask<StockLevel> HandleAsync(GetStockQuery query, CancellationToken cancellationToken) =>
+    public ValueTask<StockLevel> HandleAsync(StockQuery query, CancellationToken cancellationToken) =>
         ValueTask.FromResult(new StockLevel(query.ProductId, store.Get(query.ProductId)));
 }
 
@@ -35,9 +29,9 @@ internal sealed class SetStockCommandHandler(StockStore store) : ICommandHandler
 }
 
 internal sealed class ReserveStockWhenOrderCreated(StockStore store)
-    : INotificationHandler<OrderCreated>
+    : INotificationHandler<OrderEvent>
 {
-    public ValueTask HandleAsync(OrderCreated notification, CancellationToken cancellationToken)
+    public ValueTask HandleAsync(OrderEvent notification, CancellationToken cancellationToken)
     {
         store.Remove(notification.ProductId, notification.Quantity);
         return ValueTask.CompletedTask;

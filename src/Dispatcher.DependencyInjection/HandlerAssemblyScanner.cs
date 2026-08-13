@@ -21,6 +21,8 @@ internal static class HandlerAssemblyScanner
         IEnumerable<Assembly> assemblies,
         ServiceLifetime lifetime)
     {
+        var assemblyTypes = new Dictionary<Assembly, Type[]>();
+        var handlerAssemblyTypes = new List<Type[]>();
         foreach (var assembly in assemblies.Distinct())
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -32,8 +34,47 @@ internal static class HandlerAssemblyScanner
 
             var types = GetLoadableTypes(assembly).ToArray();
             services.AddSingleton(new ScannedAssembly(assembly));
-            var handledMessageTypes = RegisterHandlers(services, types, lifetime);
-            RegisterMessages(services, types, handledMessageTypes);
+            assemblyTypes.Add(assembly, types);
+            handlerAssemblyTypes.Add(types);
+        }
+
+        if (assemblyTypes.Count == 0)
+        {
+            return services;
+        }
+
+        var newlyHandledMessageTypes = new HashSet<Type>();
+        foreach (var types in handlerAssemblyTypes)
+        {
+            newlyHandledMessageTypes.UnionWith(RegisterHandlers(services, types, lifetime));
+        }
+
+        var handledMessageTypes = services
+            .Where(static descriptor => descriptor.ServiceType == typeof(HandlerRegistration))
+            .Select(static descriptor => descriptor.ImplementationInstance)
+            .OfType<HandlerRegistration>()
+            .Select(static registration => registration.MessageType)
+            .ToHashSet();
+        var registeredMessageTypes = services
+            .Where(static descriptor => descriptor.ServiceType == typeof(MessageRegistration))
+            .Select(static descriptor => descriptor.ImplementationInstance)
+            .OfType<MessageRegistration>()
+            .Select(static registration => registration.MessageType)
+            .ToHashSet();
+
+        foreach (var messageAssembly in newlyHandledMessageTypes
+                     .Select(static messageType => messageType.Assembly)
+                     .Distinct())
+        {
+            if (!assemblyTypes.ContainsKey(messageAssembly))
+            {
+                assemblyTypes.Add(messageAssembly, GetLoadableTypes(messageAssembly).ToArray());
+            }
+        }
+
+        foreach (var types in assemblyTypes.Values)
+        {
+            RegisterMessages(services, types, handledMessageTypes, registeredMessageTypes);
         }
 
         return services;
@@ -74,18 +115,35 @@ internal static class HandlerAssemblyScanner
     private static void RegisterMessages(
         IServiceCollection services,
         IEnumerable<Type> types,
-        HashSet<Type> handledMessageTypes)
+        IReadOnlySet<Type> handledMessageTypes,
+        ISet<Type> registeredMessageTypes)
     {
         foreach (var messageType in types
                      .Where(type =>
                          type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
                          !handledMessageTypes.Contains(type) &&
+                         !registeredMessageTypes.Contains(type) &&
                          (typeof(IRequest).IsAssignableFrom(type) ||
-                          typeof(INotification).IsAssignableFrom(type)))
+                          typeof(INotification).IsAssignableFrom(type)) &&
+                         HasHandledBaseType(type, handledMessageTypes))
                      .OrderBy(type => type.FullName, StringComparer.Ordinal))
         {
             services.AddSingleton(new MessageRegistration(messageType));
+            registeredMessageTypes.Add(messageType);
         }
+    }
+
+    private static bool HasHandledBaseType(Type messageType, IReadOnlySet<Type> handledMessageTypes)
+    {
+        for (var current = messageType.BaseType; current is not null; current = current.BaseType)
+        {
+            if (handledMessageTypes.Contains(current))
+            {
+                return true;
+            }
+        }
+
+        return messageType.GetInterfaces().Any(handledMessageTypes.Contains);
     }
 
     private static HandlerRegistration CreateRegistration(Type serviceType, Type handlerType)

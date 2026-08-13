@@ -1,6 +1,8 @@
 # Dispatcher Minimal API sample
 
-This .NET 10 sample keeps all state in memory so the CQRS flow is easy to follow.
+This .NET 10 sample keeps all state in memory so the CQRS flow is easy to follow. Orders and Stock
+share a contracts assembly while keeping `ListOrdersQuery` beside its handler to demonstrate both
+supported layouts.
 
 Start it from the repository root:
 
@@ -43,4 +45,7 @@ Minimal API endpoint
   -> internal Stock notification handler
 ```
 
-The web project registers Dispatcher infrastructure once. Orders and Stock register their internal handlers independently through their public module registration methods.
+`GetStockQuery` routes to the base `StockQuery` handler, and `OrderCreated` routes to the base
+`OrderEvent` notification handler. Both concrete messages are discovered from the shared contracts
+assembly. The web project registers Dispatcher infrastructure once. Orders and Stock register their
+internal handlers independently through their public module registration methods.

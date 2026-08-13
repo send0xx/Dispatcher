@@ -1,4 +1,5 @@
 using Dispatcher.DependencyInjection;
+using Dispatcher.SampleApi.Contracts;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 

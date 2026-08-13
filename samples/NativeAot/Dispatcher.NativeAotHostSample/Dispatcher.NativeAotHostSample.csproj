@@ -5,6 +5,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
     <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"

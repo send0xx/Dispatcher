@@ -1,16 +1,10 @@
 using System.Collections.Concurrent;
+using Dispatcher.NativeAotHostSample.Contracts;
 using Dispatcher.SourceGeneration;
 
 [assembly: GenerateDispatcherHandlers("AddMessageHandlers")]
 
 namespace Dispatcher.NativeAotHostSample.Handlers;
-
-public sealed record Message(Guid Id, string Text);
-public sealed record ListMessagesQuery : IQuery<MessageSnapshot>;
-public sealed record AddMessageCommand(string Text) : ICommand<Guid>;
-public sealed record ClearMessagesCommand : ICommand;
-public sealed record MessageAdded(Guid Id) : INotification;
-public sealed record MessageSnapshot(IReadOnlyCollection<Message> Messages, int NotificationsObserved);
 
 public sealed class MessageStore
 {
@@ -29,10 +23,10 @@ public sealed class MessageStore
 }
 
 internal sealed class ListMessagesQueryHandler(MessageStore store)
-    : IQueryHandler<ListMessagesQuery, MessageSnapshot>
+    : IQueryHandler<MessagesQuery, MessageSnapshot>
 {
     public ValueTask<MessageSnapshot> HandleAsync(
-        ListMessagesQuery query,
+        MessagesQuery query,
         CancellationToken cancellationToken) =>
         ValueTask.FromResult(store.Snapshot());
 }
@@ -65,10 +59,10 @@ internal sealed class ClearMessagesCommandHandler(MessageStore store)
 }
 
 internal sealed class CountMessageAddedHandler(MessageStore store)
-    : INotificationHandler<MessageAdded>
+    : INotificationHandler<MessageEvent>
 {
     public ValueTask HandleAsync(
-        MessageAdded notification,
+        MessageEvent notification,
         CancellationToken cancellationToken)
     {
         store.RecordNotification();

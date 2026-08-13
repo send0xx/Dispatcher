@@ -1,17 +1,10 @@
 using System.Collections.Concurrent;
+using Dispatcher.SampleApi.Contracts;
 using FluentValidation;
 
 namespace Dispatcher.SampleApi.Modules.Orders;
 
-public sealed record Order(Guid Id, string ProductId, int Quantity, DateTimeOffset CreatedAt);
-
-public sealed record CreateOrderCommand(string ProductId, int Quantity) : ICommand<Guid>;
-
-public sealed record GetOrderQuery(Guid Id) : IQuery<Order?>;
-
 public sealed record ListOrdersQuery : IQuery<IReadOnlyCollection<Order>>;
-
-public sealed record OrderCreated(Guid OrderId, string ProductId, int Quantity) : INotification;
 
 internal sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
 {

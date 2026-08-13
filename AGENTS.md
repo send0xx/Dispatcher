@@ -81,6 +81,8 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Dispatch lookup uses exact concrete message types and startup-precomputed polymorphic routes. An exact handler wins;
   otherwise, select the most-specific compatible handled base class or interface. Do not broadcast notifications across
   multiple levels of the type hierarchy.
+- Route discovery includes handler assemblies and assemblies declaring handled message types. Generated dispatchers also
+  include concrete messages declared by the host. Do not scan every referenced assembly implicitly.
 - Reflection, including closed wrapper construction from registration metadata, is limited to startup. Dispatch must not use reflection.
 
 ## Documentation style
