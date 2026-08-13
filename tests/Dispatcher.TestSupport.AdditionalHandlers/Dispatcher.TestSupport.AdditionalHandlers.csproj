@@ -4,6 +4,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../Dispatcher.Tests.Contracts/Dispatcher.Tests.Contracts.csproj" />
+    <ProjectReference Include="../Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
   </ItemGroup>
 </Project>

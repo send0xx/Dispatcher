@@ -1,4 +1,4 @@
-namespace Dispatcher.Tests.TestSupport;
+namespace Dispatcher.DependencyInjection.Tests.TestSupport;
 
 internal sealed record GreetingQuery(string Name) : IQuery<string>;
 

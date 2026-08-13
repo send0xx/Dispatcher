@@ -1,8 +1,8 @@
-using Dispatcher.Tests.TestSupport;
+using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Dispatcher.Tests.Dispatching;
+namespace Dispatcher.DependencyInjection.Tests.Dispatching;
 
 public sealed class DispatcherTests
 {

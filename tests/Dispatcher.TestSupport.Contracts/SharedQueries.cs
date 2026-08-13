@@ -1,4 +1,4 @@
-namespace Dispatcher.Tests.Contracts;
+namespace Dispatcher.TestSupport.Contracts;
 
 public abstract record SharedBaseQuery(string Value) : IQuery<string>;
 

@@ -16,7 +16,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `src/Dispatcher.SourceGeneration`: generated dispatcher implementation and handler registration.
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
-- `tests/Dispatcher.Tests`: integration tests targeting .NET 8 and .NET 10.
+- `tests/Dispatcher.DependencyInjection.Tests`: integration tests targeting .NET 8 and .NET 10.
+- `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs`: repository documentation, including maintenance and release guides.
 
@@ -126,13 +127,13 @@ For normal changes, run:
 ```bash
 dotnet format Dispatcher.slnx --verify-no-changes
 dotnet build Dispatcher.slnx -c Release
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net10.0
 ```
 
 Run .NET 8 tests as well when a .NET 8 runtime is installed:
 
 ```bash
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net8.0
 ```
 
 For package-affecting changes, pack all libraries and inspect their dependencies and XML documentation:

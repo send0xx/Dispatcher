@@ -15,8 +15,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
-    <ProjectReference Include="../Dispatcher.Tests.AdditionalHandlers/Dispatcher.Tests.AdditionalHandlers.csproj" />
-    <ProjectReference Include="../Dispatcher.Tests.Contracts/Dispatcher.Tests.Contracts.csproj" />
-    <ProjectReference Include="../Dispatcher.Tests.Handlers/Dispatcher.Tests.Handlers.csproj" />
+    <ProjectReference Include="../Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
+    <ProjectReference Include="../Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
+    <ProjectReference Include="../Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
   </ItemGroup>
 </Project>

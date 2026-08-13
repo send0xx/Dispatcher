@@ -1,6 +1,6 @@
-using Dispatcher.Tests.Contracts;
+using Dispatcher.TestSupport.Contracts;
 
-namespace Dispatcher.Tests.AdditionalHandlers;
+namespace Dispatcher.TestSupport.AdditionalHandlers;
 
 public sealed class AdditionalHandlerAssemblyMarker;
 

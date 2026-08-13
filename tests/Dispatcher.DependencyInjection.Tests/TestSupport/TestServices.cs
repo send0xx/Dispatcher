@@ -1,7 +1,7 @@
 using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Dispatcher.Tests.TestSupport;
+namespace Dispatcher.DependencyInjection.Tests.TestSupport;
 
 internal static class TestServices
 {

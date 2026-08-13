@@ -2,11 +2,11 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Dispatcher.DependencyInjection;
-using Dispatcher.Tests.TestSupport;
+using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Dispatcher.Tests.Telemetry;
+namespace Dispatcher.DependencyInjection.Tests.Telemetry;
 
 public sealed class DispatcherTelemetryTests
 {
@@ -24,7 +24,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Async_dispatch_restores_the_parent_activity()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, meterName: null);
         await using var provider = CreateProvider(options =>
         {
@@ -51,7 +51,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Metrics_can_be_enabled_without_tracing()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
         await using var provider = CreateProvider(options =>
         {
@@ -71,7 +71,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Emits_one_activity_and_duration_for_every_routed_message_shape()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
         await using var provider = CreateProvider(options =>
         {
@@ -116,7 +116,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Telemetry_is_outside_user_pipeline_behaviors()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, meterName: null);
         var services = CreateServices(options =>
         {
@@ -139,7 +139,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Polymorphic_route_reports_the_concrete_message_type()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, meterName: null);
         await using var provider = CreateProvider(options =>
         {
@@ -161,7 +161,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Missing_requests_and_notifications_without_handlers_emit_no_telemetry()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
         await using var provider = CreateProvider(options =>
         {
@@ -184,7 +184,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Exceptions_set_error_type_and_add_standard_span_event()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
         await using var provider = CreateProvider(options =>
         {
@@ -223,7 +223,7 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task Cancellation_is_recorded_as_an_exception()
     {
-        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
         using var capture = new TelemetryCapture(instrumentationName, meterName: null);
         await using var provider = CreateProvider(options =>
         {
@@ -247,8 +247,8 @@ public sealed class DispatcherTelemetryTests
     [Fact]
     public async Task First_dispatcher_telemetry_configuration_wins()
     {
-        var firstName = "Dispatcher.Tests.First." + Guid.NewGuid();
-        var secondName = "Dispatcher.Tests.Second." + Guid.NewGuid();
+        var firstName = "Dispatcher.DependencyInjection.Tests.First." + Guid.NewGuid();
+        var secondName = "Dispatcher.DependencyInjection.Tests.Second." + Guid.NewGuid();
         using var firstCapture = new TelemetryCapture(firstName, meterName: null);
         using var secondCapture = new TelemetryCapture(secondName, meterName: null);
         var services = new ServiceCollection();

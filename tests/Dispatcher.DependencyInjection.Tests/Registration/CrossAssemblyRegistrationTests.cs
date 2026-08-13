@@ -1,11 +1,11 @@
 using Dispatcher.DependencyInjection;
-using Dispatcher.Tests.AdditionalHandlers;
-using Dispatcher.Tests.Contracts;
-using Dispatcher.Tests.Handlers;
+using Dispatcher.TestSupport.AdditionalHandlers;
+using Dispatcher.TestSupport.Contracts;
+using Dispatcher.TestSupport.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Dispatcher.Tests.Registration;
+namespace Dispatcher.DependencyInjection.Tests.Registration;
 
 public sealed class CrossAssemblyRegistrationTests
 {

@@ -1,10 +1,10 @@
 using Dispatcher;
 using Dispatcher.DependencyInjection;
-using Dispatcher.Tests.TestSupport;
+using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Dispatcher.Tests.Registration;
+namespace Dispatcher.DependencyInjection.Tests.Registration;
 
 public sealed class DispatcherRegistrationTests
 {

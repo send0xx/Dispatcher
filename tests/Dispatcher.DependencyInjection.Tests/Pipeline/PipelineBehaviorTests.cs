@@ -1,9 +1,9 @@
 using Dispatcher.DependencyInjection;
-using Dispatcher.Tests.TestSupport;
+using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Dispatcher.Tests.Pipeline;
+namespace Dispatcher.DependencyInjection.Tests.Pipeline;
 
 public sealed class PipelineBehaviorTests
 {

@@ -1,7 +1,7 @@
-using Dispatcher.Tests.TestSupport;
+using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Xunit;
 
-namespace Dispatcher.Tests.Registry;
+namespace Dispatcher.DependencyInjection.Tests.Registry;
 
 public sealed class DispatcherRegistryTests
 {

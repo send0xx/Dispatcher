@@ -14,14 +14,14 @@ Build and test changes from the repository root:
 
 ```bash
 dotnet build Dispatcher.slnx -c Release
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net10.0
 dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
 ```
 
 Run the .NET 8 test target as well when a .NET 8 runtime is installed:
 
 ```bash
-dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net8.0
 ```
 
 ## Performance changes

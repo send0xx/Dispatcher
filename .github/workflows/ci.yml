@@ -56,7 +56,7 @@ jobs:
 
       - name: Test runtime
         run: >-
-          dotnet test tests/Dispatcher.Tests/Dispatcher.Tests.csproj
+          dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
 
