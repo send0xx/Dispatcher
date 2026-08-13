@@ -6,6 +6,34 @@ namespace Dispatcher.SourceGeneration.Tests.Diagnostics;
 public sealed class DispatcherGeneratorDiagnosticTests
 {
     [Fact]
+    public void Reports_ambiguous_polymorphic_handler_routes()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal interface IFirstQuery : IQuery<string>;
+            internal interface ISecondQuery : IQuery<string>;
+            internal sealed record AmbiguousQuery : IFirstQuery, ISecondQuery;
+
+            internal sealed class FirstHandler : IQueryHandler<IFirstQuery, string>
+            {
+                public ValueTask<string> HandleAsync(IFirstQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("first");
+            }
+
+            internal sealed class SecondHandler : IQueryHandler<ISecondQuery, string>
+            {
+                public ValueTask<string> HandleAsync(ISecondQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("second");
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG009");
+    }
+
+    [Fact]
     public void Reports_duplicate_request_handlers()
     {
         const string source = """

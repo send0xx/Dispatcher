@@ -59,6 +59,14 @@ internal sealed class HandlerModel
     };
 }
 
+internal sealed class DispatchRouteModel(
+    INamedTypeSymbol messageType,
+    HandlerModel handler)
+{
+    public INamedTypeSymbol MessageType { get; } = messageType;
+    public HandlerModel Handler { get; } = handler;
+}
+
 internal sealed class GenerationResult
 {
     public static readonly GenerationResult Empty = new(
@@ -66,6 +74,7 @@ internal sealed class GenerationResult
         null,
         ImmutableArray<HandlerModel>.Empty,
         ImmutableArray<HandlerModel>.Empty,
+        ImmutableArray<DispatchRouteModel>.Empty,
         ImmutableArray<INamedTypeSymbol>.Empty,
         ImmutableArray<Diagnostic>.Empty);
 
@@ -74,6 +83,7 @@ internal sealed class GenerationResult
         string? dispatcherMethodName,
         ImmutableArray<HandlerModel> localHandlers,
         ImmutableArray<HandlerModel> dispatchHandlers,
+        ImmutableArray<DispatchRouteModel> dispatchRoutes,
         ImmutableArray<INamedTypeSymbol> openBehaviors,
         ImmutableArray<Diagnostic> diagnostics,
         string assemblyName = "")
@@ -82,6 +92,7 @@ internal sealed class GenerationResult
         DispatcherMethodName = dispatcherMethodName;
         LocalHandlers = localHandlers;
         DispatchHandlers = dispatchHandlers;
+        DispatchRoutes = dispatchRoutes;
         OpenBehaviors = openBehaviors;
         Diagnostics = diagnostics;
         AssemblyName = assemblyName;
@@ -91,6 +102,7 @@ internal sealed class GenerationResult
     public string? DispatcherMethodName { get; }
     public ImmutableArray<HandlerModel> LocalHandlers { get; }
     public ImmutableArray<HandlerModel> DispatchHandlers { get; }
+    public ImmutableArray<DispatchRouteModel> DispatchRoutes { get; }
     public ImmutableArray<INamedTypeSymbol> OpenBehaviors { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
     public string AssemblyName { get; }

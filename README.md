@@ -200,7 +200,29 @@ await publisher.PublishAsync(new OrderCreated(orderId), cancellationToken);
 
 Notification handlers run sequentially in registration order. Publishing a notification with no handlers is a no-op.
 
-Queries and commands require exactly one handler. A missing handler throws `HandlerNotFoundException`, and duplicate handlers throw `DuplicateHandlerException`. Dispatch uses the exact concrete message type; polymorphic routing is not currently supported.
+Queries and commands require exactly one selected handler. A missing handler throws
+`HandlerNotFoundException`, and duplicate handlers for the same handled message type throw
+`DuplicateHandlerException`.
+
+Dispatch supports precomputed polymorphic routes. A concrete message first uses an exact
+handler when one exists; otherwise Dispatcher selects the most-specific compatible base class
+or interface handler. For example, `UserCreatedEvent : DomainEvent` routes to a
+`INotificationHandler<DomainEvent>` when no `UserCreatedEvent` handler exists. Notification
+dispatch invokes every registered handler for the one selected message type, sequentially in
+registration order; it does not broadcast across the inheritance hierarchy. Queries and
+commands invoke the single handler for the selected message type, including that type's
+pipeline behaviors. Unrelated equally specific candidates make the route ambiguous and fail
+during registry creation or source generation.
+
+Reflection assembly scanning and source generation discover concrete route targets automatically.
+When handlers are registered only through the typed registration methods, add message-only metadata
+for each derived concrete type that needs a precomputed fallback route:
+
+```csharp
+builder.Services
+    .AddQueryHandler<BaseQuery, Result, BaseQueryHandler>()
+    .AddSingleton(new MessageRegistration(typeof(DerivedQuery)));
+```
 
 ## Pipeline behaviors
 
@@ -376,7 +398,7 @@ The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the a
 ## Current limitations
 
 - Reflection-based registration is not trimming or Native AOT safe; use `Send0xx.Dispatcher.SourceGeneration` for those deployment modes.
-- Queries and commands use exact concrete message types and require exactly one handler.
+- Queries and commands select the most-specific compatible handled message type and require one handler for it.
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.
 

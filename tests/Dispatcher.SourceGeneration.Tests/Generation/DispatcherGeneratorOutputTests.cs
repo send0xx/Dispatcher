@@ -40,6 +40,58 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
+    public void Generates_direct_polymorphic_routes_to_base_handlers()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal abstract record BaseQuery : IQuery<string>;
+            internal sealed record DerivedQuery : BaseQuery;
+            internal sealed class BaseQueryHandler : IQueryHandler<BaseQuery, string>
+            {
+                public ValueTask<string> HandleAsync(BaseQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("value");
+            }
+
+            internal abstract record DomainEvent : INotification;
+            internal sealed record UserCreatedEvent : DomainEvent;
+            internal sealed class DomainEventHandler : INotificationHandler<DomainEvent>
+            {
+                public ValueTask HandleAsync(DomainEvent notification, CancellationToken cancellationToken) =>
+                    ValueTask.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var generated = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "internal sealed class Dispatcher",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "[typeof(global::DerivedQuery)] = (typeof(string)",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "QueryCore<global::BaseQuery, string>((global::BaseQuery)message",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "[typeof(global::UserCreatedEvent)] = static (dispatcher, notification, token) => dispatcher.NotificationCore<global::DomainEvent>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "GeneratedNotificationHandlerInvoker",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
     public void Generates_configurable_dispatcher_lifetime_registration()
     {
         const string source = """

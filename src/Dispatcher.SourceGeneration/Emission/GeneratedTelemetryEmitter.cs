@@ -8,10 +8,10 @@ internal static class GeneratedTelemetryEmitter
     internal static void Append(
         StringBuilder source,
         string generatedTypeName,
-        IReadOnlyCollection<HandlerModel> queries,
-        IReadOnlyCollection<HandlerModel> responseCommands,
-        IReadOnlyCollection<HandlerModel> commands,
-        IReadOnlyCollection<HandlerModel> notifications)
+        IReadOnlyCollection<DispatchRouteModel> queries,
+        IReadOnlyCollection<DispatchRouteModel> responseCommands,
+        IReadOnlyCollection<DispatchRouteModel> commands,
+        IReadOnlyCollection<DispatchRouteModel> notifications)
     {
         AppendTelemetry(source, queries, responseCommands, commands, notifications);
         AppendDispatcher(source, generatedTypeName);
@@ -20,10 +20,10 @@ internal static class GeneratedTelemetryEmitter
 
     private static void AppendTelemetry(
         StringBuilder source,
-        IReadOnlyCollection<HandlerModel> queries,
-        IReadOnlyCollection<HandlerModel> responseCommands,
-        IReadOnlyCollection<HandlerModel> commands,
-        IReadOnlyCollection<HandlerModel> notifications)
+        IReadOnlyCollection<DispatchRouteModel> queries,
+        IReadOnlyCollection<DispatchRouteModel> responseCommands,
+        IReadOnlyCollection<DispatchRouteModel> commands,
+        IReadOnlyCollection<DispatchRouteModel> notifications)
     {
         source.AppendLine();
         source.AppendLine();
@@ -340,16 +340,16 @@ internal static class GeneratedTelemetryEmitter
     private static void AppendRouteDictionaryInitialization(
         StringBuilder source,
         string name,
-        IEnumerable<HandlerModel> handlers,
+        IEnumerable<DispatchRouteModel> routes,
         string operationName,
         string messageKind)
     {
         source.Append("        ").Append(name).AppendLine(" =");
         source.AppendLine("            new global::System.Collections.Generic.Dictionary<global::System.Type, global::Dispatcher.DispatcherTelemetryRoute>");
         source.AppendLine("            {");
-        foreach (var handler in handlers)
+        foreach (var route in routes)
         {
-            var messageType = handler.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+            var messageType = route.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
             source.Append("                [typeof(").Append(messageType)
                 .Append(")] = new global::Dispatcher.DispatcherTelemetryRoute(activitySource, operationDuration, typeof(")
                 .Append(messageType).Append("), \"").Append(operationName).Append("\", \"")

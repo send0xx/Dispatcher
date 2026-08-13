@@ -18,6 +18,8 @@ internal static class DispatcherAnalyzer
     private const string QueryMetadataName = "Dispatcher.IQuery`1";
     private const string CommandMetadataName = "Dispatcher.ICommand`1";
     private const string CommandWithoutResponseMetadataName = "Dispatcher.ICommand";
+    private const string RequestMetadataName = "Dispatcher.IRequest";
+    private const string NotificationMetadataName = "Dispatcher.INotification";
     private const string PipelineBehaviorMetadataName = "Dispatcher.IPipelineBehavior`2";
 
     internal static GenerationResult Analyze(Compilation compilation, CancellationToken cancellationToken)
@@ -61,6 +63,7 @@ internal static class DispatcherAnalyzer
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
@@ -78,6 +81,7 @@ internal static class DispatcherAnalyzer
                 null,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
@@ -95,6 +99,7 @@ internal static class DispatcherAnalyzer
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
         }
@@ -155,8 +160,6 @@ internal static class DispatcherAnalyzer
             }
         }
 
-        AddMissingHandlerDiagnostics(compilation, allTypes, handlers, diagnostics);
-
         var localHandlers = handlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
@@ -181,14 +184,100 @@ internal static class DispatcherAnalyzer
             AddDuplicateDiagnostics(localHandlers, diagnostics);
         }
 
+        var orderedDispatchHandlers = dispatchHandlers
+            .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
+            .ToImmutableArray();
+        var routeSelector = new HandlerRouteSelector(compilation, orderedDispatchHandlers);
+        var dispatchRoutes = dispatcherAttribute is null
+            ? ImmutableArray<DispatchRouteModel>.Empty
+            : CreateDispatchRoutes(
+                compilation,
+                allTypes,
+                routeSelector,
+                diagnostics,
+                cancellationToken);
+        AddMissingHandlerDiagnostics(routeSelector, allTypes, compilation, diagnostics);
+
         return new GenerationResult(
             methodName,
             dispatcherMethodName,
             localHandlers,
-            dispatchHandlers.OrderBy(handler => handler.SortKey, StringComparer.Ordinal).ToImmutableArray(),
+            orderedDispatchHandlers,
+            dispatchRoutes,
             openBehaviors,
             diagnostics.ToImmutable(),
             compilation.AssemblyName ?? "DispatcherModule");
+    }
+
+    private static ImmutableArray<DispatchRouteModel> CreateDispatchRoutes(
+        Compilation compilation,
+        ImmutableArray<INamedTypeSymbol> localTypes,
+        HandlerRouteSelector routeSelector,
+        ImmutableArray<Diagnostic>.Builder diagnostics,
+        CancellationToken cancellationToken)
+    {
+        var request = compilation.GetTypeByMetadataName(RequestMetadataName);
+        var notification = compilation.GetTypeByMetadataName(NotificationMetadataName);
+        if (request is null || notification is null)
+        {
+            return ImmutableArray<DispatchRouteModel>.Empty;
+        }
+
+        var messageTypes = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        AddConcreteMessageTypes(localTypes, request, notification, messageTypes);
+        foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols
+                     .Where(HasGeneratedHandlerRegistration))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AddConcreteMessageTypes(
+                GetAllTypes(assembly.GlobalNamespace),
+                request,
+                notification,
+                messageTypes);
+        }
+
+        var routes = ImmutableArray.CreateBuilder<DispatchRouteModel>();
+        foreach (var messageType in messageTypes
+                     .OrderBy(type => type.ToDisplayString(SymbolDisplayFormats.FullyQualified), StringComparer.Ordinal))
+        {
+            var handler = routeSelector.Select(messageType, diagnostics);
+            if (handler is null)
+            {
+                continue;
+            }
+
+            if (!compilation.IsSymbolAccessibleWithin(messageType, compilation.Assembly))
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    GeneratorDiagnostics.InaccessibleReferencedMessage,
+                    Location.None,
+                    messageType.ToDisplayString(SymbolDisplayFormats.FullyQualified),
+                    messageType.ContainingAssembly.Name));
+                continue;
+            }
+
+            routes.Add(new DispatchRouteModel(messageType, handler));
+        }
+
+        return routes.ToImmutable();
+    }
+
+    private static void AddConcreteMessageTypes(
+        IEnumerable<INamedTypeSymbol> types,
+        INamedTypeSymbol request,
+        INamedTypeSymbol notification,
+        HashSet<INamedTypeSymbol> messageTypes)
+    {
+        foreach (var type in types.Where(type =>
+                     type.Arity == 0 &&
+                     !type.IsAbstract &&
+                     type.TypeKind is TypeKind.Class or TypeKind.Struct &&
+                     type.AllInterfaces.Any(@interface =>
+                         SymbolEqualityComparer.Default.Equals(@interface, request) ||
+                         SymbolEqualityComparer.Default.Equals(@interface, notification))))
+        {
+            messageTypes.Add(type);
+        }
     }
 
     private static ImmutableArray<INamedTypeSymbol> GetOpenPipelineBehaviors(
@@ -331,9 +420,9 @@ internal static class DispatcherAnalyzer
     }
 
     private static void AddMissingHandlerDiagnostics(
-        Compilation compilation,
+        HandlerRouteSelector routeSelector,
         ImmutableArray<INamedTypeSymbol> allTypes,
-        ImmutableArray<HandlerModel>.Builder handlers,
+        Compilation compilation,
         ImmutableArray<Diagnostic>.Builder diagnostics)
     {
         var query = compilation.GetTypeByMetadataName(QueryMetadataName);
@@ -350,7 +439,7 @@ internal static class DispatcherAnalyzer
                      !type.IsAbstract &&
                      IsRequest(type, query, command, commandWithoutResponse)))
         {
-            if (handlers.Any(handler => SymbolEqualityComparer.Default.Equals(handler.MessageType, type)))
+            if (routeSelector.HasCompatibleHandler(type))
             {
                 continue;
             }

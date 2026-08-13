@@ -48,4 +48,39 @@ public sealed class DispatcherTests
 
         Assert.Equal(typeof(MissingQuery), exception.MessageType);
     }
+
+    [Fact]
+    public async Task Routes_derived_queries_and_commands_to_base_handlers()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var queryResult = await dispatcher.QueryAsync(new DerivedGreetingQuery("Ada"));
+        var commandResult = await dispatcher.ExecuteAsync(new DerivedSumCommand(2, 3));
+        await dispatcher.ExecuteAsync(new DerivedRecordCommand("polymorphic"));
+
+        Assert.Equal("Base hello, Ada", queryResult);
+        Assert.Equal(5, commandResult);
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        Assert.Equal("polymorphic", state.Recorded);
+        Assert.Equal(
+            ["base-query", "base-response-command", "base-command"],
+            state.Events);
+    }
+
+    [Fact]
+    public async Task Exact_query_handler_takes_precedence_over_base_handler()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new SpecificGreetingQuery("Ada"));
+
+        Assert.Equal("Specific hello, Ada", result);
+        Assert.Equal(
+            ["specific-query"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
 }

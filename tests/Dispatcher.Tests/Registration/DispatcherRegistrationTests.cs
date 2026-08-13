@@ -36,6 +36,24 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
+    public async Task Typed_registration_can_compose_a_polymorphic_message_route()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddQueryHandler<BaseGreetingQuery, string, BaseGreetingQueryHandler>();
+        services.AddSingleton(new MessageRegistration(typeof(DerivedGreetingQuery)));
+        services.AddScoped<TestState>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new DerivedGreetingQuery("Ada"));
+
+        Assert.Equal("Base hello, Ada", result);
+    }
+
+    [Fact]
     public async Task Registration_is_idempotent_and_all_contracts_share_scoped_instance()
     {
         var services = new ServiceCollection();
@@ -248,5 +266,6 @@ public sealed class DispatcherRegistrationTests
 
         Assert.Equal("Hello, Ada", result);
         Assert.Single(provider.GetServices<HandlerRegistration>());
+        Assert.Empty(provider.GetServices<MessageRegistration>());
     }
 }

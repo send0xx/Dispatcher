@@ -64,16 +64,12 @@ public static class ServiceCollectionExtensions
                 ActivitySourceName = telemetryOptions.ActivitySourceName
             };
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
-            services.TryAddSingleton(static provider =>
-                DispatcherRegistry.Create(
-                    provider.GetServices<HandlerRegistration>(),
-                    provider.GetRequiredService<DispatcherTelemetry>()));
         }
-        else
-        {
-            services.TryAddSingleton(static provider =>
-                DispatcherRegistry.Create(provider.GetServices<HandlerRegistration>()));
-        }
+        services.TryAddSingleton(static provider =>
+            DispatcherRegistry.Create(
+                provider.GetServices<MessageRegistration>()
+                    .Concat(provider.GetServices<HandlerRegistration>()),
+                provider.GetService<DispatcherTelemetry>()));
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),
             typeof(Dispatcher),

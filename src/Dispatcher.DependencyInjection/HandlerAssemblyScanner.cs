@@ -30,8 +30,10 @@ internal static class HandlerAssemblyScanner
                 continue;
             }
 
+            var types = GetLoadableTypes(assembly).ToArray();
             services.AddSingleton(new ScannedAssembly(assembly));
-            RegisterHandlers(services, assembly, lifetime);
+            var handledMessageTypes = RegisterHandlers(services, types, lifetime);
+            RegisterMessages(services, types, handledMessageTypes);
         }
 
         return services;
@@ -45,12 +47,13 @@ internal static class HandlerAssemblyScanner
 
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
-    private static void RegisterHandlers(
+    private static HashSet<Type> RegisterHandlers(
         IServiceCollection services,
-        Assembly assembly,
+        IReadOnlyCollection<Type> types,
         ServiceLifetime lifetime)
     {
-        foreach (var implementationType in GetLoadableTypes(assembly)
+        var handledMessageTypes = new HashSet<Type>();
+        foreach (var implementationType in types
                      .Where(type => type is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
                      .OrderBy(type => type.FullName, StringComparer.Ordinal))
         {
@@ -59,8 +62,29 @@ internal static class HandlerAssemblyScanner
                          .OrderBy(type => type.FullName, StringComparer.Ordinal))
             {
                 services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
-                services.AddSingleton(CreateRegistration(serviceType, implementationType));
+                var registration = CreateRegistration(serviceType, implementationType);
+                services.AddSingleton(registration);
+                handledMessageTypes.Add(registration.MessageType);
             }
+        }
+
+        return handledMessageTypes;
+    }
+
+    private static void RegisterMessages(
+        IServiceCollection services,
+        IEnumerable<Type> types,
+        HashSet<Type> handledMessageTypes)
+    {
+        foreach (var messageType in types
+                     .Where(type =>
+                         type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
+                         !handledMessageTypes.Contains(type) &&
+                         (typeof(IRequest).IsAssignableFrom(type) ||
+                          typeof(INotification).IsAssignableFrom(type)))
+                     .OrderBy(type => type.FullName, StringComparer.Ordinal))
+        {
+            services.AddSingleton(new MessageRegistration(messageType));
         }
     }
 

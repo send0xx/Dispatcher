@@ -12,16 +12,16 @@ internal static class PipelineBehaviorEmitter
         SourceProductionContext context,
         GenerationResult result)
     {
-        var requests = result.DispatchHandlers
-            .Where(handler => handler.Kind != HandlerModelKind.Notification)
-            .Select(handler => new
+        var requests = result.DispatchRoutes
+            .Where(route => route.Handler.Kind != HandlerModelKind.Notification)
+            .Select(route => new
             {
-                Request = handler.MessageType,
-                Response = handler.Kind == HandlerModelKind.Command
-                    ? ((INamedTypeSymbol)handler.MessageType).AllInterfaces
+                Request = route.Handler.MessageType,
+                Response = route.Handler.Kind == HandlerModelKind.Command
+                    ? ((INamedTypeSymbol)route.Handler.MessageType).AllInterfaces
                         .First(@interface => @interface.OriginalDefinition.ToDisplayString() ==
                             "Dispatcher.ICommand<TResponse>").TypeArguments[0]
-                    : handler.ResponseType
+                    : route.Handler.ResponseType
             })
             .Where(item => item.Response is not null)
             .GroupBy(item => item.Request.ToDisplayString(SymbolDisplayFormats.FullyQualified) + "|" +

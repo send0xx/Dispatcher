@@ -137,6 +137,28 @@ public sealed class DispatcherTelemetryTests
     }
 
     [Fact]
+    public async Task Polymorphic_route_reports_the_concrete_message_type()
+    {
+        var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();
+        using var capture = new TelemetryCapture(instrumentationName, meterName: null);
+        await using var provider = CreateProvider(options =>
+        {
+            options.Telemetry.EnableTracing = true;
+            options.Telemetry.ActivitySourceName = instrumentationName;
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new DerivedGreetingQuery("Ada"));
+
+        var activity = Assert.Single(capture.Activities);
+        Assert.Equal("query DerivedGreetingQuery", activity.DisplayName);
+        Assert.Equal(
+            typeof(DerivedGreetingQuery).FullName,
+            activity.GetTagItem("dispatcher.message.type"));
+    }
+
+    [Fact]
     public async Task Missing_requests_and_notifications_without_handlers_emit_no_telemetry()
     {
         var instrumentationName = "Dispatcher.Tests." + Guid.NewGuid();

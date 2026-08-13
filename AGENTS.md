@@ -4,6 +4,8 @@
 
 Dispatcher is a small CQRS library for .NET applications using dependency injection. Keep the API focused on queries, commands, notifications, handlers, and pipeline behaviors. Prefer straightforward runtime code over abstractions that do not provide a measurable benefit.
 
+Before introducing a new type, study the existing design and prefer refactoring or composing its types when the responsibility fits naturally; add a type only when it represents a genuinely distinct responsibility.
+
 The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net10.0`. The current package version is defined centrally in `Directory.Build.props`.
 
 ## Solution structure
@@ -45,8 +47,8 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
 - `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
-- Public handler registrations in `src/Dispatcher` are metadata only. They must not reference reflection wrapper factories.
-- Reflection wrapper factories and executable wrappers belong to `src/Dispatcher.DependencyInjection` and are constructed from registration metadata when the singleton registry is created.
+- Public handler registrations in `src/Dispatcher` are metadata only. They must not reference reflection-based wrapper construction.
+- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from registration metadata when the singleton registry is created.
 - The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
 - Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
@@ -73,10 +75,12 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 ## Registry and handler behavior
 
 - Use `FrozenDictionary` for request and notification wrapper lookup.
-- Queries and commands require exactly one handler.
-- Duplicate query or command handlers fail when the singleton registry is created.
+- Queries and commands require exactly one handler for the selected message type.
+- Duplicate query or command handlers for the same handled message type fail when the singleton registry is created.
 - Notifications allow zero or more handlers and execute sequentially in registration order.
-- Dispatch uses exact concrete message types; polymorphic routing is not currently supported.
+- Dispatch lookup uses exact concrete message types and startup-precomputed polymorphic routes. An exact handler wins;
+  otherwise, select the most-specific compatible handled base class or interface. Do not broadcast notifications across
+  multiple levels of the type hierarchy.
 - Reflection, including closed wrapper construction from registration metadata, is limited to startup. Dispatch must not use reflection.
 
 ## Documentation style

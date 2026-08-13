@@ -46,6 +46,58 @@ public sealed class GeneratedTelemetryTests
         Assert.Same(parent, Activity.Current);
         Assert.Same(parent, Assert.Single(capture.Activities).Parent);
     }
+
+    [Fact]
+    public async Task Dispatches_derived_messages_to_the_most_specific_handlers()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var queryResult = await dispatcher.QueryAsync(new GeneratedDerivedQuery("Ada"));
+        var commandResult = await dispatcher.ExecuteAsync(new GeneratedDerivedCommand(2, 3));
+        await dispatcher.PublishAsync(new GeneratedUserUpdatedEvent());
+
+        Assert.Equal("Base hello, Ada", queryResult);
+        Assert.Equal(5, commandResult);
+        Assert.Equal(
+            ["base-query", "base-command", "domain-a", "domain-b"],
+            scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
+
+    [Fact]
+    public async Task Exact_handlers_take_precedence_over_base_handlers()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var result = await dispatcher.QueryAsync(new GeneratedSpecificQuery("Ada"));
+        await dispatcher.PublishAsync(new GeneratedUserCreatedEvent());
+
+        Assert.Equal("Specific hello, Ada", result);
+        Assert.Equal(
+            ["specific-query", "user-created"],
+            scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
 }
 
 public sealed record GeneratedDelayedQuery : IQuery<string>;
@@ -63,6 +115,90 @@ public sealed class GeneratedTestState
 {
     public TaskCompletionSource<string> Completion { get; } =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public List<string> Events { get; } = [];
+}
+
+public abstract record GeneratedBaseQuery(string Name) : IQuery<string>;
+public sealed record GeneratedDerivedQuery(string Name) : GeneratedBaseQuery(Name);
+public sealed record GeneratedSpecificQuery(string Name) : GeneratedBaseQuery(Name);
+
+public sealed class GeneratedBaseQueryHandler(GeneratedTestState state)
+    : IQueryHandler<GeneratedBaseQuery, string>
+{
+    public ValueTask<string> HandleAsync(
+        GeneratedBaseQuery query,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("base-query");
+        return ValueTask.FromResult($"Base hello, {query.Name}");
+    }
+}
+
+public sealed class GeneratedSpecificQueryHandler(GeneratedTestState state)
+    : IQueryHandler<GeneratedSpecificQuery, string>
+{
+    public ValueTask<string> HandleAsync(
+        GeneratedSpecificQuery query,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("specific-query");
+        return ValueTask.FromResult($"Specific hello, {query.Name}");
+    }
+}
+
+public abstract record GeneratedBaseCommand(int Left, int Right) : ICommand<int>;
+public sealed record GeneratedDerivedCommand(int Left, int Right) : GeneratedBaseCommand(Left, Right);
+
+public sealed class GeneratedBaseCommandHandler(GeneratedTestState state)
+    : ICommandHandler<GeneratedBaseCommand, int>
+{
+    public ValueTask<int> HandleAsync(
+        GeneratedBaseCommand command,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("base-command");
+        return ValueTask.FromResult(command.Left + command.Right);
+    }
+}
+
+public abstract record GeneratedDomainEvent : INotification;
+public sealed record GeneratedUserUpdatedEvent : GeneratedDomainEvent;
+public sealed record GeneratedUserCreatedEvent : GeneratedDomainEvent;
+
+public sealed class GeneratedFirstDomainEventHandler(GeneratedTestState state)
+    : INotificationHandler<GeneratedDomainEvent>
+{
+    public ValueTask HandleAsync(
+        GeneratedDomainEvent notification,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("domain-a");
+        return ValueTask.CompletedTask;
+    }
+}
+
+public sealed class GeneratedSecondDomainEventHandler(GeneratedTestState state)
+    : INotificationHandler<GeneratedDomainEvent>
+{
+    public ValueTask HandleAsync(
+        GeneratedDomainEvent notification,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("domain-b");
+        return ValueTask.CompletedTask;
+    }
+}
+
+public sealed class GeneratedUserCreatedEventHandler(GeneratedTestState state)
+    : INotificationHandler<GeneratedUserCreatedEvent>
+{
+    public ValueTask HandleAsync(
+        GeneratedUserCreatedEvent notification,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("user-created");
+        return ValueTask.CompletedTask;
+    }
 }
 
 internal sealed class GeneratedActivityCapture : IDisposable

@@ -73,6 +73,20 @@ internal sealed class TransientGreetingBehavior : IPipelineBehavior<GreetingQuer
         next(cancellationToken);
 }
 
+internal sealed class BaseGreetingBehavior(TestState state) : IPipelineBehavior<BaseGreetingQuery, string>
+{
+    public async ValueTask<string> HandleAsync(
+        BaseGreetingQuery query,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("base-before");
+        var result = await next(cancellationToken);
+        state.Events.Add("base-after");
+        return result;
+    }
+}
+
 internal sealed class PartiallyClosedGreetingBehavior<TResponse>
     : IPipelineBehavior<GreetingQuery, TResponse>
 {

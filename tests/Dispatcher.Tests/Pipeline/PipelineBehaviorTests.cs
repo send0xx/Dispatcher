@@ -101,4 +101,21 @@ public sealed class PipelineBehaviorTests
             ["first-before", "handler", "first-after"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
+
+    [Fact]
+    public async Task Polymorphic_route_uses_behaviors_for_the_handled_message_type()
+    {
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<BaseGreetingQuery, string>, BaseGreetingBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new DerivedGreetingQuery("Ada"));
+
+        Assert.Equal("Base hello, Ada", result);
+        Assert.Equal(
+            ["base-before", "base-query", "base-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
 }

@@ -27,6 +27,9 @@ internal static class GeneratorDiagnostics
         "DSPG008", "Unsupported open generic pipeline behavior",
         "Pipeline behavior '{0}' must have two type parameters, implement " +
         "IPipelineBehavior<TRequest, TResponse> using them in order, and expose a public constructor");
+    internal static readonly DiagnosticDescriptor AmbiguousHandlerRoute = Create(
+        "DSPG009", "Ambiguous polymorphic handler route",
+        "Message '{0}' matches multiple equally specific handled message types: {1}");
 
     private static DiagnosticDescriptor Create(string id, string title, string message) => new(
         id,
