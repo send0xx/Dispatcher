@@ -16,6 +16,12 @@ Run one benchmark class while iterating:
 dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*PipelineBenchmarks*'
 ```
 
+Measure reflection startup scanning across modules with shared contracts:
+
+```shell
+dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*HandlerScanningBenchmarks*'
+```
+
 Compare the reflection and source-generated implementations under the same runtime:
 
 ```shell

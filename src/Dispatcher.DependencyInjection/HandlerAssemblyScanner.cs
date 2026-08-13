@@ -21,32 +21,32 @@ internal static class HandlerAssemblyScanner
         IEnumerable<Assembly> assemblies,
         ServiceLifetime lifetime)
     {
-        var assemblyTypes = new Dictionary<Assembly, Type[]>();
-        var handlerAssemblyTypes = new List<Type[]>();
+        var scanState = GetOrCreateScanState(services);
+        var handlerCandidates = new List<(Type ImplementationType, Type[] ServiceTypes)[]>();
         foreach (var assembly in assemblies.Distinct())
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
-            if (IsRegistered(services, assembly))
+            if (scanState.HandlerAssemblies.Contains(assembly))
             {
                 continue;
             }
 
-            var types = GetLoadableTypes(assembly).ToArray();
-            services.AddSingleton(new ScannedAssembly(assembly));
-            assemblyTypes.Add(assembly, types);
-            handlerAssemblyTypes.Add(types);
+            var types = GetLoadableTypes(assembly);
+            scanState.HandlerAssemblies.Add(assembly);
+            handlerCandidates.Add(GetHandlerCandidates(types));
+            AddMessageScan(scanState, assembly, types);
         }
 
-        if (assemblyTypes.Count == 0)
+        if (handlerCandidates.Count == 0)
         {
             return services;
         }
 
         var newlyHandledMessageTypes = new HashSet<Type>();
-        foreach (var types in handlerAssemblyTypes)
+        foreach (var candidates in handlerCandidates)
         {
-            newlyHandledMessageTypes.UnionWith(RegisterHandlers(services, types, lifetime));
+            newlyHandledMessageTypes.UnionWith(RegisterHandlers(services, candidates, lifetime));
         }
 
         var handledMessageTypes = services
@@ -66,41 +66,54 @@ internal static class HandlerAssemblyScanner
                      .Select(static messageType => messageType.Assembly)
                      .Distinct())
         {
-            if (!assemblyTypes.ContainsKey(messageAssembly))
+            if (!scanState.MessageTypes.ContainsKey(messageAssembly))
             {
-                assemblyTypes.Add(messageAssembly, GetLoadableTypes(messageAssembly).ToArray());
+                AddMessageScan(
+                    scanState,
+                    messageAssembly,
+                    GetLoadableTypes(messageAssembly));
             }
         }
 
-        foreach (var types in assemblyTypes.Values)
+        foreach (var messageTypes in scanState.MessageTypes.Values)
         {
-            RegisterMessages(services, types, handledMessageTypes, registeredMessageTypes);
+            RegisterMessages(
+                services,
+                messageTypes,
+                handledMessageTypes,
+                registeredMessageTypes);
         }
 
         return services;
     }
 
-    private static bool IsRegistered(IServiceCollection services, Assembly assembly) =>
-        services.Any(descriptor =>
-            descriptor.ServiceType == typeof(ScannedAssembly) &&
-            descriptor.ImplementationInstance is ScannedAssembly scanned &&
-            scanned.Assembly == assembly);
+    private static AssemblyScanState GetOrCreateScanState(IServiceCollection services)
+    {
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(AssemblyScanState) &&
+                descriptor.ImplementationInstance is AssemblyScanState state)
+            {
+                return state;
+            }
+        }
+
+        var created = new AssemblyScanState();
+        services.AddSingleton(created);
+        return created;
+    }
 
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     private static HashSet<Type> RegisterHandlers(
         IServiceCollection services,
-        IReadOnlyCollection<Type> types,
+        IEnumerable<(Type ImplementationType, Type[] ServiceTypes)> candidates,
         ServiceLifetime lifetime)
     {
         var handledMessageTypes = new HashSet<Type>();
-        foreach (var implementationType in types
-                     .Where(type => type is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
-                     .OrderBy(type => type.FullName, StringComparer.Ordinal))
+        foreach (var (implementationType, serviceTypes) in candidates)
         {
-            foreach (var serviceType in implementationType.GetInterfaces()
-                         .Where(IsHandlerInterface)
-                         .OrderBy(type => type.FullName, StringComparer.Ordinal))
+            foreach (var serviceType in serviceTypes)
             {
                 services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
                 var registration = CreateRegistration(serviceType, implementationType);
@@ -118,20 +131,57 @@ internal static class HandlerAssemblyScanner
         IReadOnlySet<Type> handledMessageTypes,
         ISet<Type> registeredMessageTypes)
     {
-        foreach (var messageType in types
-                     .Where(type =>
-                         type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
-                         !handledMessageTypes.Contains(type) &&
-                         !registeredMessageTypes.Contains(type) &&
-                         (typeof(IRequest).IsAssignableFrom(type) ||
-                          typeof(INotification).IsAssignableFrom(type)) &&
-                         HasHandledBaseType(type, handledMessageTypes))
-                     .OrderBy(type => type.FullName, StringComparer.Ordinal))
+        foreach (var messageType in types)
         {
+            if (handledMessageTypes.Contains(messageType) ||
+                registeredMessageTypes.Contains(messageType) ||
+                !HasHandledBaseType(messageType, handledMessageTypes))
+            {
+                continue;
+            }
+
             services.AddSingleton(new MessageRegistration(messageType));
             registeredMessageTypes.Add(messageType);
         }
     }
+
+    private static void AddMessageScan(
+        AssemblyScanState scanState,
+        Assembly assembly,
+        IEnumerable<Type> types)
+    {
+        if (scanState.MessageTypes.ContainsKey(assembly))
+        {
+            return;
+        }
+
+        scanState.MessageTypes.Add(
+            assembly,
+            types
+                .Where(IsConcreteMessage)
+                .OrderBy(static type => type.FullName, StringComparer.Ordinal)
+                .ToArray());
+    }
+
+    private static (Type ImplementationType, Type[] ServiceTypes)[] GetHandlerCandidates(
+        IEnumerable<Type> types) =>
+        types
+            .Where(static type =>
+                type is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
+            .Select(type => (
+                ImplementationType: type,
+                ServiceTypes: type.GetInterfaces()
+                    .Where(IsHandlerInterface)
+                    .OrderBy(static serviceType => serviceType.FullName, StringComparer.Ordinal)
+                    .ToArray()))
+            .Where(static candidate => candidate.ServiceTypes.Length > 0)
+            .OrderBy(static candidate => candidate.ImplementationType.FullName, StringComparer.Ordinal)
+            .ToArray();
+
+    private static bool IsConcreteMessage(Type type) =>
+        type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
+        (typeof(IRequest).IsAssignableFrom(type) ||
+         typeof(INotification).IsAssignableFrom(type));
 
     private static bool HasHandledBaseType(Type messageType, IReadOnlySet<Type> handledMessageTypes)
     {
@@ -173,7 +223,7 @@ internal static class HandlerAssemblyScanner
         type.IsGenericType && HandlerInterfaces.Contains(type.GetGenericTypeDefinition());
 
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
-    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    private static Type[] GetLoadableTypes(Assembly assembly)
     {
         try
         {
@@ -181,9 +231,13 @@ internal static class HandlerAssemblyScanner
         }
         catch (ReflectionTypeLoadException exception)
         {
-            return exception.Types.Where(static type => type is not null)!;
+            return exception.Types.OfType<Type>().ToArray();
         }
     }
 
-    private sealed record ScannedAssembly(Assembly Assembly);
+    private sealed class AssemblyScanState
+    {
+        internal HashSet<Assembly> HandlerAssemblies { get; } = [];
+        internal Dictionary<Assembly, Type[]> MessageTypes { get; } = [];
+    }
 }
