@@ -1,6 +1,7 @@
 # Dispatcher
 
-[![NuGet](https://img.shields.io/nuget/v/Send0xx.Dispatcher.svg)](https://www.nuget.org/packages/Send0xx.Dispatcher/)
+[![NuGet DependencyInjection](https://img.shields.io/nuget/v/Send0xx.Dispatcher.DependencyInjection.svg?label=DependencyInjection)](https://www.nuget.org/packages/Send0xx.Dispatcher.DependencyInjection/)
+[![NuGet SourceGeneration](https://img.shields.io/nuget/v/Send0xx.Dispatcher.SourceGeneration.svg?label=SourceGeneration)](https://www.nuget.org/packages/Send0xx.Dispatcher.SourceGeneration/)
 [![CI](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml)
 
 Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
@@ -17,13 +18,13 @@ Dispatch itself does not use reflection. Handler routes are stored in frozen dic
 For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.8
+dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.9
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.8
+dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.9
 ```
 
 Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
