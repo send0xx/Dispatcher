@@ -353,7 +353,10 @@ public sealed class DispatcherGeneratorOutputTests
             tree.ToString().Contains("GenerateDispatcherAttribute", StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
             tree.ToString().Contains(
-                "namespace Dispatcher.SourceGeneration;\n\npublic static class ServiceCollectionExtensions",
+                "namespace Dispatcher.SourceGeneration;",
+                StringComparison.Ordinal) &&
+            tree.ToString().Contains(
+                "public static class ServiceCollectionExtensions",
                 StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
             tree.ToString().Contains(

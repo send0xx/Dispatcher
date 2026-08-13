@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Dispatcher;
 
 /// <summary>
-/// Provides handler lookup used by the reflection-based Dispatcher implementation.
+/// Represents an immutable handler registry used by the reflection-based Dispatcher implementation.
 /// </summary>
 public sealed class DispatcherRegistry
 {
@@ -23,8 +23,10 @@ public sealed class DispatcherRegistry
     /// Creates a registry from handler registration metadata.
     /// </summary>
     /// <param name="registrations">The handler registrations to include.</param>
-    /// <returns>The dispatcher registry.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="registrations"/> is <see langword="null"/>.</exception>
+    /// <returns>A registry containing the specified handler registrations.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="registrations"/> is <see langword="null"/> or contains a <see langword="null"/> element.
+    /// </exception>
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     /// <exception cref="ArgumentOutOfRangeException">A registration has an unknown metadata type.</exception>
     [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
@@ -33,14 +35,15 @@ public sealed class DispatcherRegistry
         CreateCore(registrations, telemetry: null);
 
     /// <summary>
-    /// Creates a registry from handler registration metadata with telemetry instrumentation.
+    /// Creates a registry from handler registration metadata and enables telemetry instrumentation.
     /// </summary>
     /// <param name="registrations">The handler registrations to include.</param>
     /// <param name="telemetry">The telemetry service used to instrument routed handlers.</param>
-    /// <returns>The dispatcher registry.</returns>
+    /// <returns>A registry containing the specified handler registrations.</returns>
     /// <remarks>The caller retains ownership of <paramref name="telemetry"/> and must dispose it.</remarks>
     /// <exception cref="ArgumentNullException">
-    /// <paramref name="registrations"/> or <paramref name="telemetry"/> is <see langword="null"/>.
+    /// <paramref name="registrations"/> or <paramref name="telemetry"/> is <see langword="null"/>, or
+    /// <paramref name="registrations"/> contains a <see langword="null"/> element.
     /// </exception>
     /// <exception cref="DuplicateHandlerException">A query or command has multiple handlers.</exception>
     /// <exception cref="ArgumentOutOfRangeException">A registration has an unknown metadata type.</exception>

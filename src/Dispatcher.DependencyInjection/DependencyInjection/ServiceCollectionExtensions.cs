@@ -13,19 +13,27 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers Dispatcher services. Handlers must be registered separately.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <param name="services">The service collection to add Dispatcher services to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
     public static IServiceCollection AddDispatcher(this IServiceCollection services) =>
         AddDispatcher(services, static _ => { });
 
     /// <summary>
-    /// Registers Dispatcher services with the specified options. Handlers must be registered separately.
+    /// Registers Dispatcher services using the specified options. Handlers must be registered separately.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure Dispatcher services.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <param name="services">The service collection to add Dispatcher services to.</param>
+    /// <param name="configure">The delegate that configures Dispatcher services.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="configure"/> sets <see cref="DispatcherOptions.ServiceLifetime"/> to
+    /// <see cref="ServiceLifetime.Singleton"/>.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
     public static IServiceCollection AddDispatcher(
@@ -93,9 +101,10 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers handlers found in the assembly containing <typeparamref name="TAssemblyMarker"/>.
     /// </summary>
-    /// <typeparam name="TAssemblyMarker">A type whose assembly contains handlers.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TAssemblyMarker">A type from the assembly that contains the handlers.</typeparam>
+    /// <param name="services">The service collection to add the handlers to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers<TAssemblyMarker>(this IServiceCollection services) =>
@@ -103,12 +112,15 @@ public static class ServiceCollectionExtensions
 
     /// <summary>
     /// Registers handlers found in the assembly containing <typeparamref name="TAssemblyMarker"/>
-    /// with the specified options.
+    /// using the specified options.
     /// </summary>
-    /// <typeparam name="TAssemblyMarker">A type whose assembly contains handlers.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TAssemblyMarker">A type from the assembly that contains the handlers.</typeparam>
+    /// <param name="services">The service collection to add the handlers to.</param>
+    /// <param name="configure">The delegate that configures handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers<TAssemblyMarker>(
@@ -119,9 +131,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers handlers found in an assembly.
     /// </summary>
-    /// <param name="services">The service collection.</param>
+    /// <param name="services">The service collection to add the handlers to.</param>
     /// <param name="assembly">The assembly to scan.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="assembly"/> is <see langword="null"/>.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
@@ -130,12 +145,16 @@ public static class ServiceCollectionExtensions
         services.AddDispatcherHandlers(static _ => { }, assembly);
 
     /// <summary>
-    /// Registers handlers found in an assembly with the specified options.
+    /// Registers handlers found in an assembly using the specified options.
     /// </summary>
-    /// <param name="services">The service collection.</param>
+    /// <param name="services">The service collection to add the handlers to.</param>
     /// <param name="assembly">The assembly to scan.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <param name="configure">The delegate that configures handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/>, <paramref name="assembly"/>, or <paramref name="configure"/> is
+    /// <see langword="null"/>.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
@@ -148,11 +167,15 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers scoped handlers found in one or more assemblies.
+    /// Registers handlers found in one or more assemblies.
     /// </summary>
-    /// <param name="services">The service collection.</param>
+    /// <param name="services">The service collection to add the handlers to.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="assemblies"/> is <see langword="null"/>, or
+    /// <paramref name="assemblies"/> contains a <see langword="null"/> element.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
@@ -163,10 +186,14 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers handlers found in one or more assemblies.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
+    /// <param name="services">The service collection to add the handlers to.</param>
+    /// <param name="configure">The delegate that configures handler registration.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/>, <paramref name="configure"/>, or <paramref name="assemblies"/> is
+    /// <see langword="null"/>, or <paramref name="assemblies"/> contains a <see langword="null"/> element.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     public static IServiceCollection AddDispatcherHandlers(
@@ -187,21 +214,31 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a pipeline behavior.
     /// </summary>
-    /// <typeparam name="TBehavior">The behavior implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TBehavior">The type of pipeline behavior to register.</typeparam>
+    /// <param name="services">The service collection to add the behavior to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <typeparamref name="TBehavior"/> is not a supported concrete or open generic behavior class.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior<TBehavior>(this IServiceCollection services) =>
         services.AddPipelineBehavior(typeof(TBehavior));
 
     /// <summary>
-    /// Registers a pipeline behavior with the specified options.
+    /// Registers a pipeline behavior using the specified options.
     /// </summary>
-    /// <typeparam name="TBehavior">The behavior implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure behavior registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TBehavior">The type of pipeline behavior to register.</typeparam>
+    /// <param name="services">The service collection to add the behavior to.</param>
+    /// <param name="configure">The delegate that configures behavior registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <typeparamref name="TBehavior"/> is not a supported concrete or open generic behavior class.
+    /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.BehaviorDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.BehaviorTrimming)]
     public static IServiceCollection AddPipelineBehavior<TBehavior>(
@@ -212,9 +249,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a pipeline behavior.
     /// </summary>
-    /// <param name="services">The service collection.</param>
+    /// <param name="services">The service collection to add the behavior to.</param>
     /// <param name="behaviorType">The behavior implementation type, which may be an open generic type.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="behaviorType"/> is <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="behaviorType"/> is not a supported concrete or open generic behavior class.
     /// </exception>
@@ -226,12 +266,16 @@ public static class ServiceCollectionExtensions
         services.AddPipelineBehavior(behaviorType, static _ => { });
 
     /// <summary>
-    /// Registers a pipeline behavior with the specified options.
+    /// Registers a pipeline behavior using the specified options.
     /// </summary>
-    /// <param name="services">The service collection.</param>
+    /// <param name="services">The service collection to add the behavior to.</param>
     /// <param name="behaviorType">The behavior implementation type, which may be an open generic type.</param>
-    /// <param name="configure">The options used to configure behavior registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <param name="configure">The delegate that configures behavior registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/>, <paramref name="behaviorType"/>, or <paramref name="configure"/> is
+    /// <see langword="null"/>.
+    /// </exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="behaviorType"/> is not a supported concrete or open generic behavior class.
     /// </exception>

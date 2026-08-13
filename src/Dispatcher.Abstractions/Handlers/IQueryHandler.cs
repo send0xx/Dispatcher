@@ -1,10 +1,10 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Handles queries of type <typeparamref name="TQuery"/>.
+/// Defines a handler for queries of type <typeparamref name="TQuery"/>.
 /// </summary>
-/// <typeparam name="TQuery">The query type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TQuery">The type of query to handle.</typeparam>
+/// <typeparam name="TResponse">The type of response returned by the handler.</typeparam>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
 {
@@ -12,8 +12,8 @@ public interface IQueryHandler<in TQuery, TResponse>
     /// Handles a query and returns its response.
     /// </summary>
     /// <param name="query">The query to handle.</param>
-    /// <param name="cancellationToken">A token that can cancel the operation.</param>
-    /// <returns>The query response.</returns>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>A value task whose result contains the query response.</returns>
     ValueTask<TResponse> HandleAsync(
         TQuery query,
         CancellationToken cancellationToken = default);

@@ -15,8 +15,19 @@ internal static class HandlerRegistrationEmitter
         source.AppendLine("#nullable enable");
         source.AppendLine("namespace Dispatcher.SourceGeneration;");
         source.AppendLine();
+        source.AppendLine("/// <summary>");
+        source.AppendLine("/// Provides registration methods for source-generated handlers in this assembly.");
+        source.AppendLine("/// </summary>");
         source.Append("public static class ").Append(className).AppendLine();
         source.AppendLine("{");
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Registers the source-generated handlers in this assembly.");
+        source.AppendLine("    /// </summary>");
+        source.AppendLine("    /// <param name=\"services\">The service collection to add the handlers to.</param>");
+        source.AppendLine("    /// <returns>The same service collection so that additional calls can be chained.</returns>");
+        source.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        source.AppendLine("    /// <paramref name=\"services\"/> is <see langword=\"null\"/>.");
+        source.AppendLine("    /// </exception>");
         source.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.MethodName)
             .AppendLine("(");
@@ -24,6 +35,15 @@ internal static class HandlerRegistrationEmitter
         source.Append("        => ").Append(result.MethodName)
             .AppendLine("(services, static _ => { });");
         source.AppendLine();
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Registers the source-generated handlers in this assembly using the specified options.");
+        source.AppendLine("    /// </summary>");
+        source.AppendLine("    /// <param name=\"services\">The service collection to add the handlers to.</param>");
+        source.AppendLine("    /// <param name=\"configure\">The delegate that configures handler registration.</param>");
+        source.AppendLine("    /// <returns>The same service collection so that additional calls can be chained.</returns>");
+        source.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        source.AppendLine("    /// <paramref name=\"services\"/> or <paramref name=\"configure\"/> is <see langword=\"null\"/>.");
+        source.AppendLine("    /// </exception>");
         source.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.MethodName)
             .AppendLine("(");

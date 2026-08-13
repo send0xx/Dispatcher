@@ -1,9 +1,9 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Handles notifications of type <typeparamref name="TNotification"/>.
+/// Defines a handler for notifications of type <typeparamref name="TNotification"/>.
 /// </summary>
-/// <typeparam name="TNotification">The notification type.</typeparam>
+/// <typeparam name="TNotification">The type of notification to handle.</typeparam>
 public interface INotificationHandler<in TNotification>
     where TNotification : INotification
 {
@@ -11,8 +11,8 @@ public interface INotificationHandler<in TNotification>
     /// Handles a notification.
     /// </summary>
     /// <param name="notification">The notification to handle.</param>
-    /// <param name="cancellationToken">A token that can cancel the operation.</param>
-    /// <returns>An operation that represents notification handling.</returns>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>A value task that represents the asynchronous notification handling operation.</returns>
     ValueTask HandleAsync(
         TNotification notification,
         CancellationToken cancellationToken = default);

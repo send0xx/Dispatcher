@@ -1,10 +1,11 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Dispatches queries and commands and publishes notifications through an <see cref="IServiceProvider"/>.
+/// Represents a reflection-based dispatcher that resolves handlers and pipeline behaviors from an
+/// <see cref="IServiceProvider"/>.
 /// </summary>
 /// <param name="serviceProvider">The service provider used to resolve handlers and behaviors.</param>
-/// <param name="registry">The handler registry.</param>
+/// <param name="registry">The registry used to locate handler wrappers.</param>
 public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
 {
     /// <inheritdoc />

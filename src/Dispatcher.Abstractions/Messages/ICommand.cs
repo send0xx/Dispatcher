@@ -1,12 +1,12 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Identifies a command that returns a response.
+/// Represents a command that returns a response.
 /// </summary>
-/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TResponse">The type of response returned by the command.</typeparam>
 public interface ICommand<out TResponse> : IRequest;
 
 /// <summary>
-/// Identifies a command that does not return a response.
+/// Represents a command that does not return a response.
 /// </summary>
 public interface ICommand : ICommand<Unit>;

@@ -1,10 +1,10 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Handles result-bearing commands of type <typeparamref name="TCommand"/>.
+/// Defines a handler for commands of type <typeparamref name="TCommand"/> that return a response.
 /// </summary>
-/// <typeparam name="TCommand">The command type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TCommand">The type of command to handle.</typeparam>
+/// <typeparam name="TResponse">The type of response returned by the handler.</typeparam>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
 {
@@ -12,17 +12,17 @@ public interface ICommandHandler<in TCommand, TResponse>
     /// Handles a command and returns its response.
     /// </summary>
     /// <param name="command">The command to handle.</param>
-    /// <param name="cancellationToken">A token that can cancel the operation.</param>
-    /// <returns>The command response.</returns>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>A value task whose result contains the command response.</returns>
     ValueTask<TResponse> HandleAsync(
         TCommand command,
         CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// Handles resultless commands of type <typeparamref name="TCommand"/>.
+/// Defines a handler for commands of type <typeparamref name="TCommand"/> that do not return a response.
 /// </summary>
-/// <typeparam name="TCommand">The command type.</typeparam>
+/// <typeparam name="TCommand">The type of command to handle.</typeparam>
 public interface ICommandHandler<in TCommand>
     where TCommand : ICommand
 {
@@ -30,8 +30,8 @@ public interface ICommandHandler<in TCommand>
     /// Handles a command.
     /// </summary>
     /// <param name="command">The command to handle.</param>
-    /// <param name="cancellationToken">A token that can cancel the operation.</param>
-    /// <returns>An operation that represents command handling.</returns>
+    /// <param name="cancellationToken">The cancellation token for the operation.</param>
+    /// <returns>A value task that represents the asynchronous command handling operation.</returns>
     ValueTask HandleAsync(
         TCommand command,
         CancellationToken cancellationToken = default);

@@ -6,9 +6,13 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Dispatcher.SourceGeneration;
 
+/// <summary>
+/// Generates Dispatcher registrations and dispatch infrastructure for opted-in assemblies.
+/// </summary>
 [Generator(LanguageNames.CSharp)]
 public sealed class DispatcherGenerator : IIncrementalGenerator
 {
+    /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(static postInitializationContext =>

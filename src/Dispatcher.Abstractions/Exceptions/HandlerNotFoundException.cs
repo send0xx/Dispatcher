@@ -10,5 +10,6 @@ public sealed class HandlerNotFoundException(Type messageType)
     /// <summary>
     /// Gets the message type without a handler.
     /// </summary>
+    /// <value>The concrete type of the query or command that has no registered handler.</value>
     public Type MessageType { get; } = messageType;
 }

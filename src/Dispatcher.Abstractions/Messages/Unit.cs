@@ -11,11 +11,13 @@ public readonly struct Unit : IEquatable<Unit>, IComparable<Unit>, IComparable
     /// <summary>
     /// Gets the single logical <see cref="Unit"/> value.
     /// </summary>
+    /// <value>The single logical <see cref="Unit"/> value.</value>
     public static ref readonly Unit Value => ref _value;
 
     /// <summary>
     /// Gets a completed value task containing <see cref="Value"/>.
     /// </summary>
+    /// <value>A completed value task whose result is <see cref="Value"/>.</value>
     public static ValueTask<Unit> ValueTask => new(_value);
 
     /// <inheritdoc />

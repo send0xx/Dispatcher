@@ -4,7 +4,7 @@ using System.Diagnostics.Metrics;
 namespace Dispatcher;
 
 /// <summary>
-/// Provides tracing and metrics instrumentation used by a Dispatcher registry.
+/// Represents tracing and metrics instrumentation used by a Dispatcher registry.
 /// </summary>
 /// <remarks>
 /// Applications normally configure this service through <see cref="DispatcherOptions.Telemetry"/>.
@@ -19,7 +19,7 @@ public sealed class DispatcherTelemetry : IDisposable
     private readonly Histogram<double>? _operationDuration;
 
     /// <summary>
-    /// Initializes Dispatcher telemetry from the specified configuration.
+    /// Initializes a new instance of the <see cref="DispatcherTelemetry"/> class.
     /// </summary>
     /// <param name="options">The telemetry configuration.</param>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>

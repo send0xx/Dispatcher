@@ -1,6 +1,6 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Identifies a notification that can have zero or more handlers.
+/// Represents a notification that can be published.
 /// </summary>
 public interface INotification;

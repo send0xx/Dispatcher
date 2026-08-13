@@ -11,11 +11,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a query handler.
     /// </summary>
-    /// <typeparam name="TQuery">The query type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="THandler">The query handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TQuery">The type of query to handle.</typeparam>
+    /// <typeparam name="TResponse">The type of response returned by the query.</typeparam>
+    /// <typeparam name="THandler">The type of query handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
@@ -26,12 +27,15 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a query handler with the specified options.
     /// </summary>
-    /// <typeparam name="TQuery">The query type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="THandler">The query handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TQuery">The type of query to handle.</typeparam>
+    /// <typeparam name="TResponse">The type of response returned by the query.</typeparam>
+    /// <typeparam name="THandler">The type of query handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <param name="configure">The delegate that configures the handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
@@ -44,13 +48,14 @@ public static class ServiceCollectionExtensions
             GetLifetime(configure));
 
     /// <summary>
-    /// Registers a result-bearing command handler.
+    /// Registers a handler for a command that returns a response.
     /// </summary>
-    /// <typeparam name="TCommand">The command type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TCommand">The type of command to handle.</typeparam>
+    /// <typeparam name="TResponse">The type of response returned by the command.</typeparam>
+    /// <typeparam name="THandler">The type of command handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
@@ -59,14 +64,17 @@ public static class ServiceCollectionExtensions
         AddCommandHandler<TCommand, TResponse, THandler>(services, static _ => { });
 
     /// <summary>
-    /// Registers a result-bearing command handler with the specified options.
+    /// Registers a handler for a command that returns a response, using the specified options.
     /// </summary>
-    /// <typeparam name="TCommand">The command type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TCommand">The type of command to handle.</typeparam>
+    /// <typeparam name="TResponse">The type of response returned by the command.</typeparam>
+    /// <typeparam name="THandler">The type of command handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <param name="configure">The delegate that configures the handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
@@ -79,12 +87,13 @@ public static class ServiceCollectionExtensions
             GetLifetime(configure));
 
     /// <summary>
-    /// Registers a resultless command handler.
+    /// Registers a handler for a command that does not return a response.
     /// </summary>
-    /// <typeparam name="TCommand">The command type.</typeparam>
-    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TCommand">The type of command to handle.</typeparam>
+    /// <typeparam name="THandler">The type of command handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
@@ -93,13 +102,16 @@ public static class ServiceCollectionExtensions
         AddCommandHandler<TCommand, THandler>(services, static _ => { });
 
     /// <summary>
-    /// Registers a resultless command handler with the specified options.
+    /// Registers a handler for a command that does not return a response, using the specified options.
     /// </summary>
-    /// <typeparam name="TCommand">The command type.</typeparam>
-    /// <typeparam name="THandler">The command handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TCommand">The type of command to handle.</typeparam>
+    /// <typeparam name="THandler">The type of command handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <param name="configure">The delegate that configures the handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
@@ -114,10 +126,11 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a notification handler.
     /// </summary>
-    /// <typeparam name="TNotification">The notification type.</typeparam>
-    /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TNotification">The type of notification to handle.</typeparam>
+    /// <typeparam name="THandler">The type of notification handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
@@ -128,11 +141,14 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a notification handler with the specified options.
     /// </summary>
-    /// <typeparam name="TNotification">The notification type.</typeparam>
-    /// <typeparam name="THandler">The notification handler implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure handler registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TNotification">The type of notification to handle.</typeparam>
+    /// <typeparam name="THandler">The type of notification handler to register.</typeparam>
+    /// <param name="services">The service collection to add the handler to.</param>
+    /// <param name="configure">The delegate that configures the handler registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
@@ -147,11 +163,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a pipeline behavior for a request and response type.
     /// </summary>
-    /// <typeparam name="TRequest">The request type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="TBehavior">The pipeline behavior implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TRequest">The type of request handled by the pipeline.</typeparam>
+    /// <typeparam name="TResponse">The type of response produced by the pipeline.</typeparam>
+    /// <typeparam name="TBehavior">The type of pipeline behavior to register.</typeparam>
+    /// <param name="services">The service collection to add the behavior to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
         this IServiceCollection services)
@@ -162,12 +179,15 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers a pipeline behavior for a request and response type with the specified options.
     /// </summary>
-    /// <typeparam name="TRequest">The request type.</typeparam>
-    /// <typeparam name="TResponse">The response type.</typeparam>
-    /// <typeparam name="TBehavior">The pipeline behavior implementation type.</typeparam>
-    /// <param name="services">The service collection.</param>
-    /// <param name="configure">The options used to configure behavior registration.</param>
-    /// <returns>The service collection for chaining.</returns>
+    /// <typeparam name="TRequest">The type of request handled by the pipeline.</typeparam>
+    /// <typeparam name="TResponse">The type of response produced by the pipeline.</typeparam>
+    /// <typeparam name="TBehavior">The type of pipeline behavior to register.</typeparam>
+    /// <param name="services">The service collection to add the behavior to.</param>
+    /// <param name="configure">The delegate that configures the behavior registration.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
         this IServiceCollection services,

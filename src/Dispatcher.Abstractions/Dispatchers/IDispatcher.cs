@@ -1,6 +1,6 @@
 namespace Dispatcher;
 
 /// <summary>
-/// Dispatches queries and commands and publishes notifications.
+/// Defines a dispatcher that combines query, command, and notification operations.
 /// </summary>
 public interface IDispatcher : IQueryDispatcher, ICommandDispatcher, INotificationDispatcher;

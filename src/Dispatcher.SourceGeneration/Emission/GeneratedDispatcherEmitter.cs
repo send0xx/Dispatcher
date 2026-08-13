@@ -63,14 +63,37 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine();
         registration.AppendLine("namespace Dispatcher.SourceGeneration;");
         registration.AppendLine();
+        registration.AppendLine("/// <summary>");
+        registration.AppendLine("/// Provides registration methods for the source-generated Dispatcher implementation.");
+        registration.AppendLine("/// </summary>");
         registration.Append("public static class ").Append(extensionsName).AppendLine();
         registration.AppendLine("{");
+        registration.AppendLine("    /// <summary>");
+        registration.AppendLine("    /// Registers the source-generated Dispatcher implementation.");
+        registration.AppendLine("    /// </summary>");
+        registration.AppendLine("    /// <param name=\"services\">The service collection to add Dispatcher services to.</param>");
+        registration.AppendLine("    /// <returns>The same service collection so that additional calls can be chained.</returns>");
+        registration.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        registration.AppendLine("    /// <paramref name=\"services\"/> is <see langword=\"null\"/>.");
+        registration.AppendLine("    /// </exception>");
         registration.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.DispatcherMethodName).AppendLine("(");
         registration.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
         registration.Append("        => ").Append(result.DispatcherMethodName)
             .AppendLine("(services, static _ => { });");
         registration.AppendLine();
+        registration.AppendLine("    /// <summary>");
+        registration.AppendLine("    /// Registers the source-generated Dispatcher implementation using the specified options.");
+        registration.AppendLine("    /// </summary>");
+        registration.AppendLine("    /// <param name=\"services\">The service collection to add Dispatcher services to.</param>");
+        registration.AppendLine("    /// <param name=\"configure\">The delegate that configures Dispatcher services.</param>");
+        registration.AppendLine("    /// <returns>The same service collection so that additional calls can be chained.</returns>");
+        registration.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        registration.AppendLine("    /// <paramref name=\"services\"/> or <paramref name=\"configure\"/> is <see langword=\"null\"/>.");
+        registration.AppendLine("    /// </exception>");
+        registration.AppendLine("    /// <exception cref=\"global::System.ArgumentOutOfRangeException\">");
+        registration.AppendLine("    /// <paramref name=\"configure\"/> sets the Dispatcher service lifetime to singleton.");
+        registration.AppendLine("    /// </exception>");
         registration.Append("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection ")
             .Append(result.DispatcherMethodName).AppendLine("(");
         registration.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
