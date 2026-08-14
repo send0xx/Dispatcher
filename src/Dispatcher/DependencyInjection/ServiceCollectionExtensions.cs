@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
-        AddQueryHandler<TQuery, TResponse, THandler>(services, static _ => { });
+        services.AddQueryHandler<TQuery, TResponse, THandler>(static _ => { });
 
     /// <summary>
     /// Registers a query handler with the specified options.
@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
-        AddCommandHandler<TCommand, TResponse, THandler>(services, static _ => { });
+        services.AddCommandHandler<TCommand, TResponse, THandler>(static _ => { });
 
     /// <summary>
     /// Registers a handler for a command that returns a response, using the specified options.
@@ -99,7 +99,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>
-        AddCommandHandler<TCommand, THandler>(services, static _ => { });
+        services.AddCommandHandler<TCommand, THandler>(static _ => { });
 
     /// <summary>
     /// Registers a handler for a command that does not return a response, using the specified options.
@@ -136,7 +136,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
-        AddNotificationHandler<TNotification, THandler>(services, static _ => { });
+        services.AddNotificationHandler<TNotification, THandler>(static _ => { });
 
     /// <summary>
     /// Registers a notification handler with the specified options.
@@ -177,7 +177,7 @@ public static class ServiceCollectionExtensions
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
         Type handlerType) =>
-        AddNotificationHandler(services, handlerType, static _ => { });
+        services.AddNotificationHandler(handlerType, static _ => { });
 
     /// <summary>
     /// Registers an open generic notification handler with the specified options.
@@ -238,7 +238,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services)
         where TRequest : IRequest
         where TBehavior : class, IPipelineBehavior<TRequest, TResponse> =>
-        AddPipelineBehavior<TRequest, TResponse, TBehavior>(services, static _ => { });
+        services.AddPipelineBehavior<TRequest, TResponse, TBehavior>(static _ => { });
 
     /// <summary>
     /// Registers a pipeline behavior for a request and response type with the specified options.

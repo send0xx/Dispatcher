@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
     [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
     public static IServiceCollection AddDispatcher(this IServiceCollection services) =>
-        AddDispatcher(services, static _ => { });
+        services.AddDispatcher(static _ => { });
 
     /// <summary>
     /// Registers Dispatcher services using the specified options. Handlers must be registered separately.
@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
             };
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
         }
+
         services.TryAddSingleton(static provider =>
             DispatcherRegistry.Create(
                 provider.GetServices<MessageRegistration>()
