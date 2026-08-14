@@ -201,6 +201,28 @@ await publisher.PublishAsync(new OrderCreated(orderId), cancellationToken);
 
 Notification handlers run sequentially in registration order. Publishing a notification with no handlers is a no-op.
 
+An open generic notification handler can observe every compatible known concrete notification:
+
+```csharp
+internal sealed class AuditHandler<TNotification>
+    : INotificationHandler<TNotification>
+    where TNotification : INotification
+{
+    public ValueTask HandleAsync(
+        TNotification notification,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.CompletedTask;
+}
+
+builder.Services.AddNotificationHandler(typeof(AuditHandler<>));
+```
+
+Assembly scanning and generated handler registration discover this canonical shape automatically.
+Dispatcher first invokes the one selected closed notification route, then invokes compatible open
+handlers in registration order, closed over the concrete published type. Open handlers are registered
+as their own services and therefore do not appear in `IEnumerable<INotificationHandler<TNotification>>`;
+that enumerable remains the closed-handler view.
+
 Queries and commands require exactly one selected handler. A missing handler throws
 `HandlerNotFoundException`, and duplicate handlers for the same handled message type throw
 `DuplicateHandlerException`.
@@ -371,7 +393,7 @@ All samples target .NET 10. Start with the [samples overview](samples/README.md)
   dotnet run --project samples/DependencyInjection/Dispatcher.SampleApi
   ```
 
-- [Native AOT Minimal API](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates shared contracts, generated polymorphic routes, a host-generated dispatcher, an open generic logging behavior, source-generated JSON metadata, and internal handlers composed from two referenced assemblies. Publish it with:
+- [Native AOT Minimal API](samples/NativeAot/Dispatcher.NativeAotHostSample) demonstrates shared contracts, generated polymorphic routes, a host-generated dispatcher, open generic notification handling and logging behavior, source-generated JSON metadata, and internal handlers composed from two referenced assemblies. Publish it with:
 
   ```bash
   dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample -c Release

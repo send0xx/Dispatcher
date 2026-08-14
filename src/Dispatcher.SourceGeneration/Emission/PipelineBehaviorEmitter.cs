@@ -13,10 +13,10 @@ internal static class PipelineBehaviorEmitter
         GenerationResult result)
     {
         var requests = result.DispatchRoutes
-            .Where(route => route.Handler.Kind != HandlerModelKind.Notification)
+            .Where(route => route.Handler is not null && route.Handler.Kind != HandlerModelKind.Notification)
             .Select(route => new
             {
-                Request = route.Handler.MessageType,
+                Request = route.Handler!.MessageType,
                 Response = route.Handler.Kind == HandlerModelKind.Command
                     ? ((INamedTypeSymbol)route.Handler.MessageType).AllInterfaces
                         .First(@interface => @interface.OriginalDefinition.ToDisplayString() ==

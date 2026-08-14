@@ -17,8 +17,9 @@ Each module generates its own handler registrations so its handler implementatio
 The host generates one dispatcher whose routes include both modules and their shared contracts. The
 reflection implementation is not used. `ListMessagesQuery` routes to the base `MessagesQuery` handler.
 After adding a message, its command handler publishes `MessageAdded`, which routes to the base
-`MessageEvent` handlers in both the Messages and Audit modules. The generator also closes
-`LoggingBehavior<,>` over every known query and command without runtime generic construction.
+`MessageEvent` handler in the Messages module and then to the Audit module's open generic handler
+closed over `MessageAdded`. The generator also closes `LoggingBehavior<,>` over every known query
+and command without runtime generic construction.
 
 Publish a native executable for the current platform:
 

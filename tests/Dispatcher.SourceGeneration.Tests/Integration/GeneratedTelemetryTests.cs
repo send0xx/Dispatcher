@@ -70,7 +70,14 @@ public sealed class GeneratedTelemetryTests
         Assert.Equal("Base hello, Ada", queryResult);
         Assert.Equal(5, commandResult);
         Assert.Equal(
-            ["base-query", "base-command", "domain-a", "domain-b"],
+            [
+                "base-query",
+                "base-command",
+                "domain-a",
+                "domain-b",
+                "open-GeneratedUserUpdatedEvent",
+                "domain-open-GeneratedUserUpdatedEvent"
+            ],
             scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
     }
 
@@ -143,8 +150,37 @@ public sealed class GeneratedTelemetryTests
 
         Assert.Equal("Specific hello, Ada", result);
         Assert.Equal(
-            ["specific-query", "user-created"],
+            [
+                "specific-query",
+                "user-created",
+                "open-GeneratedUserCreatedEvent",
+                "domain-open-GeneratedUserCreatedEvent"
+            ],
             scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
+
+    [Fact]
+    public async Task Open_handler_observes_a_known_notification_without_a_closed_handler()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new GeneratedStandaloneEvent());
+
+        Assert.Equal(
+            ["open-GeneratedStandaloneEvent"],
+            scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+        Assert.Empty(scope.ServiceProvider.GetServices<INotificationHandler<GeneratedStandaloneEvent>>());
     }
 }
 
@@ -240,9 +276,34 @@ public sealed class GeneratedRecordingBehavior<TRequest, TResponse>(GeneratedTes
     }
 }
 
-public abstract record GeneratedDomainEvent : INotification;
+public interface IGeneratedAuditedNotification : INotification;
+
+public abstract record GeneratedDomainEvent : IGeneratedAuditedNotification;
 public sealed record GeneratedUserUpdatedEvent : GeneratedDomainEvent;
 public sealed record GeneratedUserCreatedEvent : GeneratedDomainEvent;
+public sealed record GeneratedStandaloneEvent : IGeneratedAuditedNotification;
+
+public sealed class GeneratedAuditNotificationHandler<TNotification>(GeneratedTestState state)
+    : INotificationHandler<TNotification>
+    where TNotification : IGeneratedAuditedNotification
+{
+    public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
+    {
+        state.Events.Add("open-" + typeof(TNotification).Name);
+        return ValueTask.CompletedTask;
+    }
+}
+
+public sealed class GeneratedDomainAuditNotificationHandler<TNotification>(GeneratedTestState state)
+    : INotificationHandler<TNotification>
+    where TNotification : GeneratedDomainEvent
+{
+    public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
+    {
+        state.Events.Add("domain-open-" + typeof(TNotification).Name);
+        return ValueTask.CompletedTask;
+    }
+}
 
 public sealed class GeneratedFirstDomainEventHandler(GeneratedTestState state)
     : INotificationHandler<GeneratedDomainEvent>

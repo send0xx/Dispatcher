@@ -8,21 +8,21 @@ public sealed record NotificationHandlerRegistration : HandlerRegistration
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationHandlerRegistration"/> class.
     /// </summary>
-    /// <param name="messageType">The handled notification type.</param>
-    /// <param name="handlerType">The concrete handler type.</param>
+    /// <param name="messageType">
+    /// The handled notification type, or the handler type parameter for an open generic registration.
+    /// </param>
+    /// <param name="handlerType">The closed handler type or open generic handler type definition.</param>
     public NotificationHandlerRegistration(Type messageType, Type handlerType)
         : base(messageType, handlerType)
     {
     }
 
     /// <summary>
-    /// Creates a notification handler registration.
+    /// Gets a value indicating whether the handler is an open generic notification handler.
     /// </summary>
-    /// <typeparam name="TNotification">The type of notification to register.</typeparam>
-    /// <typeparam name="THandler">The type of notification handler to register.</typeparam>
-    /// <returns>A notification handler registration for the specified types.</returns>
-    public static NotificationHandlerRegistration Create<TNotification, THandler>()
-        where TNotification : INotification
-        where THandler : class, INotificationHandler<TNotification> =>
-        new(typeof(TNotification), typeof(THandler));
+    /// <value>
+    /// <see langword="true"/> when <see cref="HandlerRegistration.HandlerType"/> is a generic type definition;
+    /// otherwise, <see langword="false"/>.
+    /// </value>
+    public bool IsOpenGeneric => HandlerType.IsGenericTypeDefinition;
 }

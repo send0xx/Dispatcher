@@ -59,12 +59,42 @@ internal sealed class HandlerModel
     };
 }
 
+internal sealed class OpenGenericNotificationHandlerModel(INamedTypeSymbol implementationType)
+{
+    public INamedTypeSymbol ImplementationType { get; } = implementationType;
+    public ITypeParameterSymbol TypeParameter { get; } = implementationType.TypeParameters[0];
+    public string SortKey => ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+    public string RegistrationClassName => "global::Dispatcher.SourceGeneration." +
+        "GeneratedHandlerServiceCollectionExtensions_" +
+        IdentifierSanitizer.SanitizeIdentifier(ImplementationType.ContainingAssembly.Name);
+    public string MethodSuffix => IdentifierSanitizer.SanitizeIdentifier(
+        ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified)) + "_" +
+        GetStableHash(ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified)).ToString("X8");
+
+    private static uint GetStableHash(string value)
+    {
+        const uint offset = 2166136261;
+        const uint prime = 16777619;
+        var hash = offset;
+        foreach (var character in value)
+        {
+            hash ^= character;
+            hash *= prime;
+        }
+
+        return hash;
+    }
+}
+
 internal sealed class DispatchRouteModel(
     INamedTypeSymbol messageType,
-    HandlerModel handler)
+    HandlerModel? handler,
+    ImmutableArray<OpenGenericNotificationHandlerModel> openNotificationHandlers)
 {
     public INamedTypeSymbol MessageType { get; } = messageType;
-    public HandlerModel Handler { get; } = handler;
+    public HandlerModel? Handler { get; } = handler;
+    public ImmutableArray<OpenGenericNotificationHandlerModel> OpenNotificationHandlers { get; } =
+        openNotificationHandlers;
 }
 
 internal sealed class GenerationResult
@@ -74,6 +104,8 @@ internal sealed class GenerationResult
         null,
         ImmutableArray<HandlerModel>.Empty,
         ImmutableArray<HandlerModel>.Empty,
+        ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
+        ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
         ImmutableArray<DispatchRouteModel>.Empty,
         ImmutableArray<INamedTypeSymbol>.Empty,
         ImmutableArray<Diagnostic>.Empty);
@@ -83,6 +115,8 @@ internal sealed class GenerationResult
         string? dispatcherMethodName,
         ImmutableArray<HandlerModel> localHandlers,
         ImmutableArray<HandlerModel> dispatchHandlers,
+        ImmutableArray<OpenGenericNotificationHandlerModel> localOpenNotificationHandlers,
+        ImmutableArray<OpenGenericNotificationHandlerModel> dispatchOpenNotificationHandlers,
         ImmutableArray<DispatchRouteModel> dispatchRoutes,
         ImmutableArray<INamedTypeSymbol> openBehaviors,
         ImmutableArray<Diagnostic> diagnostics,
@@ -92,6 +126,8 @@ internal sealed class GenerationResult
         DispatcherMethodName = dispatcherMethodName;
         LocalHandlers = localHandlers;
         DispatchHandlers = dispatchHandlers;
+        LocalOpenNotificationHandlers = localOpenNotificationHandlers;
+        DispatchOpenNotificationHandlers = dispatchOpenNotificationHandlers;
         DispatchRoutes = dispatchRoutes;
         OpenBehaviors = openBehaviors;
         Diagnostics = diagnostics;
@@ -102,6 +138,8 @@ internal sealed class GenerationResult
     public string? DispatcherMethodName { get; }
     public ImmutableArray<HandlerModel> LocalHandlers { get; }
     public ImmutableArray<HandlerModel> DispatchHandlers { get; }
+    public ImmutableArray<OpenGenericNotificationHandlerModel> LocalOpenNotificationHandlers { get; }
+    public ImmutableArray<OpenGenericNotificationHandlerModel> DispatchOpenNotificationHandlers { get; }
     public ImmutableArray<DispatchRouteModel> DispatchRoutes { get; }
     public ImmutableArray<INamedTypeSymbol> OpenBehaviors { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }

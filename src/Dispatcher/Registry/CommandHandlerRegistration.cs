@@ -14,15 +14,4 @@ public sealed record CommandHandlerRegistration : HandlerRegistration
         : base(messageType, handlerType)
     {
     }
-
-    /// <summary>
-    /// Creates a resultless command handler registration.
-    /// </summary>
-    /// <typeparam name="TCommand">The type of command to register.</typeparam>
-    /// <typeparam name="THandler">The type of command handler to register.</typeparam>
-    /// <returns>A command handler registration for the specified types.</returns>
-    public static CommandHandlerRegistration Create<TCommand, THandler>()
-        where TCommand : ICommand
-        where THandler : class, ICommandHandler<TCommand> =>
-        new(typeof(TCommand), typeof(THandler));
 }

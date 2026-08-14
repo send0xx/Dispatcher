@@ -12,8 +12,8 @@ public abstract record HandlerRegistration : MessageRegistration
     }
 
     /// <summary>
-    /// Gets the concrete handler type.
+    /// Gets the handler type.
     /// </summary>
-    /// <value>The concrete type of the registered handler.</value>
+    /// <value>The closed handler type or open generic notification handler type definition.</value>
     public Type HandlerType { get; }
 }

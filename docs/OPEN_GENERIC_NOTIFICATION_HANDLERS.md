@@ -2,8 +2,7 @@
 
 ## Status
 
-Future design proposal. Open generic notification handlers are not currently supported.
-This document records the intended behavior and the questions to settle before implementation.
+Implemented for reflection-based assembly scanning, explicit registration, and source-generated dispatch.
 
 ## Goal
 
@@ -56,7 +55,7 @@ behave differently.
 
 ## Supported handler shape
 
-The first implementation should accept only the canonical form:
+The implementation accepts only the canonical form:
 
 ```csharp
 Handler<TNotification> : INotificationHandler<TNotification>
@@ -71,22 +70,26 @@ The handler must:
 - Be closed only for concrete notification types that satisfy all generic constraints.
 
 More complex mappings such as `INotificationHandler<Envelope<T>>`, partially open handlers, and
-handlers with unrelated generic parameters should remain unsupported initially. The reflection
-scanner and source generator should report invalid shapes consistently.
+handlers with unrelated generic parameters are unsupported. The reflection scanner and source
+generator reject invalid shapes.
 
 ## Registration and discovery
 
-Assembly scanning should discover canonical open generic notification handlers. Explicit
-registration should also be possible, likely through an overload shaped like:
+Assembly scanning discovers canonical open generic notification handlers. Explicit registration uses:
 
 ```csharp
 services.AddNotificationHandler(typeof(AuditHandler<>));
 ```
 
-The exact public API should be decided during implementation after checking whether the existing
-registration metadata can represent the responsibility cleanly. A new public metadata type should
-be introduced only if composing `MessageRegistration` and the existing handler registrations
-cannot express the feature without ambiguity.
+Open and closed handlers both use `NotificationHandlerRegistration`. `IsOpenGeneric` is derived from
+whether `HandlerType` is a generic type definition. For an open registration, `MessageType` is the
+handler's notification type parameter. Because that parameter is not concrete, it cannot become a
+route target during registry construction.
+
+The DI descriptor registers the handler definition as itself, for example
+`AuditHandler<> -> AuditHandler<>`. It is intentionally not registered as
+`INotificationHandler<>`: closed handler enumeration therefore remains isolated from additive open
+observers without keyed services. The descriptor remains the single source of truth for lifetime.
 
 Startup-precomputed routes require a finite set of concrete notification types. A generic handler
 does not identify those types by itself. The implementation therefore needs to define how a
@@ -94,41 +97,32 @@ notification with no closed handler becomes a known route target. Prefer notific
 already discovered from registered modules or emitted as explicit message metadata; do not scan
 every referenced application assembly implicitly.
 
-Source generation should discover the same handler shape and pre-close registrations for every
-compatible concrete notification known to the generated host. Generated dispatch must not use
+Source generation discovers the same handler shape. Each module emits public matching and strongly
+typed invocation helpers so internal open handlers remain usable by a generated host. The host emits
+a singleton execution plan from registration metadata in runtime registration order. The plan contains
+route-specific static invokers and generated closed generic references; generated dispatch does not use
 runtime reflection, `MakeGenericType`, or a dispatch-time cache.
 
 ## Ordering
 
-The proposed deterministic order is:
+The deterministic order is:
 
 1. Closed handlers from the selected route, in their existing registration order.
 2. Compatible open generic handlers, in their registration order.
 
 This preserves current notification ordering within the selected route and avoids pretending that
 closed and open registrations have one global order when they may come from different modules.
-Confirm this ordering before implementation because it becomes observable API behavior.
 
-## Current behavior and implementation risk
+## Runtime implementation
 
-Current support is intentionally incomplete:
+The reflection registry closes compatible handler self-service types during singleton registry
+creation. Closed-route wrappers resolve only `IEnumerable<INotificationHandler<TSelected>>`; combined
+wrappers then resolve each preclosed open handler type and invoke it as
+`INotificationHandler<TConcrete>`. Reflection and generic construction remain limited to startup.
 
-- The reflection scanner excludes handler classes with unbound generic parameters.
-- The source generator reports `DSPG003` for an open generic handler.
-- The typed `AddNotificationHandler<TNotification, THandler>` API accepts only a closed handler.
-
-A consumer can directly register an open generic Microsoft DI descriptor today. That can appear to
-work when the selected route is the exact notification type because the wrapper resolves
-`IEnumerable<INotificationHandler<TNotification>>`. It is not supported behavior. When Dispatcher
-selects a base route, the same wrapper resolves the generic handler closed over the base type rather
-than the concrete published type. A generic-only registration also does not create Dispatcher route
-metadata.
-
-The implementation must avoid invoking an open handler twice when Microsoft DI includes it in the
-same enumerable as exact closed handlers. It will likely need to keep closed-route resolution and
-concrete generic-handler resolution distinct while preserving configured handler lifetimes. This
-should be designed using the existing registry, wrapper, and registration responsibilities before
-adding another abstraction.
+An open handler does not by itself define an infinite set of routes. Open-only publication works when
+the concrete notification is already known from scanned modules, handled-message assemblies, a
+generated host, a generic constraint assembly, or explicit `MessageRegistration` metadata.
 
 ## Telemetry and failure behavior
 
@@ -137,7 +131,7 @@ handlers. It should continue reporting the concrete published message type. The 
 cancellation should stop sequential execution, be recorded once for the publish operation, and be
 re-thrown unchanged.
 
-## Verification plan
+## Verification
 
 Tests should cover both reflection and source-generated dispatch:
 
@@ -152,9 +146,9 @@ Tests should cover both reflection and source-generated dispatch:
 - Cross-assembly contracts, closed handlers, and open handlers.
 - Reflection and generated behavior parity, including Native AOT publishing.
 
-Before accepting the feature, benchmark startup, generated source size, compile time, and publish
-latency with thousands of notification types. Source generation can multiply the number of emitted
-registrations by `concrete notification count × open generic handler count`.
+Source generation can multiply the number of emitted route invokers by
+`compatible concrete notification count × open generic handler count`; source size and startup cost
+should therefore be monitored when applications contain thousands of notification types.
 
 ## Non-goals
 

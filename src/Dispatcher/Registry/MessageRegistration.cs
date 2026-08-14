@@ -17,6 +17,8 @@ public record MessageRegistration
     /// <summary>
     /// Gets the message type.
     /// </summary>
-    /// <value>The concrete route target or handled message type.</value>
+    /// <value>
+    /// The concrete route target, handled message type, or open notification handler type parameter.
+    /// </value>
     public Type MessageType { get; }
 }

@@ -233,6 +233,47 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
+    public void Generates_key_free_open_notification_registration_and_dispatch_plan()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestNotification : INotification;
+            internal sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                where TNotification : INotification
+            {
+                public ValueTask HandleAsync(
+                    TNotification notification,
+                    CancellationToken cancellationToken) => ValueTask.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var registration = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "public static class GeneratedHandlerServiceCollectionExtensions_GeneratorTests",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains("AddNotificationHandler(services, typeof(global::AuditHandler<>)", registration, StringComparison.Ordinal);
+        Assert.Contains("IsOpenNotificationHandler_", registration, StringComparison.Ordinal);
+        Assert.Contains("InvokeOpenNotificationHandler_", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("Keyed", registration, StringComparison.Ordinal);
+
+        var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();
+        Assert.Contains("internal sealed class OpenNotificationHandlerRegistry", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("OpenNotificationCore<global::TestNotification>", dispatcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("MakeGenericType", dispatcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("Keyed", dispatcher, StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
     public void Generates_closed_registrations_for_open_pipeline_behavior()
     {
         const string source = """

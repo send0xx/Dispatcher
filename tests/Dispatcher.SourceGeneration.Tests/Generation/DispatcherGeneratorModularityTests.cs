@@ -186,6 +186,53 @@ public sealed class DispatcherGeneratorModularityTests
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == "DSPG007");
     }
 
+    [Fact]
+    public void Host_dispatcher_uses_public_generated_invoker_for_internal_open_handler()
+    {
+        var contracts = GeneratorTestHarness.CompileModule(
+            """
+            using Dispatcher;
+            namespace Contracts;
+            public abstract record SharedEvent : INotification;
+            public sealed record SharedEventOccurred : SharedEvent;
+            """,
+            "Open.Contracts");
+        var handlers = GeneratorTestHarness.CompileModule(
+            """
+            using Contracts;
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddOpenHandlers")]
+            internal sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                where TNotification : SharedEvent
+            {
+                public ValueTask HandleAsync(
+                    TNotification notification,
+                    CancellationToken cancellationToken) => ValueTask.CompletedTask;
+            }
+            """,
+            "Open.Handlers",
+            [contracts]);
+
+        var result = GeneratorTestHarness.Run(
+            """
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddDispatcher")]
+            """,
+            additionalReferences: [contracts, handlers],
+            assemblyName: "Open.Host");
+
+        AssertNoErrors(result);
+        var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "global::Dispatcher.SourceGeneration.GeneratedHandlerServiceCollectionExtensions_Open_Handlers.InvokeOpenNotificationHandler_",
+            dispatcher,
+            StringComparison.Ordinal);
+        Assert.Contains("OpenNotificationCore<global::Contracts.SharedEventOccurred>", dispatcher, StringComparison.Ordinal);
+        Assert.DoesNotContain("global::AuditHandler", dispatcher, StringComparison.Ordinal);
+    }
+
     private static MetadataReference CompileQueryModule(
         string assemblyName,
         string methodName,

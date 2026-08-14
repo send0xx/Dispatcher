@@ -22,7 +22,7 @@ internal static class HandlerAssemblyScanner
         ServiceLifetime lifetime)
     {
         var scanState = GetOrCreateScanState(services);
-        var handlerCandidates = new List<(Type ImplementationType, Type[] ServiceTypes)[]>();
+        var handlerCandidates = new List<(Type ImplementationType, Type ServiceType, HandlerRegistration Registration)[]>();
         foreach (var assembly in assemblies.Distinct())
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -34,7 +34,10 @@ internal static class HandlerAssemblyScanner
 
             var types = GetLoadableTypes(assembly);
             scanState.HandlerAssemblies.Add(assembly);
-            handlerCandidates.Add(GetHandlerCandidates(types));
+            var candidates = GetHandlerCandidates(types);
+            handlerCandidates.Add(candidates);
+            scanState.HasOpenNotificationHandlers |= candidates.Any(static candidate =>
+                candidate.Registration is NotificationHandlerRegistration { IsOpenGeneric: true });
             AddMessageScan(scanState, assembly, types);
         }
 
@@ -53,8 +56,15 @@ internal static class HandlerAssemblyScanner
             .Where(static descriptor => descriptor.ServiceType == typeof(HandlerRegistration))
             .Select(static descriptor => descriptor.ImplementationInstance)
             .OfType<HandlerRegistration>()
+            .Where(static registration =>
+                registration is not NotificationHandlerRegistration { IsOpenGeneric: true })
             .Select(static registration => registration.MessageType)
             .ToHashSet();
+        scanState.HasOpenNotificationHandlers |= services
+            .Where(static descriptor => descriptor.ServiceType == typeof(HandlerRegistration))
+            .Select(static descriptor => descriptor.ImplementationInstance)
+            .OfType<NotificationHandlerRegistration>()
+            .Any(static registration => registration.IsOpenGeneric);
         var registeredMessageTypes = services
             .Where(static descriptor => descriptor.ServiceType == typeof(MessageRegistration))
             .Select(static descriptor => descriptor.ImplementationInstance)
@@ -62,8 +72,17 @@ internal static class HandlerAssemblyScanner
             .Select(static registration => registration.MessageType)
             .ToHashSet();
 
-        foreach (var messageAssembly in newlyHandledMessageTypes
-                     .Select(static messageType => messageType.Assembly)
+        var messageAssemblies = newlyHandledMessageTypes
+            .Select(static messageType => messageType.Assembly)
+            .Concat(handlerCandidates
+                .SelectMany(static candidates => candidates)
+                .Where(static candidate =>
+                    candidate.Registration is NotificationHandlerRegistration { IsOpenGeneric: true })
+                .SelectMany(static candidate => candidate.ImplementationType
+                    .GetGenericArguments()[0]
+                    .GetGenericParameterConstraints())
+                .Select(static constraint => constraint.Assembly));
+        foreach (var messageAssembly in messageAssemblies
                      .Distinct())
         {
             if (!scanState.MessageTypes.ContainsKey(messageAssembly))
@@ -81,7 +100,8 @@ internal static class HandlerAssemblyScanner
                 services,
                 messageTypes,
                 handledMessageTypes,
-                registeredMessageTypes);
+                registeredMessageTypes,
+                scanState.HasOpenNotificationHandlers);
         }
 
         return services;
@@ -107,17 +127,16 @@ internal static class HandlerAssemblyScanner
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     private static HashSet<Type> RegisterHandlers(
         IServiceCollection services,
-        IEnumerable<(Type ImplementationType, Type[] ServiceTypes)> candidates,
+        IEnumerable<(Type ImplementationType, Type ServiceType, HandlerRegistration Registration)> candidates,
         ServiceLifetime lifetime)
     {
         var handledMessageTypes = new HashSet<Type>();
-        foreach (var (implementationType, serviceTypes) in candidates)
+        foreach (var (implementationType, serviceType, registration) in candidates)
         {
-            foreach (var serviceType in serviceTypes)
+            services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
+            services.AddSingleton(registration);
+            if (registration is not NotificationHandlerRegistration { IsOpenGeneric: true })
             {
-                services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
-                var registration = CreateRegistration(serviceType, implementationType);
-                services.AddSingleton(registration);
                 handledMessageTypes.Add(registration.MessageType);
             }
         }
@@ -129,13 +148,15 @@ internal static class HandlerAssemblyScanner
         IServiceCollection services,
         IEnumerable<Type> types,
         IReadOnlySet<Type> handledMessageTypes,
-        ISet<Type> registeredMessageTypes)
+        ISet<Type> registeredMessageTypes,
+        bool hasOpenNotificationHandlers)
     {
         foreach (var messageType in types)
         {
             if (handledMessageTypes.Contains(messageType) ||
                 registeredMessageTypes.Contains(messageType) ||
-                !HasHandledBaseType(messageType, handledMessageTypes))
+                !HasHandledBaseType(messageType, handledMessageTypes) &&
+                !(hasOpenNotificationHandlers && typeof(INotification).IsAssignableFrom(messageType)))
             {
                 continue;
             }
@@ -163,20 +184,56 @@ internal static class HandlerAssemblyScanner
                 .ToArray());
     }
 
-    private static (Type ImplementationType, Type[] ServiceTypes)[] GetHandlerCandidates(
-        IEnumerable<Type> types) =>
-        types
-            .Where(static type =>
-                type is { IsClass: true, IsAbstract: false, ContainsGenericParameters: false })
-            .Select(type => (
-                ImplementationType: type,
-                ServiceTypes: type.GetInterfaces()
-                    .Where(IsHandlerInterface)
-                    .OrderBy(static serviceType => serviceType.FullName, StringComparer.Ordinal)
-                    .ToArray()))
-            .Where(static candidate => candidate.ServiceTypes.Length > 0)
-            .OrderBy(static candidate => candidate.ImplementationType.FullName, StringComparer.Ordinal)
-            .ToArray();
+    private static (Type ImplementationType, Type ServiceType, HandlerRegistration Registration)[]
+        GetHandlerCandidates(IEnumerable<Type> types)
+    {
+        var candidates = new List<(Type, Type, HandlerRegistration)>();
+        foreach (var type in types
+                     .Where(static type => type is { IsClass: true, IsAbstract: false })
+                     .OrderBy(static type => type.FullName, StringComparer.Ordinal))
+        {
+            var serviceTypes = type.GetInterfaces()
+                .Where(IsHandlerInterface)
+                .OrderBy(static serviceType => serviceType.FullName, StringComparer.Ordinal)
+                .ToArray();
+            if (serviceTypes.Length == 0)
+            {
+                continue;
+            }
+
+            if (!type.ContainsGenericParameters)
+            {
+                candidates.AddRange(serviceTypes.Select(serviceType => (
+                    type,
+                    serviceType,
+                    CreateRegistration(serviceType, type))));
+                continue;
+            }
+
+            var typeParameter = type.IsGenericTypeDefinition && type.GetGenericArguments() is [var parameter]
+                ? parameter
+                : null;
+            var notificationService = typeParameter is null
+                ? null
+                : serviceTypes.FirstOrDefault(serviceType =>
+                    serviceType.IsGenericType &&
+                    serviceType.GetGenericTypeDefinition() == typeof(INotificationHandler<>) &&
+                    serviceType.GetGenericArguments()[0] == typeParameter);
+            if (notificationService is null || serviceTypes.Length != 1 || type.GetConstructors().Length == 0)
+            {
+                throw new ArgumentException(
+                    $"Handler '{type.FullName}' must be closed or use the canonical open notification handler shape.",
+                    nameof(types));
+            }
+
+            candidates.Add((
+                type,
+                type,
+                new NotificationHandlerRegistration(typeParameter!, type)));
+        }
+
+        return candidates.ToArray();
+    }
 
     private static bool IsConcreteMessage(Type type) =>
         type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
@@ -239,5 +296,6 @@ internal static class HandlerAssemblyScanner
     {
         internal HashSet<Assembly> HandlerAssemblies { get; } = [];
         internal Dictionary<Assembly, Type[]> MessageTypes { get; } = [];
+        internal bool HasOpenNotificationHandlers { get; set; }
     }
 }

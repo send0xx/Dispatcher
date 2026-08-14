@@ -24,11 +24,12 @@ internal sealed class GetAuditCountQueryHandler(AuditState state)
         CancellationToken cancellationToken) => ValueTask.FromResult(state.Count);
 }
 
-internal sealed class AuditMessageAddedHandler(AuditState state)
-    : INotificationHandler<MessageEvent>
+internal sealed class AuditNotificationHandler<TNotification>(AuditState state)
+    : INotificationHandler<TNotification>
+    where TNotification : MessageEvent
 {
     public ValueTask HandleAsync(
-        MessageEvent notification,
+        TNotification notification,
         CancellationToken cancellationToken)
     {
         state.Record();

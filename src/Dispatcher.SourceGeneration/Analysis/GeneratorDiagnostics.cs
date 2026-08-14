@@ -10,8 +10,9 @@ internal static class GeneratorDiagnostics
     internal static readonly DiagnosticDescriptor DuplicateRequestHandler = Create(
         "DSPG002", "Multiple request handlers", "Request '{0}' has multiple handlers: {1}");
     internal static readonly DiagnosticDescriptor OpenGenericHandler = Create(
-        "DSPG003", "Open generic handlers are unsupported",
-        "Handler '{0}' is open generic and cannot be registered by the generator");
+        "DSPG003", "Unsupported open generic handler",
+        "Handler '{0}' must have one type parameter and implement " +
+        "INotificationHandler<TNotification> using that parameter directly");
     internal static readonly DiagnosticDescriptor HandlerCannotBeActivated = Create(
         "DSPG004", "Handler cannot be activated",
         "Handler '{0}' must be accessible and expose at least one public constructor");

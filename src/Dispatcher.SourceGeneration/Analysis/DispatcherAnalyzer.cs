@@ -63,6 +63,8 @@ internal static class DispatcherAnalyzer
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
                 ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
@@ -81,6 +83,8 @@ internal static class DispatcherAnalyzer
                 null,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
                 ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
@@ -99,6 +103,8 @@ internal static class DispatcherAnalyzer
                 dispatcherMethodName,
                 ImmutableArray<HandlerModel>.Empty,
                 ImmutableArray<HandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
+                ImmutableArray<OpenGenericNotificationHandlerModel>.Empty,
                 ImmutableArray<DispatchRouteModel>.Empty,
                 ImmutableArray<INamedTypeSymbol>.Empty,
                 diagnostics.ToImmutable());
@@ -110,6 +116,7 @@ internal static class DispatcherAnalyzer
             ? ImmutableArray<INamedTypeSymbol>.Empty
             : GetOpenPipelineBehaviors(allTypes, pipelineBehavior, diagnostics);
         var handlers = ImmutableArray.CreateBuilder<HandlerModel>();
+        var openNotificationHandlers = ImmutableArray.CreateBuilder<OpenGenericNotificationHandlerModel>();
 
         foreach (var type in allTypes)
         {
@@ -130,17 +137,34 @@ internal static class DispatcherAnalyzer
 
             if (type.Arity != 0 || implementedHandlers.Any(ContainsTypeParameter))
             {
-                diagnostics.Add(Diagnostic.Create(
-                    GeneratorDiagnostics.OpenGenericHandler,
-                    type.Locations.FirstOrDefault(),
-                    type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
+                if (IsCanonicalOpenNotificationHandler(type, implementedHandlers, notificationHandler))
+                {
+                    if (HasPublicConstructor(type))
+                    {
+                        openNotificationHandlers.Add(new OpenGenericNotificationHandlerModel(type));
+                    }
+                    else
+                    {
+                        diagnostics.Add(Diagnostic.Create(
+                            GeneratorDiagnostics.HandlerCannotBeActivated,
+                            type.Locations.FirstOrDefault(),
+                            type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
+                    }
+                }
+                else
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        GeneratorDiagnostics.OpenGenericHandler,
+                        type.Locations.FirstOrDefault(),
+                        type.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
+                }
+
                 continue;
             }
 
             if (type.TypeKind != TypeKind.Class || type.IsAbstract ||
                 !compilation.IsSymbolAccessibleWithin(type, compilation.Assembly) ||
-                !type.InstanceConstructors.Any(constructor =>
-                    !constructor.IsStatic && constructor.DeclaredAccessibility == Accessibility.Public))
+                !HasPublicConstructor(type))
             {
                 diagnostics.Add(Diagnostic.Create(
                     GeneratorDiagnostics.HandlerCannotBeActivated,
@@ -163,8 +187,13 @@ internal static class DispatcherAnalyzer
         var localHandlers = handlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
+        var localOpenNotificationHandlers = openNotificationHandlers
+            .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
+            .ToImmutableArray();
         var dispatchHandlers = ImmutableArray.CreateBuilder<HandlerModel>();
         dispatchHandlers.AddRange(localHandlers);
+        var dispatchOpenNotificationHandlers = ImmutableArray.CreateBuilder<OpenGenericNotificationHandlerModel>();
+        dispatchOpenNotificationHandlers.AddRange(localOpenNotificationHandlers);
 
         if (dispatcherAttribute is not null)
         {
@@ -175,6 +204,7 @@ internal static class DispatcherAnalyzer
                 commandWithoutResponseHandler,
                 notificationHandler,
                 dispatchHandlers,
+                dispatchOpenNotificationHandlers,
                 diagnostics,
                 cancellationToken);
             AddDuplicateDiagnostics(dispatchHandlers, diagnostics);
@@ -187,6 +217,9 @@ internal static class DispatcherAnalyzer
         var orderedDispatchHandlers = dispatchHandlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
+        var orderedDispatchOpenNotificationHandlers = dispatchOpenNotificationHandlers
+            .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
+            .ToImmutableArray();
         var routeSelector = new HandlerRouteSelector(compilation, orderedDispatchHandlers);
         var dispatchRoutes = dispatcherAttribute is null
             ? ImmutableArray<DispatchRouteModel>.Empty
@@ -194,6 +227,7 @@ internal static class DispatcherAnalyzer
                 compilation,
                 allTypes,
                 orderedDispatchHandlers,
+                orderedDispatchOpenNotificationHandlers,
                 routeSelector,
                 diagnostics,
                 cancellationToken);
@@ -204,6 +238,8 @@ internal static class DispatcherAnalyzer
             dispatcherMethodName,
             localHandlers,
             orderedDispatchHandlers,
+            localOpenNotificationHandlers,
+            orderedDispatchOpenNotificationHandlers,
             dispatchRoutes,
             openBehaviors,
             diagnostics.ToImmutable(),
@@ -214,6 +250,7 @@ internal static class DispatcherAnalyzer
         Compilation compilation,
         ImmutableArray<INamedTypeSymbol> localTypes,
         ImmutableArray<HandlerModel> handlers,
+        ImmutableArray<OpenGenericNotificationHandlerModel> openNotificationHandlers,
         HandlerRouteSelector routeSelector,
         ImmutableArray<Diagnostic>.Builder diagnostics,
         CancellationToken cancellationToken)
@@ -241,6 +278,13 @@ internal static class DispatcherAnalyzer
             }
         }
 
+        foreach (var constraintType in openNotificationHandlers
+                     .SelectMany(static handler => handler.TypeParameter.ConstraintTypes)
+                     .OfType<INamedTypeSymbol>())
+        {
+            messageAssemblies.Add(constraintType.ContainingAssembly);
+        }
+
         foreach (var assembly in messageAssemblies)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -261,7 +305,14 @@ internal static class DispatcherAnalyzer
                      .OrderBy(type => type.ToDisplayString(SymbolDisplayFormats.FullyQualified), StringComparer.Ordinal))
         {
             var handler = routeSelector.Select(messageType, diagnostics);
-            if (handler is null)
+            var isNotification = messageType.AllInterfaces.Any(@interface =>
+                SymbolEqualityComparer.Default.Equals(@interface, notification));
+            var compatibleOpenHandlers = isNotification
+                ? openNotificationHandlers
+                    .Where(openHandler => CanCloseOpenNotificationHandler(compilation, openHandler, messageType))
+                    .ToImmutableArray()
+                : ImmutableArray<OpenGenericNotificationHandlerModel>.Empty;
+            if (handler is null && compatibleOpenHandlers.IsDefaultOrEmpty)
             {
                 continue;
             }
@@ -276,7 +327,7 @@ internal static class DispatcherAnalyzer
                 continue;
             }
 
-            routes.Add(new DispatchRouteModel(messageType, handler));
+            routes.Add(new DispatchRouteModel(messageType, handler, compatibleOpenHandlers));
         }
 
         return routes.ToImmutable();
@@ -348,6 +399,7 @@ internal static class DispatcherAnalyzer
         INamedTypeSymbol commandWithoutResponseHandler,
         INamedTypeSymbol notificationHandler,
         ImmutableArray<HandlerModel>.Builder handlers,
+        ImmutableArray<OpenGenericNotificationHandlerModel>.Builder openNotificationHandlers,
         ImmutableArray<Diagnostic>.Builder diagnostics,
         CancellationToken cancellationToken)
     {
@@ -358,13 +410,21 @@ internal static class DispatcherAnalyzer
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                foreach (var handlerInterface in type.AllInterfaces.Where(@interface =>
-                             IsHandlerInterface(
-                                 @interface.OriginalDefinition,
-                                 queryHandler,
-                                 commandHandler,
-                                 commandWithoutResponseHandler,
-                                 notificationHandler)))
+                var implementedHandlers = type.AllInterfaces.Where(@interface =>
+                        IsHandlerInterface(
+                            @interface.OriginalDefinition,
+                            queryHandler,
+                            commandHandler,
+                            commandWithoutResponseHandler,
+                            notificationHandler))
+                    .ToImmutableArray();
+                if (IsCanonicalOpenNotificationHandler(type, implementedHandlers, notificationHandler))
+                {
+                    openNotificationHandlers.Add(new OpenGenericNotificationHandlerModel(type));
+                    continue;
+                }
+
+                foreach (var handlerInterface in implementedHandlers)
                 {
                     if (type.Arity != 0 || ContainsTypeParameter(handlerInterface))
                     {
@@ -393,6 +453,76 @@ internal static class DispatcherAnalyzer
                 }
             }
         }
+    }
+
+    private static bool IsCanonicalOpenNotificationHandler(
+        INamedTypeSymbol type,
+        ImmutableArray<INamedTypeSymbol> implementedHandlers,
+        INamedTypeSymbol notificationHandler)
+    {
+        if (type is not { TypeKind: TypeKind.Class, IsAbstract: false, Arity: 1 } ||
+            implementedHandlers.Length != 1)
+        {
+            return false;
+        }
+
+        var handlerInterface = implementedHandlers[0];
+        return SymbolEqualityComparer.Default.Equals(handlerInterface.OriginalDefinition, notificationHandler) &&
+            SymbolEqualityComparer.Default.Equals(handlerInterface.TypeArguments[0], type.TypeParameters[0]);
+    }
+
+    private static bool HasPublicConstructor(INamedTypeSymbol type) =>
+        type.InstanceConstructors.Any(constructor =>
+            !constructor.IsStatic && constructor.DeclaredAccessibility == Accessibility.Public);
+
+    private static bool CanCloseOpenNotificationHandler(
+        Compilation compilation,
+        OpenGenericNotificationHandlerModel handler,
+        INamedTypeSymbol notificationType)
+    {
+        var parameter = handler.TypeParameter;
+        if (parameter.HasUnmanagedTypeConstraint && !notificationType.IsUnmanagedType ||
+            parameter.HasReferenceTypeConstraint && !notificationType.IsReferenceType ||
+            parameter.HasValueTypeConstraint && !notificationType.IsValueType ||
+            parameter.HasConstructorConstraint &&
+            !notificationType.IsValueType &&
+            (!notificationType.InstanceConstructors.Any(constructor =>
+                constructor.Parameters.IsEmpty && constructor.DeclaredAccessibility == Accessibility.Public) ||
+             notificationType.IsAbstract))
+        {
+            return false;
+        }
+
+        foreach (var constraint in parameter.ConstraintTypes)
+        {
+            var closedConstraint = SubstituteTypeParameter(constraint, parameter, notificationType);
+            if (!compilation.ClassifyConversion(notificationType, closedConstraint).IsImplicit)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static ITypeSymbol SubstituteTypeParameter(
+        ITypeSymbol type,
+        ITypeParameterSymbol parameter,
+        ITypeSymbol argument)
+    {
+        if (SymbolEqualityComparer.Default.Equals(type, parameter))
+        {
+            return argument;
+        }
+
+        if (type is not INamedTypeSymbol namedType || !namedType.IsGenericType)
+        {
+            return type;
+        }
+
+        return namedType.OriginalDefinition.Construct(namedType.TypeArguments
+            .Select(typeArgument => SubstituteTypeParameter(typeArgument, parameter, argument))
+            .ToArray());
     }
 
     private static bool HasGeneratedHandlerRegistration(IAssemblySymbol assembly) =>

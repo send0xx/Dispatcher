@@ -1,6 +1,7 @@
 using Dispatcher;
 using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
+using Dispatcher.TestSupport.AdditionalHandlers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -267,5 +268,50 @@ public sealed class DispatcherRegistrationTests
         Assert.Equal("Hello, Ada", result);
         Assert.Single(provider.GetServices<HandlerRegistration>());
         Assert.Empty(provider.GetServices<MessageRegistration>());
+    }
+
+    [Fact]
+    public void Open_notification_registration_is_idempotent_and_uses_self_registration()
+    {
+        var services = new ServiceCollection();
+
+        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
+        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
+
+        var service = Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>));
+        Assert.Equal(typeof(FirstOpenNotificationHandler<>), service.ImplementationType);
+        Assert.False(service.IsKeyedService);
+        var registration = Assert.IsType<NotificationHandlerRegistration>(Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(HandlerRegistration)).ImplementationInstance);
+        Assert.True(registration.IsOpenGeneric);
+        Assert.True(registration.MessageType.IsGenericParameter);
+        Assert.Equal(typeof(FirstOpenNotificationHandler<>), registration.HandlerType);
+    }
+
+    [Fact]
+    public void Open_notification_registration_uses_dispatcher_options()
+    {
+        var services = new ServiceCollection();
+
+        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>), options =>
+            options.ServiceLifetime = ServiceLifetime.Singleton);
+
+        Assert.Equal(
+            ServiceLifetime.Singleton,
+            Assert.Single(
+                services,
+                descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>)).Lifetime);
+    }
+
+    [Fact]
+    public void Rejects_noncanonical_open_notification_handler()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentException>(() =>
+            services.AddNotificationHandler(typeof(Dictionary<,>)));
     }
 }

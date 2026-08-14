@@ -21,6 +21,22 @@ internal static class HandlerRegistrationEmitter
         source.AppendLine("/// </summary>");
         source.Append("public static class ").Append(className).AppendLine();
         source.AppendLine("{");
+        if (result.MethodName is not null)
+        {
+            AppendRegistrationMethods(source, result);
+        }
+
+        foreach (var handler in result.LocalOpenNotificationHandlers)
+        {
+            AppendOpenNotificationHandlerMethods(source, handler);
+        }
+
+        source.AppendLine("}");
+        context.AddSource(className + ".g.cs", SourceText.From(source.ToString(), Encoding.UTF8));
+    }
+
+    private static void AppendRegistrationMethods(StringBuilder source, GenerationResult result)
+    {
         source.AppendLine("    /// <summary>");
         source.AppendLine("    /// Registers the source-generated handlers in this assembly.");
         source.AppendLine("    /// </summary>");
@@ -65,11 +81,100 @@ internal static class HandlerRegistrationEmitter
                 .AppendLine(">(services, handlerOptions => handlerOptions.ServiceLifetime = options.ServiceLifetime);");
         }
 
+        foreach (var handler in result.LocalOpenNotificationHandlers)
+        {
+            source.Append("        global::Dispatcher.ServiceCollectionExtensions.AddNotificationHandler(services, typeof(")
+                .Append(handler.ImplementationType.ConstructUnboundGenericType()
+                    .ToDisplayString(SymbolDisplayFormats.FullyQualified))
+                .AppendLine("), handlerOptions => handlerOptions.ServiceLifetime = options.ServiceLifetime);");
+        }
+
         source.AppendLine();
         source.AppendLine("        return services;");
         source.AppendLine("    }");
-        source.AppendLine("}");
+    }
 
-        context.AddSource(className + ".g.cs", SourceText.From(source.ToString(), Encoding.UTF8));
+    private static void AppendOpenNotificationHandlerMethods(
+        StringBuilder source,
+        OpenGenericNotificationHandlerModel handler)
+    {
+        var parameter = handler.TypeParameter;
+        var parameterName = parameter.Name;
+        var implementation = handler.ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+        source.AppendLine();
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Identifies registration metadata for a generated open notification handler.");
+        source.AppendLine("    /// </summary>");
+        source.AppendLine("    /// <param name=\"registration\">The notification handler registration to inspect.</param>");
+        source.AppendLine("    /// <returns><see langword=\"true\"/> when the registration describes this handler.</returns>");
+        source.Append("    public static bool IsOpenNotificationHandler_").Append(handler.MethodSuffix)
+            .AppendLine("(global::Dispatcher.NotificationHandlerRegistration registration) =>");
+        source.Append("        registration.HandlerType == typeof(")
+            .Append(handler.ImplementationType.ConstructUnboundGenericType()
+                .ToDisplayString(SymbolDisplayFormats.FullyQualified))
+            .AppendLine(");");
+        source.AppendLine();
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Invokes a generated open notification handler closed over a concrete notification type.");
+        source.AppendLine("    /// </summary>");
+        source.Append("    /// <typeparam name=\"").Append(parameterName)
+            .AppendLine("\">The concrete notification type.</typeparam>");
+        source.AppendLine("    /// <param name=\"serviceProvider\">The service provider used to resolve the handler.</param>");
+        source.AppendLine("    /// <param name=\"notification\">The notification to handle.</param>");
+        source.AppendLine("    /// <param name=\"cancellationToken\">The cancellation token for the operation.</param>");
+        source.AppendLine("    /// <returns>A value task that represents the handler invocation.</returns>");
+        source.Append("    public static global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_")
+            .Append(handler.MethodSuffix).Append('<').Append(parameterName).AppendLine(">(");
+        source.AppendLine("        global::System.IServiceProvider serviceProvider,");
+        source.Append("        ").Append(parameterName).AppendLine(" notification,");
+        source.AppendLine("        global::System.Threading.CancellationToken cancellationToken)");
+        AppendConstraints(source, parameter, "        ");
+        source.AppendLine("    {");
+        source.Append("        var handler = (global::Dispatcher.INotificationHandler<")
+            .Append(parameterName).Append(">?)serviceProvider.GetService(typeof(")
+            .Append(implementation).AppendLine(")) ??");
+        source.Append("            throw new global::System.InvalidOperationException($\"Service '{typeof(")
+            .Append(implementation).AppendLine(").FullName}' is not registered.\");");
+        source.AppendLine("        return handler.HandleAsync(notification, cancellationToken);");
+        source.AppendLine("    }");
+    }
+
+    private static void AppendConstraints(
+        StringBuilder source,
+        ITypeParameterSymbol parameter,
+        string indentation)
+    {
+        var constraints = new List<string>();
+        if (parameter.HasUnmanagedTypeConstraint)
+        {
+            constraints.Add("unmanaged");
+        }
+        else if (parameter.HasValueTypeConstraint)
+        {
+            constraints.Add("struct");
+        }
+        else if (parameter.HasReferenceTypeConstraint)
+        {
+            constraints.Add(parameter.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated
+                ? "class?"
+                : "class");
+        }
+        else if (parameter.HasNotNullConstraint)
+        {
+            constraints.Add("notnull");
+        }
+
+        constraints.AddRange(parameter.ConstraintTypes.Select(constraint =>
+            constraint.ToDisplayString(SymbolDisplayFormats.FullyQualified)));
+        if (parameter.HasConstructorConstraint)
+        {
+            constraints.Add("new()");
+        }
+
+        if (constraints.Count > 0)
+        {
+            source.Append(indentation).Append("where ").Append(parameter.Name).Append(" : ")
+                .AppendLine(string.Join(", ", constraints));
+        }
     }
 }

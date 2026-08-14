@@ -1,5 +1,9 @@
 namespace Dispatcher;
 
+/// <summary>
+/// Defines an executable response-bearing command route for a response type.
+/// </summary>
+/// <typeparam name="TResponse">The command response type.</typeparam>
 internal abstract class CommandWithResponseHandlerWrapper<TResponse> : RequestHandlerWrapper
 {
     public abstract ValueTask<TResponse> HandleAsync(
@@ -8,6 +12,12 @@ internal abstract class CommandWithResponseHandlerWrapper<TResponse> : RequestHa
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Resolves and invokes the selected response-bearing command handler, applying compatible pipeline
+/// behaviors when present.
+/// </summary>
+/// <typeparam name="TCommand">The selected handled command type.</typeparam>
+/// <typeparam name="TResponse">The command response type.</typeparam>
 internal sealed class CommandWithResponseHandlerWrapper<TCommand, TResponse> : CommandWithResponseHandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
 {
@@ -47,6 +57,9 @@ internal sealed class CommandWithResponseHandlerWrapper<TCommand, TResponse> : C
     }
 }
 
+/// <summary>
+/// Defines an executable resultless command route.
+/// </summary>
 internal abstract class CommandHandlerWrapperBase : RequestHandlerWrapper
 {
     public abstract ValueTask HandleAsync(
@@ -55,6 +68,11 @@ internal abstract class CommandHandlerWrapperBase : RequestHandlerWrapper
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Resolves and invokes the selected resultless command handler, adapting its pipeline response to
+/// <see cref="Unit"/> and applying compatible pipeline behaviors when present.
+/// </summary>
+/// <typeparam name="TCommand">The selected handled command type.</typeparam>
 internal sealed class CommandHandlerWrapper<TCommand> : CommandHandlerWrapperBase
     where TCommand : ICommand
 {
@@ -98,6 +116,12 @@ internal sealed class CommandHandlerWrapper<TCommand> : CommandHandlerWrapperBas
     }
 }
 
+/// <summary>
+/// Records telemetry around an executable response-bearing command route.
+/// </summary>
+/// <param name="inner">The prepared response-bearing command route to invoke.</param>
+/// <param name="route">The telemetry route associated with the concrete dispatched command type.</param>
+/// <typeparam name="TResponse">The command response type.</typeparam>
 internal sealed class TelemetryCommandWithResponseHandlerWrapper<TResponse>(
     CommandWithResponseHandlerWrapper<TResponse> inner,
     DispatcherTelemetryRoute route) : CommandWithResponseHandlerWrapper<TResponse>
@@ -123,6 +147,11 @@ internal sealed class TelemetryCommandWithResponseHandlerWrapper<TResponse>(
     }
 }
 
+/// <summary>
+/// Records telemetry around an executable resultless command route.
+/// </summary>
+/// <param name="inner">The prepared resultless command route to invoke.</param>
+/// <param name="route">The telemetry route associated with the concrete dispatched command type.</param>
 internal sealed class TelemetryCommandHandlerWrapper(
     CommandHandlerWrapperBase inner,
     DispatcherTelemetryRoute route) : CommandHandlerWrapperBase

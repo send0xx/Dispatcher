@@ -1,4 +1,7 @@
+using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
+using Dispatcher.TestSupport.AdditionalHandlers;
+using Dispatcher.TestSupport.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -56,5 +59,70 @@ public sealed class NotificationDispatcherTests
         Assert.Equal(
             ["user-created"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Open_handlers_observe_a_known_notification_without_a_closed_handler()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcher();
+        services.AddDispatcherHandlers<AdditionalHandlerAssemblyMarker>();
+        services.AddSingleton<OpenNotificationRecorder>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new OpenOnlyNotification());
+
+        Assert.Equal(
+            ["open-a-OpenOnlyNotification", "open-b-OpenOnlyNotification"],
+            scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
+        Assert.Empty(scope.ServiceProvider.GetServices<INotificationHandler<OpenOnlyNotification>>());
+    }
+
+    [Fact]
+    public async Task Open_handlers_run_after_the_selected_polymorphic_closed_route()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcher();
+        services.AddDispatcherHandlers<AdditionalHandlerAssemblyMarker>();
+        services.AddSingleton<OpenNotificationRecorder>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new DerivedSharedNotification());
+
+        Assert.Equal(
+            [
+                "closed-base",
+                "open-a-DerivedSharedNotification",
+                "open-b-DerivedSharedNotification",
+                "open-shared-DerivedSharedNotification"
+            ],
+            scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
+    }
+
+    [Fact]
+    public async Task Exact_closed_route_wins_while_open_handlers_use_the_concrete_type()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcher();
+        services.AddDispatcherHandlers<AdditionalHandlerAssemblyMarker>();
+        services.AddSingleton<OpenNotificationRecorder>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new ExactSharedNotification());
+
+        Assert.Equal(
+            [
+                "closed-exact",
+                "open-a-ExactSharedNotification",
+                "open-b-ExactSharedNotification",
+                "open-shared-ExactSharedNotification"
+            ],
+            scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
     }
 }

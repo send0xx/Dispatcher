@@ -1,5 +1,9 @@
 namespace Dispatcher;
 
+/// <summary>
+/// Defines an executable query route for a response type.
+/// </summary>
+/// <typeparam name="TResponse">The query response type.</typeparam>
 internal abstract class QueryHandlerWrapper<TResponse> : RequestHandlerWrapper
 {
     public abstract ValueTask<TResponse> HandleAsync(
@@ -8,6 +12,11 @@ internal abstract class QueryHandlerWrapper<TResponse> : RequestHandlerWrapper
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Resolves and invokes the selected query handler, applying compatible pipeline behaviors when present.
+/// </summary>
+/// <typeparam name="TQuery">The selected handled query type.</typeparam>
+/// <typeparam name="TResponse">The query response type.</typeparam>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : QueryHandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
 {
@@ -47,6 +56,12 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : QueryHandlerWrapp
     }
 }
 
+/// <summary>
+/// Records telemetry around an executable query route.
+/// </summary>
+/// <param name="inner">The prepared query route to invoke.</param>
+/// <param name="route">The telemetry route associated with the concrete dispatched query type.</param>
+/// <typeparam name="TResponse">The query response type.</typeparam>
 internal sealed class TelemetryQueryHandlerWrapper<TResponse>(
     QueryHandlerWrapper<TResponse> inner,
     DispatcherTelemetryRoute route) : QueryHandlerWrapper<TResponse>

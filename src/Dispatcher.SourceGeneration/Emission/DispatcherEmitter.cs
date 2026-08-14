@@ -17,7 +17,7 @@ internal static class DispatcherEmitter
             return;
         }
 
-        if (result.MethodName is not null)
+        if (result.MethodName is not null || !result.LocalOpenNotificationHandlers.IsDefaultOrEmpty)
         {
             HandlerRegistrationEmitter.Emit(context, result);
         }
