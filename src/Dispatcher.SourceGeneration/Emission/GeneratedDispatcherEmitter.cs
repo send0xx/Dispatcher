@@ -10,7 +10,9 @@ internal static class GeneratedDispatcherEmitter
     internal static void Emit(SourceProductionContext context, GenerationResult result)
     {
         const string className = "Dispatcher";
-        const string generatedNamespace = "Dispatcher";
+        // Not the "Dispatcher" namespace: a type of the same name there would shadow the namespace
+        // for the consuming assembly.
+        const string generatedNamespace = "Dispatcher.SourceGeneration";
         var generatedTypeName = "global::" + generatedNamespace + "." + className;
         var queries = result.DispatchRoutes.Where(route => route.Handler?.Kind == HandlerModelKind.Query).ToArray();
         var responseCommands = result.DispatchRoutes
@@ -36,7 +38,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("    private readonly global::System.IServiceProvider serviceProvider;");
         if (hasOpenNotificationHandlers)
         {
-            source.AppendLine("    private readonly global::Dispatcher.OpenNotificationHandlerRegistry openNotificationHandlers;");
+            source.AppendLine("    private readonly global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry openNotificationHandlers;");
         }
         AppendRequestDictionary(source, generatedTypeName, "QueryHandlers", queries, "global::Dispatcher.IQuery", "QueryCore");
         AppendRequestDictionary(source, generatedTypeName, "ResponseCommandHandlers", responseCommands, "global::Dispatcher.ICommand", "ResponseCommandCore");
@@ -48,7 +50,7 @@ internal static class GeneratedDispatcherEmitter
             .AppendLine(hasOpenNotificationHandlers ? "," : ")");
         if (hasOpenNotificationHandlers)
         {
-            source.AppendLine("        global::Dispatcher.OpenNotificationHandlerRegistry openNotificationHandlers)");
+            source.AppendLine("        global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry openNotificationHandlers)");
         }
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(serviceProvider);");
@@ -141,8 +143,8 @@ internal static class GeneratedDispatcherEmitter
         if (hasOpenNotificationHandlers)
         {
             registration.AppendLine("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
-            registration.AppendLine("            typeof(global::Dispatcher.OpenNotificationHandlerRegistry),");
-            registration.AppendLine("            typeof(global::Dispatcher.OpenNotificationHandlerRegistry)));");
+            registration.AppendLine("            typeof(global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry),");
+            registration.AppendLine("            typeof(global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry)));");
         }
         registration.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(typeof(")
             .Append(generatedTypeName).Append("), typeof(").Append(generatedTypeName)
@@ -155,35 +157,35 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine("            var meterName = telemetry.MeterName;");
         registration.AppendLine("            var activitySourceName = telemetry.ActivitySourceName;");
         registration.AppendLine("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
-        registration.AppendLine("                typeof(global::Dispatcher.DispatcherTelemetry),");
-        registration.AppendLine("                _ => new global::Dispatcher.DispatcherTelemetry(");
+        registration.AppendLine("                typeof(global::Dispatcher.SourceGeneration.DispatcherTelemetry),");
+        registration.AppendLine("                _ => new global::Dispatcher.SourceGeneration.DispatcherTelemetry(");
         registration.AppendLine("                    enableMetrics,");
         registration.AppendLine("                    enableTracing,");
         registration.AppendLine("                    meterName,");
         registration.AppendLine("                    activitySourceName)));");
         registration.AppendLine("            services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(");
-        registration.AppendLine("                typeof(global::Dispatcher.TelemetryDispatcher),");
-        registration.AppendLine("                typeof(global::Dispatcher.TelemetryDispatcher),");
+        registration.AppendLine("                typeof(global::Dispatcher.SourceGeneration.TelemetryDispatcher),");
+        registration.AppendLine("                typeof(global::Dispatcher.SourceGeneration.TelemetryDispatcher),");
         registration.AppendLine("                options.ServiceLifetime));");
         AppendDispatcherContractRegistration(
             registration,
             "global::Dispatcher.IDispatcher",
-            "global::Dispatcher.TelemetryDispatcher",
+            "global::Dispatcher.SourceGeneration.TelemetryDispatcher",
             12);
         AppendDispatcherContractRegistration(
             registration,
             "global::Dispatcher.IQueryDispatcher",
-            "global::Dispatcher.TelemetryDispatcher",
+            "global::Dispatcher.SourceGeneration.TelemetryDispatcher",
             12);
         AppendDispatcherContractRegistration(
             registration,
             "global::Dispatcher.ICommandDispatcher",
-            "global::Dispatcher.TelemetryDispatcher",
+            "global::Dispatcher.SourceGeneration.TelemetryDispatcher",
             12);
         AppendDispatcherContractRegistration(
             registration,
             "global::Dispatcher.INotificationDispatcher",
-            "global::Dispatcher.TelemetryDispatcher",
+            "global::Dispatcher.SourceGeneration.TelemetryDispatcher",
             12);
         registration.AppendLine("        }");
         registration.AppendLine("        else");
@@ -541,7 +543,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("internal sealed class OpenNotificationHandlerRegistry");
         source.AppendLine("{");
         source.AppendLine("    private readonly global::System.Collections.Frozen.FrozenDictionary<global::System.Type,");
-        source.AppendLine("        global::Dispatcher.OpenNotificationHandlerInvoker[]> handlers;");
+        source.AppendLine("        global::Dispatcher.SourceGeneration.OpenNotificationHandlerInvoker[]> handlers;");
         source.AppendLine();
         source.AppendLine("    public OpenNotificationHandlerRegistry(");
         source.AppendLine("        global::System.Collections.Generic.IEnumerable<global::Dispatcher.HandlerRegistration> registrations)");
@@ -549,7 +551,7 @@ internal static class GeneratedDispatcherEmitter
         for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
         {
             source.Append("        var route").Append(routeIndex)
-                .AppendLine(" = new global::System.Collections.Generic.List<global::Dispatcher.OpenNotificationHandlerInvoker>();");
+                .AppendLine(" = new global::System.Collections.Generic.List<global::Dispatcher.SourceGeneration.OpenNotificationHandlerInvoker>();");
         }
 
         source.AppendLine("        foreach (var registration in registrations)");
@@ -588,7 +590,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        }");
         source.AppendLine();
         source.AppendLine("        handlers = new global::System.Collections.Generic.Dictionary<global::System.Type,");
-        source.AppendLine("            global::Dispatcher.OpenNotificationHandlerInvoker[]>");
+        source.AppendLine("            global::Dispatcher.SourceGeneration.OpenNotificationHandlerInvoker[]>");
         source.AppendLine("        {");
         for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
         {
@@ -600,7 +602,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        }.ToFrozenDictionary();");
         source.AppendLine("    }");
         source.AppendLine();
-        source.AppendLine("    internal global::Dispatcher.OpenNotificationHandlerInvoker[] GetHandlers(");
+        source.AppendLine("    internal global::Dispatcher.SourceGeneration.OpenNotificationHandlerInvoker[] GetHandlers(");
         source.AppendLine("        global::System.Type notificationType) =>");
         source.AppendLine("        handlers.TryGetValue(notificationType, out var routeHandlers) ? routeHandlers : [];");
         source.AppendLine("}");

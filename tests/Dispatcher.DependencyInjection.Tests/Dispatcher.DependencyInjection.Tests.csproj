@@ -18,5 +18,6 @@
     <ProjectReference Include="../Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
     <ProjectReference Include="../Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
     <ProjectReference Include="../Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
+    <ProjectReference Include="../Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
   </ItemGroup>
 </Project>

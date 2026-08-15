@@ -58,7 +58,7 @@ builder.Services
     .AddDispatcherHandlers(typeof(Program).Assembly);
 ```
 
-`AddDispatcher()` registers infrastructure only and never scans assemblies implicitly.  
+`AddDispatcher()` registers infrastructure only and never scans assemblies implicitly.
 `AddDispatcherHandlers()` registers internal handler classes. Registering the same assembly more than once is safe.
 
 Handler scanning accepts the same options type when a different handler lifetime is required:

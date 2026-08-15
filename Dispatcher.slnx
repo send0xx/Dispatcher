@@ -32,6 +32,7 @@
     <Project Path="tests/Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
+    <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
   </Folder>
   <Folder Name="/_/">
     <File Path=".editorconfig" />

@@ -75,6 +75,43 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
+    public async Task Typed_registration_and_assembly_scanning_may_overlap_for_one_handler()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>();
+        services.AddDispatcherHandlers<TestAssemblyMarker>();
+        services.AddScoped<TestState>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GreetingQuery("Ada"));
+
+        Assert.Equal("Hello, Ada", result);
+    }
+
+    [Fact]
+    public async Task Overlapping_notification_registration_invokes_each_handler_once()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddNotificationHandler<SomethingHappened, ANotificationHandler>();
+        services.AddDispatcherHandlers<TestAssemblyMarker>();
+        services.AddScoped<TestState>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new SomethingHappened());
+
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        Assert.Equal(["notification-a", "notification-b"], state.Events);
+    }
+
+    [Fact]
     public void Dispatcher_lifetime_is_scoped_by_default()
     {
         var services = new ServiceCollection();

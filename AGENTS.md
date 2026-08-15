@@ -36,6 +36,12 @@ Choose namespaces deliberately based on each type's responsibility and public AP
 - `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as `next(cancellationToken)`.
 - Keep `MessageType` naming in shared handler registration and exception types because registrations also describe notifications.
 - Public abstractions are organized into the current folders. Do not consolidate them into one file.
+- `IQuery<TResponse>` and `ICommand<TResponse>` are invariant. Do not reintroduce `out`. Requests route by
+  concrete type to one handler declaring one response type, so an upcast such as `IQuery<object>` can never
+  dispatch; invariance makes the compiler reject it instead of failing at runtime.
+- No type named `Dispatcher` may sit directly in the `Dispatcher` namespace, because it shadows that
+  namespace for consumers and produces CS0426. The reflection implementation lives in
+  `Dispatcher.DependencyInjection`, and the generated dispatcher is emitted into `Dispatcher.SourceGeneration`.
 
 Treat changes to these contracts as breaking API changes. Discuss and benchmark them before implementation.
 
@@ -44,7 +50,12 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - `AddDispatcher()` registers infrastructure only. It must not scan assemblies implicitly.
 - Modules register their own handlers separately through `AddDispatcherHandlers<TMarker>()` or an assembly overload.
 - Reflection scanning must include internal handler classes.
-- Handler assembly registration is idempotent.
+- Handler assembly registration is idempotent, and it must stay idempotent against the typed registration
+  methods too. Registering one handler through both paths must not duplicate its service descriptor, which
+  would run a notification handler twice and make a query or command look like it has duplicate handlers.
+- Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly
+  later as a notification that never arrives or a missing request handler. Collect every offending type and
+  throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.
 - `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI registrations of `IPipelineBehavior<,>` must continue to work.
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.

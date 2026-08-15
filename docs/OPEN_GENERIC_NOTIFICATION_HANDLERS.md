@@ -73,6 +73,13 @@ More complex mappings such as `INotificationHandler<Envelope<T>>`, partially ope
 handlers with unrelated generic parameters are unsupported. The reflection scanner and source
 generator reject invalid shapes.
 
+An invalid shape is never skipped, because a skipped handler fails invisibly later as a
+notification that never arrives or a missing request handler. The source generator reports one
+diagnostic per offending type. Assembly scanning collects every offending type across all scanned
+assemblies and throws a single `UnsupportedHandlerException` whose `Handlers` property maps each
+handler type to the reason it cannot be registered. Scanning commits nothing to the service
+collection when it fails, so a rejected assembly leaves no partial registration behind.
+
 ## Registration and discovery
 
 Assembly scanning discovers canonical open generic notification handlers. Explicit registration uses:

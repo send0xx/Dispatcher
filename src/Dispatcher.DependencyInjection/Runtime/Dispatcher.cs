@@ -1,4 +1,4 @@
-namespace Dispatcher;
+namespace Dispatcher.DependencyInjection;
 
 /// <summary>
 /// Represents a reflection-based dispatcher that resolves handlers and pipeline behaviors from an

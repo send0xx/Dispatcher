@@ -9,7 +9,7 @@ public interface ICommandBase : IRequest;
 /// Represents a command that returns a response.
 /// </summary>
 /// <typeparam name="TResponse">The type of response returned by the command.</typeparam>
-public interface ICommand<out TResponse> : ICommandBase;
+public interface ICommand<TResponse> : ICommandBase;
 
 /// <summary>
 /// Represents a command that does not return a response.

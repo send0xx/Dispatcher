@@ -158,7 +158,10 @@ public sealed class DispatcherGeneratorOutputTests
                 "public static class GeneratedDispatcherServiceCollectionExtensions",
                 StringComparison.Ordinal))).ToString();
         Assert.Contains("telemetry.EnableMetrics || telemetry.EnableTracing", registration, StringComparison.Ordinal);
-        Assert.Contains("typeof(global::Dispatcher.TelemetryDispatcher)", registration, StringComparison.Ordinal);
+        Assert.Contains(
+            "typeof(global::Dispatcher.SourceGeneration.TelemetryDispatcher)",
+            registration,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("CS0436", registration, StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
@@ -508,7 +511,7 @@ public sealed class DispatcherGeneratorOutputTests
                 StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
             tree.ToString().Contains(
-                "namespace Dispatcher;\n\ninternal sealed class Dispatcher",
+                "namespace Dispatcher.SourceGeneration;\n\ninternal sealed class Dispatcher",
                 StringComparison.Ordinal));
         Assert.Empty(result.OutputCompilation.GetDiagnostics()
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));

@@ -13,7 +13,7 @@ internal static class DispatcherRegistryFactory
     {
         ArgumentNullException.ThrowIfNull(registrations);
 
-        var registrationList = registrations.ToArray();
+        var registrationList = registrations.Distinct().ToArray();
         var handlers = registrationList.OfType<HandlerRegistration>().ToArray();
         var requestWrappers = CreateRequestWrappers(handlers);
         var notificationWrappers = CreateNotificationWrappers(handlers);
