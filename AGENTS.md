@@ -58,6 +58,10 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
   `descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()`. A descriptor added by
   factory delegate cannot be matched, because Microsoft DI does not expose what a factory returns; a
   handler or behavior registered that way and then registered again does run twice.
+- Scanning fails when an assembly has types that cannot be loaded. A type that fails to load cannot be
+  inspected, so scanning cannot tell whether it declared a handler; taking the types that did load
+  would drop it silently. `AssemblyScanException` names the assembly and carries the loader
+  exceptions.
 - Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly
   later as a notification that never arrives or a missing request handler. Collect every offending type and
   throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.

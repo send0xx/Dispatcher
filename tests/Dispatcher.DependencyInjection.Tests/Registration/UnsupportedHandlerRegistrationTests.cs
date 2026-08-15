@@ -1,4 +1,7 @@
+using System.Reflection;
+using System.Runtime.Loader;
 using Dispatcher.DependencyInjection;
+using Dispatcher.TestSupport.Handlers;
 using Dispatcher.TestSupport.UnsupportedHandlers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -57,5 +60,44 @@ public sealed class UnsupportedHandlerRegistrationTests
 
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(HandlerRegistration));
         Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(MessageRegistration));
+    }
+
+    [Fact]
+    public void Scanning_fails_when_an_assembly_declares_types_that_cannot_be_loaded()
+    {
+        // The handler assembly is loaded into a context that cannot resolve the contracts assembly
+        // its handlers derive from, so those handler types fail to load. Continuing with the types
+        // that did load would drop them silently.
+        var context = new BlockedDependencyLoadContext("Dispatcher.TestSupport.Contracts");
+        try
+        {
+            var assembly = context.LoadFromAssemblyPath(typeof(HandlerAssemblyMarker).Assembly.Location);
+            var services = new ServiceCollection();
+
+            var exception = Assert.Throws<AssemblyScanException>(() =>
+                services.AddDispatcherHandlers(assembly));
+
+            Assert.Same(assembly, exception.Assembly);
+            Assert.NotEmpty(exception.LoaderExceptions);
+            Assert.DoesNotContain(services, descriptor =>
+                descriptor.ServiceType == typeof(HandlerRegistration));
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    /// <summary>
+    /// Loads an assembly while refusing to resolve one of its dependencies, so that the types
+    /// needing that dependency fail to load.
+    /// </summary>
+    private sealed class BlockedDependencyLoadContext(string blockedAssemblyName)
+        : AssemblyLoadContext(isCollectible: true)
+    {
+        protected override Assembly? Load(AssemblyName assemblyName) =>
+            assemblyName.Name == blockedAssemblyName
+                ? throw new FileNotFoundException($"'{assemblyName.Name}' is blocked by this test.")
+                : null;
     }
 }

@@ -47,7 +47,7 @@ internal static class HandlerAssemblyScanner
         {
             if (scanState.RouteTargets.NeedsScan(messageAssembly))
             {
-                scanState.RouteTargets.Add(messageAssembly, GetLoadableTypes(messageAssembly));
+                scanState.RouteTargets.Add(messageAssembly, GetTypes(messageAssembly));
             }
         }
 
@@ -77,7 +77,7 @@ internal static class HandlerAssemblyScanner
                 continue;
             }
 
-            var types = GetLoadableTypes(assembly);
+            var types = GetTypes(assembly);
             scanned.Add(new ScannedAssembly(
                 assembly,
                 types,
@@ -161,8 +161,17 @@ internal static class HandlerAssemblyScanner
         return created;
     }
 
+    /// <summary>
+    /// The types of an assembly, or an error when any of them cannot be read.
+    /// </summary>
+    /// <remarks>
+    /// A type that fails to load cannot be inspected, so scanning cannot tell whether it was a
+    /// handler. Continuing with the types that did load would silently drop any handler among them,
+    /// which fails invisibly later as a notification that never arrives or a missing request
+    /// handler, so the whole scan fails instead.
+    /// </remarks>
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
-    private static Type[] GetLoadableTypes(Assembly assembly)
+    private static Type[] GetTypes(Assembly assembly)
     {
         try
         {
@@ -170,7 +179,7 @@ internal static class HandlerAssemblyScanner
         }
         catch (ReflectionTypeLoadException exception)
         {
-            return exception.Types.OfType<Type>().ToArray();
+            throw new AssemblyScanException(assembly, exception);
         }
     }
 
