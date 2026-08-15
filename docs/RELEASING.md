@@ -4,7 +4,7 @@
 
 The [CI workflow](../.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, packs every library, and retains the packages as workflow artifacts for seven days.
 
-NuGet publishing runs only for version tags such as `v1.0.0-preview.9`. Before publishing, the workflow verifies that the tag matches the central `Version` in [`Directory.Build.props`](../Directory.Build.props) and pushes an explicit list of package files.
+NuGet publishing runs only for version tags such as `v1.0.0-preview.10`. Before publishing, the workflow verifies that the tag matches the central `Version` in [`Directory.Build.props`](../Directory.Build.props) and pushes an explicit list of package files.
 
 ## NuGet trusted publishing
 
@@ -26,8 +26,8 @@ Update the central `Version` in [`Directory.Build.props`](../Directory.Build.pro
 After the version change has been reviewed, create and push a matching release tag:
 
 ```bash
-git tag v1.0.0-preview.9
-git push origin v1.0.0-preview.9
+git tag v1.0.0-preview.10
+git push origin v1.0.0-preview.10
 ```
 
 The tag must use the `v<version>` form and exactly match the package version. The workflow publishes these packages:
