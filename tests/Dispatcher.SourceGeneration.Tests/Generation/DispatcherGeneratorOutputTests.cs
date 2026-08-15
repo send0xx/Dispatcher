@@ -360,7 +360,7 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
-    public void Applies_constrained_behavior_only_to_compatible_commands_and_uses_unit()
+    public void Applies_resultless_command_behavior_and_uses_unit()
     {
         const string source = """
             using Dispatcher;
@@ -381,7 +381,7 @@ public sealed class DispatcherGeneratorOutputTests
             }
             internal sealed class CommandBehavior<TCommand, TResponse>
                 : IPipelineBehavior<TCommand, TResponse>
-                where TCommand : ICommand<TResponse>
+                where TCommand : ICommand
             {
                 public ValueTask<TResponse> HandleAsync(
                     TCommand request,

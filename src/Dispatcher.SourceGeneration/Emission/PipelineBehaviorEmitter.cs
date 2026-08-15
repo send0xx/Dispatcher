@@ -18,9 +18,7 @@ internal static class PipelineBehaviorEmitter
             {
                 Request = route.Handler!.MessageType,
                 Response = route.Handler.Kind == HandlerModelKind.Command
-                    ? ((INamedTypeSymbol)route.Handler.MessageType).AllInterfaces
-                        .First(@interface => @interface.OriginalDefinition.ToDisplayString() ==
-                            "Dispatcher.ICommand<TResponse>").TypeArguments[0]
+                    ? result.UnitType
                     : route.Handler.ResponseType
             })
             .Where(item => item.Response is not null)

@@ -18,6 +18,7 @@ internal static class DispatcherAnalyzer
     private const string QueryMetadataName = "Dispatcher.IQuery`1";
     private const string CommandMetadataName = "Dispatcher.ICommand`1";
     private const string CommandWithoutResponseMetadataName = "Dispatcher.ICommand";
+    private const string UnitMetadataName = "Dispatcher.Unit";
     private const string RequestMetadataName = "Dispatcher.IRequest";
     private const string NotificationMetadataName = "Dispatcher.INotification";
     private const string PipelineBehaviorMetadataName = "Dispatcher.IPipelineBehavior`2";
@@ -244,7 +245,8 @@ internal static class DispatcherAnalyzer
             dispatchRoutes,
             openBehaviors,
             diagnostics.ToImmutable(),
-            compilation.AssemblyName ?? "DispatcherModule");
+            compilation.AssemblyName ?? "DispatcherModule",
+            compilation.GetTypeByMetadataName(UnitMetadataName));
     }
 
     private static ImmutableArray<DispatchRouteModel> CreateDispatchRoutes(

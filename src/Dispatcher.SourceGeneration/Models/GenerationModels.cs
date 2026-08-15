@@ -132,7 +132,8 @@ internal sealed class GenerationResult
         ImmutableArray<DispatchRouteModel> dispatchRoutes,
         ImmutableArray<INamedTypeSymbol> openBehaviors,
         ImmutableArray<Diagnostic> diagnostics,
-        string assemblyName = "")
+        string assemblyName = "",
+        INamedTypeSymbol? unitType = null)
     {
         MethodName = methodName;
         DispatcherMethodName = dispatcherMethodName;
@@ -144,6 +145,7 @@ internal sealed class GenerationResult
         OpenBehaviors = openBehaviors;
         Diagnostics = diagnostics;
         AssemblyName = assemblyName;
+        UnitType = unitType;
     }
 
     public string? MethodName { get; }
@@ -156,4 +158,5 @@ internal sealed class GenerationResult
     public ImmutableArray<INamedTypeSymbol> OpenBehaviors { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
     public string AssemblyName { get; }
+    public INamedTypeSymbol? UnitType { get; }
 }

@@ -27,7 +27,7 @@ Choose namespaces deliberately based on each type's responsibility and public AP
 
 - Keep only the non-generic `IRequest` marker. Do not introduce `IRequest<TResponse>`.
 - `IQuery<TResponse>` and `ICommand<TResponse>` inherit from `IRequest`.
-- Resultless `ICommand` inherits from `ICommand<Unit>`.
+- Resultless `ICommand` inherits from `IRequest`; it is adapted to `Unit` only inside the pipeline.
 - A resultless `ICommandHandler<TCommand>` returns `ValueTask`, not `ValueTask<Unit>`.
 - Command dispatch methods are named `ExecuteAsync`; query dispatch uses `QueryAsync`; notification dispatch uses `PublishAsync`.
 - Keep specialized query and command handler interfaces. Do not introduce a shared public `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.

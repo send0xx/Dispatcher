@@ -9,4 +9,4 @@ public interface ICommand<out TResponse> : IRequest;
 /// <summary>
 /// Represents a command that does not return a response.
 /// </summary>
-public interface ICommand : ICommand<Unit>;
+public interface ICommand : IRequest;
