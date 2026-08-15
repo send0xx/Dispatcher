@@ -4,7 +4,7 @@ namespace Dispatcher.SampleApi;
 
 internal sealed class ValidationCommandBehavior<TCommand, TResponse>(
     IEnumerable<IValidator<TCommand>> validators) : IPipelineBehavior<TCommand, TResponse>
-    where TCommand : ICommand<TResponse>
+    where TCommand : ICommandBase
 {
     public async ValueTask<TResponse> HandleAsync(
         TCommand command,

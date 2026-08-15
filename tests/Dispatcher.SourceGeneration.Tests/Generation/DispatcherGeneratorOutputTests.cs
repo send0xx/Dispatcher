@@ -360,7 +360,7 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
-    public void Applies_resultless_command_behavior_and_uses_unit()
+    public void Applies_command_behavior_to_both_command_shapes_and_uses_unit()
     {
         const string source = """
             using Dispatcher;
@@ -379,9 +379,15 @@ public sealed class DispatcherGeneratorOutputTests
                 public ValueTask HandleAsync(TestCommand command, CancellationToken cancellationToken) =>
                     ValueTask.CompletedTask;
             }
+            internal sealed record ResponseCommand : ICommand<int>;
+            internal sealed class ResponseCommandHandler : ICommandHandler<ResponseCommand, int>
+            {
+                public ValueTask<int> HandleAsync(ResponseCommand command, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult(42);
+            }
             internal sealed class CommandBehavior<TCommand, TResponse>
                 : IPipelineBehavior<TCommand, TResponse>
-                where TCommand : ICommand
+                where TCommand : ICommandBase
             {
                 public ValueTask<TResponse> HandleAsync(
                     TCommand request,
@@ -399,6 +405,10 @@ public sealed class DispatcherGeneratorOutputTests
                 StringComparison.Ordinal))).ToString();
         Assert.Contains(
             "AddPipelineBehavior<global::TestCommand, global::Dispatcher.Unit, global::CommandBehavior<global::TestCommand, global::Dispatcher.Unit>>",
+            generated,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "AddPipelineBehavior<global::ResponseCommand, int, global::CommandBehavior<global::ResponseCommand, int>>",
             generated,
             StringComparison.Ordinal);
         Assert.DoesNotContain(

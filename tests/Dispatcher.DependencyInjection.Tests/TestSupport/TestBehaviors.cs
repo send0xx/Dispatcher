@@ -50,6 +50,20 @@ internal sealed class RecordCommandBehavior(TestState state) : IPipelineBehavior
     }
 }
 
+internal sealed class CommandBaseBehavior<TCommand, TResponse>(TestState state)
+    : IPipelineBehavior<TCommand, TResponse>
+    where TCommand : ICommandBase
+{
+    public ValueTask<TResponse> HandleAsync(
+        TCommand command,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        state.Events.Add("command-base");
+        return next(cancellationToken);
+    }
+}
+
 internal sealed class PassthroughGreetingBehavior : IPipelineBehavior<GreetingQuery, string>
 {
     public ValueTask<string> HandleAsync(

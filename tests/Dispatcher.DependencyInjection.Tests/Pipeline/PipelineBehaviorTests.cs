@@ -56,6 +56,25 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Command_base_behavior_applies_to_both_command_shapes_but_not_queries()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior(typeof(CommandBaseBehavior<,>));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
+        await dispatcher.ExecuteAsync(new SumCommand(1, 2));
+        await dispatcher.ExecuteAsync(new RecordCommand("recorded"));
+
+        Assert.Equal(
+            2,
+            scope.ServiceProvider.GetRequiredService<TestState>().Events.Count(@event =>
+                @event == "command-base"));
+    }
+
+    [Fact]
     public async Task Pipeline_is_safe_for_concurrent_requests_in_the_same_scope()
     {
         var services = TestServices.CreateServices();

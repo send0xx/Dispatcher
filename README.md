@@ -107,6 +107,10 @@ builder.Services.AddDispatcher(options =>
 
 ## Messages and handlers
 
+All dispatchable messages implement `IMessage`. Queries and commands additionally implement `IRequest`
+through their `IQueryBase` and `ICommandBase` family markers, while notifications implement `IMessage`
+directly.
+
 ### Queries
 
 A query always has a response:
