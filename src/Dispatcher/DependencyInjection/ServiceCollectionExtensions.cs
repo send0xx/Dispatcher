@@ -216,7 +216,7 @@ public static class ServiceCollectionExtensions
         if (!services.Any(descriptor =>
                 descriptor.ServiceType == typeof(HandlerRegistration) &&
                 descriptor.ImplementationInstance is HandlerRegistration existing &&
-                IsSameRegistration(existing, registration)))
+                existing == registration))
         {
             services.AddSingleton<HandlerRegistration>(registration);
         }
@@ -261,10 +261,17 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.Add(ServiceDescriptor.Describe(
-            typeof(IPipelineBehavior<TRequest, TResponse>),
-            typeof(TBehavior),
-            GetLifetime(configure)));
+        // Registering the same behavior twice would run it twice in every pipeline it applies to.
+        // The first registration wins, so the outermost-first behavior order is preserved.
+        if (!services.Any(descriptor =>
+                descriptor.ServiceType == typeof(IPipelineBehavior<TRequest, TResponse>) &&
+                descriptor.ImplementationType == typeof(TBehavior)))
+        {
+            services.Add(ServiceDescriptor.Describe(
+                typeof(IPipelineBehavior<TRequest, TResponse>),
+                typeof(TBehavior),
+                GetLifetime(configure)));
+        }
 
         return services;
     }
@@ -292,7 +299,7 @@ public static class ServiceCollectionExtensions
         if (!services.Any(descriptor =>
                 descriptor.ServiceType == typeof(HandlerRegistration) &&
                 descriptor.ImplementationInstance is HandlerRegistration existing &&
-                IsSameRegistration(existing, registration)))
+                existing == registration))
         {
             services.AddSingleton(registration);
         }
@@ -339,26 +346,5 @@ public static class ServiceCollectionExtensions
         }
 
         return typeParameter;
-    }
-
-    private static bool IsSameRegistration(
-        HandlerRegistration existing,
-        HandlerRegistration registration)
-    {
-        if (existing.GetType() != registration.GetType() ||
-            existing.MessageType != registration.MessageType ||
-            existing.HandlerType != registration.HandlerType)
-        {
-            return false;
-        }
-
-        return (existing, registration) switch
-        {
-            (QueryHandlerRegistration first, QueryHandlerRegistration second) =>
-                first.ResponseType == second.ResponseType,
-            (CommandWithResponseHandlerRegistration first, CommandWithResponseHandlerRegistration second) =>
-                first.ResponseType == second.ResponseType,
-            _ => true
-        };
     }
 }

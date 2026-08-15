@@ -75,6 +75,27 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
+    public async Task Repeating_a_typed_registration_registers_the_handler_once()
+    {
+        var services = new ServiceCollection();
+        services
+            .AddDispatcher()
+            .AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>()
+            .AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>()
+            .AddNotificationHandler<SomethingHappened, ANotificationHandler>()
+            .AddNotificationHandler<SomethingHappened, ANotificationHandler>();
+        services.AddScoped<TestState>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada")));
+        await dispatcher.PublishAsync(new SomethingHappened());
+
+        Assert.Equal(["handler", "notification-a"], scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
     public async Task Typed_registration_and_assembly_scanning_may_overlap_for_one_handler()
     {
         var services = new ServiceCollection();

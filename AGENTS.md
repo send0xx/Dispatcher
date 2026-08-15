@@ -57,6 +57,9 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
   later as a notification that never arrives or a missing request handler. Collect every offending type and
   throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.
 - `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI registrations of `IPipelineBehavior<,>` must continue to work.
+- `AddPipelineBehavior` is idempotent for the same behavior and service type, in both the typed and the
+  reflection overloads. Registering a behavior twice would otherwise run it twice in every pipeline it
+  applies to. The first registration wins so that outermost-first ordering is unaffected.
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
 - `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.

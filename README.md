@@ -289,6 +289,8 @@ builder.Services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
 
 The first registered behavior is the outermost. Behaviors may short-circuit by returning without calling `next`, and they may pass a replacement cancellation token to `next`.
 
+Registering the same behavior more than once is safe: the first registration wins and later ones are ignored, so a behavior never runs twice in one pipeline.
+
 The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and both command shapes. A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain resultless.
 Constrain `TRequest` to `ICommandBase` for both command shapes, to `ICommand` for resultless
 commands only, or to `ICommand<TResponse>` for response-bearing commands only.

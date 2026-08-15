@@ -56,6 +56,13 @@ internal static class PipelineBehaviorTypeRegistrar
 
         foreach (var serviceType in serviceTypes)
         {
+            if (services.Any(descriptor =>
+                    descriptor.ServiceType == serviceType &&
+                    descriptor.ImplementationType == behaviorType))
+            {
+                continue;
+            }
+
             services.Add(ServiceDescriptor.Describe(serviceType, behaviorType, lifetime));
         }
 

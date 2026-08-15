@@ -25,6 +25,55 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Registering_the_same_behavior_twice_runs_it_once()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<FirstGreetingBehavior>();
+        services.AddPipelineBehavior<FirstGreetingBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GreetingQuery("Grace"));
+
+        Assert.Equal(
+            ["first-before", "handler", "first-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Registering_the_same_open_generic_behavior_twice_runs_it_once()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior(typeof(CommandBaseBehavior<,>));
+        services.AddPipelineBehavior(typeof(CommandBaseBehavior<,>));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new RecordCommand("once"));
+
+        Assert.Equal(["command-base"], scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Registering_the_same_typed_behavior_twice_runs_it_once()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<GreetingQuery, string, FirstGreetingBehavior>();
+        services.AddPipelineBehavior<GreetingQuery, string, FirstGreetingBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GreetingQuery("Grace"));
+
+        Assert.Equal(
+            ["first-before", "handler", "first-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
     public async Task Behavior_can_short_circuit_handler()
     {
         var services = TestServices.CreateServices();
