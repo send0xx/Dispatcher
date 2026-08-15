@@ -8,16 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Dispatcher.Benchmarks;
 
 /// <summary>
-/// Measures registering many module assemblies, as a modular monolith does at startup.
+/// Measures reflection assembly scanning at startup, over a real module assembly and a growing
+/// number of emitted ones, as a modular monolith registers them.
 /// </summary>
 /// <remarks>
 /// <see cref="ScanUnroutableModules"/> covers modules whose messages no handler routes, so they stay
 /// under consideration for every later scan. <see cref="ScanRoutableModules"/> covers modules whose
 /// messages all route to a handled base type, so the service collection grows with every scan.
+/// <see cref="BuildRegistryForUnroutableModules"/> adds the registry creation that follows, which is
+/// where the messages scanning left pending are reconsidered.
 /// </remarks>
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev")]
-public class ModularScanningBenchmarks
+public class AssemblyScanningBenchmarks
 {
     private const int MessageTypesPerModule = 250;
 

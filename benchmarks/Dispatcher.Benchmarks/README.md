@@ -2,7 +2,8 @@
 
 The benchmarks measure dispatch latency and managed allocations for queries, commands,
 notifications, pipelines with zero, one, or three behaviors, and telemetry with and
-without active listeners.
+without active listeners. They also measure reflection startup cost: assembly scanning
+and registry creation as the number of registered module assemblies grows.
 
 Run all benchmarks from the repository root:
 
@@ -16,10 +17,11 @@ Run one benchmark class while iterating:
 dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*PipelineBenchmarks*'
 ```
 
-Measure reflection startup scanning across modules with shared contracts:
+Measure reflection startup scanning, and the registry creation that follows it, across a growing
+number of module assemblies:
 
 ```shell
-dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*HandlerScanningBenchmarks*'
+dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release -- --filter '*AssemblyScanningBenchmarks*'
 ```
 
 Compare the reflection and source-generated implementations under the same runtime:
