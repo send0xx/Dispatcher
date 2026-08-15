@@ -68,8 +68,7 @@ public static class ServiceCollectionExtensions
 
         services.TryAddSingleton(static provider =>
             DispatcherRegistry.Create(
-                provider.GetServices<MessageRegistration>()
-                    .Concat(provider.GetServices<HandlerRegistration>()),
+                provider.GetServices<MessageRegistration>().Concat(provider.GetServices<HandlerRegistration>()),
                 provider.GetService<DispatcherTelemetry>()));
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),
