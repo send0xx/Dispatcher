@@ -139,7 +139,8 @@ internal static class DispatcherAnalyzer
             {
                 if (IsCanonicalOpenNotificationHandler(type, implementedHandlers, notificationHandler))
                 {
-                    if (HasPublicConstructor(type))
+                    if (compilation.IsSymbolAccessibleWithin(type, compilation.Assembly) &&
+                        HasPublicConstructor(type))
                     {
                         openNotificationHandlers.Add(new OpenGenericNotificationHandlerModel(type));
                     }

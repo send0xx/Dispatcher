@@ -123,7 +123,8 @@ internal static class HandlerRegistrationEmitter
         source.AppendLine("    /// <param name=\"notification\">The notification to handle.</param>");
         source.AppendLine("    /// <param name=\"cancellationToken\">The cancellation token for the operation.</param>");
         source.AppendLine("    /// <returns>A value task that represents the handler invocation.</returns>");
-        source.Append("    public static global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_")
+        source.Append(handler.CanInvokeFromOtherAssemblies ? "    public static " : "    internal static ")
+            .Append("global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_")
             .Append(handler.MethodSuffix).Append('<').Append(parameterName).AppendLine(">(");
         source.AppendLine("        global::System.IServiceProvider serviceProvider,");
         source.Append("        ").Append(parameterName).AppendLine(" notification,");

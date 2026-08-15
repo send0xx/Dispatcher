@@ -63,6 +63,7 @@ internal sealed class OpenGenericNotificationHandlerModel(INamedTypeSymbol imple
 {
     public INamedTypeSymbol ImplementationType { get; } = implementationType;
     public ITypeParameterSymbol TypeParameter { get; } = implementationType.TypeParameters[0];
+    public bool CanInvokeFromOtherAssemblies => TypeParameter.ConstraintTypes.All(IsPubliclyAccessible);
     public string SortKey => ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
     public string RegistrationClassName => "global::Dispatcher.SourceGeneration." +
         "GeneratedHandlerServiceCollectionExtensions_" +
@@ -84,6 +85,17 @@ internal sealed class OpenGenericNotificationHandlerModel(INamedTypeSymbol imple
 
         return hash;
     }
+
+    private static bool IsPubliclyAccessible(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol arrayType => IsPubliclyAccessible(arrayType.ElementType),
+        IPointerTypeSymbol pointerType => IsPubliclyAccessible(pointerType.PointedAtType),
+        INamedTypeSymbol namedType =>
+            namedType.DeclaredAccessibility == Accessibility.Public &&
+            (namedType.ContainingType is null || IsPubliclyAccessible(namedType.ContainingType)) &&
+            namedType.TypeArguments.All(IsPubliclyAccessible),
+        _ => true
+    };
 }
 
 internal sealed class DispatchRouteModel(

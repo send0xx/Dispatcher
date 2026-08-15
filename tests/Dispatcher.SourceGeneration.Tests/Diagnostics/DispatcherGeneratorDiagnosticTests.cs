@@ -131,6 +131,29 @@ public sealed class DispatcherGeneratorDiagnosticTests
     }
 
     [Fact]
+    public void Reports_inaccessible_open_notification_handler()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            internal static class HandlerContainer
+            {
+                private sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                    where TNotification : INotification
+                {
+                    public AuditHandler() { }
+                    public ValueTask HandleAsync(
+                        TNotification notification,
+                        CancellationToken cancellationToken) => ValueTask.CompletedTask;
+                }
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG004");
+    }
+
+    [Fact]
     public void Reports_unsupported_open_generic_behavior_shape()
     {
         const string source = """

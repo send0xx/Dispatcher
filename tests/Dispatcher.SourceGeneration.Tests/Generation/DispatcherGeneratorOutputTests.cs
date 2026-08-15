@@ -274,6 +274,41 @@ public sealed class DispatcherGeneratorOutputTests
     }
 
     [Fact]
+    public void Generates_internal_invoker_for_open_handler_with_internal_constraint()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal interface IModuleNotification : INotification;
+            internal sealed record TestNotification : IModuleNotification;
+            internal sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                where TNotification : IModuleNotification
+            {
+                public ValueTask HandleAsync(
+                    TNotification notification,
+                    CancellationToken cancellationToken) => ValueTask.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        var registration = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "public static class GeneratedHandlerServiceCollectionExtensions_GeneratorTests",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "internal static global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_",
+            registration,
+            StringComparison.Ordinal);
+        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+    }
+
+    [Fact]
     public void Generates_closed_registrations_for_open_pipeline_behavior()
     {
         const string source = """
