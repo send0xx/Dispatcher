@@ -18,13 +18,13 @@ Dispatch itself does not use reflection. Handler routes are stored in frozen dic
 For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.11
+dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.12
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.11
+dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.12
 ```
 
 Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
