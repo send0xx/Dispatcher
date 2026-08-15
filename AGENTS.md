@@ -17,6 +17,10 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
 - `tests/Dispatcher.DependencyInjection.Tests`: integration tests targeting .NET 8 and .NET 10.
+- `tests/Dispatcher.Parity.Tests`: dispatch scenarios written once and run against both implementations.
+  Its messages and handlers are declared in the project itself and generated over at build time, so the
+  reflection-based and source-generated dispatchers route the same CLR types. Keep every request in it
+  handled: the generator reports an unhandled request as an error, so a handlerless request breaks the build.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs`: repository documentation, including maintenance and release guides.

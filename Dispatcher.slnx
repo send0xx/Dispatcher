@@ -28,6 +28,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj" />
+    <Project Path="tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj" />
     <Project Path="tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
