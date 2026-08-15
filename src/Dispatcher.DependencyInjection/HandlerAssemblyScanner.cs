@@ -57,65 +57,51 @@ internal static class HandlerAssemblyScanner
             return services;
         }
 
-        var handlerCandidates = new List<(Type ImplementationType, Type ServiceType, HandlerRegistration Registration)[]>();
+        // What this scan may still need to add. Reading the service collection drops whatever another
+        // registration path already added, so these stay sized by the scanned handlers instead of by
+        // the whole service collection.
+        var unregisteredServices = new HashSet<(Type ServiceType, Type ImplementationType)>();
+        var unregisteredHandlers = new HashSet<HandlerRegistration>();
+        foreach (var (implementationType, serviceType, registration) in
+                 scanned.SelectMany(static entry => entry.Candidates))
+        {
+            unregisteredServices.Add((serviceType, implementationType));
+            unregisteredHandlers.Add(registration);
+        }
+
+        var previousHasOpenNotificationHandlers = scanState.HasOpenNotificationHandlers;
+        var handledMessageTypes = new HashSet<Type>();
+        var registeredMessageTypes = new HashSet<Type>();
+        ReadRegistrations(
+            services,
+            scanState,
+            handledMessageTypes,
+            registeredMessageTypes,
+            unregisteredServices,
+            unregisteredHandlers);
+
+        var firstNewMessageTypeIndex = scanState.PendingMessageTypes.Count;
+        var newlyHandledMessageTypes = new HashSet<Type>();
         foreach (var (assembly, types, candidates) in scanned)
         {
             scanState.HandlerAssemblies.Add(assembly);
-            handlerCandidates.Add(candidates);
             scanState.HasOpenNotificationHandlers |= candidates.Any(static candidate =>
                 candidate.Registration is NotificationHandlerRegistration { IsOpenGeneric: true });
-            AddMessageScan(scanState, assembly, types);
-        }
-
-        var registeredServices = new HashSet<(Type ServiceType, Type ImplementationType)>();
-        var registeredHandlers = new HashSet<HandlerRegistration>();
-        foreach (var descriptor in services)
-        {
-            if (descriptor.ImplementationType is { } implementationType)
-            {
-                registeredServices.Add((descriptor.ServiceType, implementationType));
-            }
-            else if (descriptor.ImplementationInstance is HandlerRegistration registration)
-            {
-                registeredHandlers.Add(registration);
-            }
-        }
-
-        var newlyHandledMessageTypes = new HashSet<Type>();
-        foreach (var candidates in handlerCandidates)
-        {
             newlyHandledMessageTypes.UnionWith(RegisterHandlers(
                 services,
                 candidates,
                 lifetime,
-                registeredServices,
-                registeredHandlers));
+                unregisteredServices,
+                unregisteredHandlers));
+            AddMessageScan(scanState, assembly, types);
         }
 
-        var handledMessageTypes = services
-            .Where(static descriptor => descriptor.ServiceType == typeof(HandlerRegistration))
-            .Select(static descriptor => descriptor.ImplementationInstance)
-            .OfType<HandlerRegistration>()
-            .Where(static registration =>
-                registration is not NotificationHandlerRegistration { IsOpenGeneric: true })
-            .Select(static registration => registration.MessageType)
-            .ToHashSet();
-        scanState.HasOpenNotificationHandlers |= services
-            .Where(static descriptor => descriptor.ServiceType == typeof(HandlerRegistration))
-            .Select(static descriptor => descriptor.ImplementationInstance)
-            .OfType<NotificationHandlerRegistration>()
-            .Any(static registration => registration.IsOpenGeneric);
-        var registeredMessageTypes = services
-            .Where(static descriptor => descriptor.ServiceType == typeof(MessageRegistration))
-            .Select(static descriptor => descriptor.ImplementationInstance)
-            .OfType<MessageRegistration>()
-            .Select(static registration => registration.MessageType)
-            .ToHashSet();
+        handledMessageTypes.UnionWith(newlyHandledMessageTypes);
 
         var messageAssemblies = newlyHandledMessageTypes
             .Select(static messageType => messageType.Assembly)
-            .Concat(handlerCandidates
-                .SelectMany(static candidates => candidates)
+            .Concat(scanned
+                .SelectMany(static entry => entry.Candidates)
                 .Where(static candidate =>
                     candidate.Registration is NotificationHandlerRegistration { IsOpenGeneric: true })
                 .SelectMany(static candidate => candidate.ImplementationType
@@ -125,7 +111,7 @@ internal static class HandlerAssemblyScanner
         foreach (var messageAssembly in messageAssemblies
                      .Distinct())
         {
-            if (!scanState.MessageTypes.ContainsKey(messageAssembly))
+            if (!scanState.MessageAssemblies.Contains(messageAssembly))
             {
                 AddMessageScan(
                     scanState,
@@ -134,17 +120,62 @@ internal static class HandlerAssemblyScanner
             }
         }
 
-        foreach (var messageTypes in scanState.MessageTypes.Values)
-        {
-            RegisterMessages(
-                services,
-                messageTypes,
-                handledMessageTypes,
-                registeredMessageTypes,
-                scanState.HasOpenNotificationHandlers);
-        }
+        // A message type that no handler routes stays pending. Whether it can be routed depends only
+        // on the handled types and on open notification handlers, so when neither changed this scan
+        // only has to consider the message types it just added.
+        var routingChanged = scanState.LastHandledMessageTypes is null ||
+            scanState.HasOpenNotificationHandlers != previousHasOpenNotificationHandlers ||
+            !handledMessageTypes.SetEquals(scanState.LastHandledMessageTypes);
+        RegisterMessages(
+            services,
+            scanState.PendingMessageTypes,
+            routingChanged ? 0 : firstNewMessageTypeIndex,
+            handledMessageTypes,
+            registeredMessageTypes,
+            scanState.HasOpenNotificationHandlers);
+        scanState.LastHandledMessageTypes = handledMessageTypes;
 
         return services;
+    }
+
+    private static void ReadRegistrations(
+        IServiceCollection services,
+        AssemblyScanState scanState,
+        HashSet<Type> handledMessageTypes,
+        HashSet<Type> registeredMessageTypes,
+        HashSet<(Type ServiceType, Type ImplementationType)> unregisteredServices,
+        HashSet<HandlerRegistration> unregisteredHandlers)
+    {
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(HandlerRegistration) &&
+                descriptor.ImplementationInstance is HandlerRegistration handlerRegistration)
+            {
+                if (handlerRegistration is NotificationHandlerRegistration { IsOpenGeneric: true })
+                {
+                    scanState.HasOpenNotificationHandlers = true;
+                }
+                else
+                {
+                    handledMessageTypes.Add(handlerRegistration.MessageType);
+                }
+
+                unregisteredHandlers.Remove(handlerRegistration);
+                continue;
+            }
+
+            if (descriptor.ServiceType == typeof(MessageRegistration) &&
+                descriptor.ImplementationInstance is MessageRegistration messageRegistration)
+            {
+                registeredMessageTypes.Add(messageRegistration.MessageType);
+                continue;
+            }
+
+            if (descriptor.ImplementationType is { } implementationType)
+            {
+                unregisteredServices.Remove((descriptor.ServiceType, implementationType));
+            }
+        }
     }
 
     private static AssemblyScanState GetOrCreateScanState(IServiceCollection services)
@@ -169,8 +200,8 @@ internal static class HandlerAssemblyScanner
         IServiceCollection services,
         IEnumerable<(Type ImplementationType, Type ServiceType, HandlerRegistration Registration)> candidates,
         ServiceLifetime lifetime,
-        HashSet<(Type ServiceType, Type ImplementationType)> registeredServices,
-        HashSet<HandlerRegistration> registeredHandlers)
+        HashSet<(Type ServiceType, Type ImplementationType)> unregisteredServices,
+        HashSet<HandlerRegistration> unregisteredHandlers)
     {
         var handledMessageTypes = new HashSet<Type>();
         foreach (var (implementationType, serviceType, registration) in candidates)
@@ -178,12 +209,12 @@ internal static class HandlerAssemblyScanner
             // The typed registration methods may already have registered this handler. Adding it a
             // second time makes notification handlers run twice and makes queries and commands look
             // like they have duplicate handlers.
-            if (registeredServices.Add((serviceType, implementationType)))
+            if (unregisteredServices.Remove((serviceType, implementationType)))
             {
                 services.Add(ServiceDescriptor.Describe(serviceType, implementationType, lifetime));
             }
 
-            if (registeredHandlers.Add(registration))
+            if (unregisteredHandlers.Remove(registration))
             {
                 services.AddSingleton(registration);
             }
@@ -199,24 +230,36 @@ internal static class HandlerAssemblyScanner
 
     private static void RegisterMessages(
         IServiceCollection services,
-        IEnumerable<Type> types,
+        List<Type> pendingMessageTypes,
+        int startIndex,
         IReadOnlySet<Type> handledMessageTypes,
         ISet<Type> registeredMessageTypes,
         bool hasOpenNotificationHandlers)
     {
-        foreach (var messageType in types)
+        // Types that are registered here, or that another path already covers, are compacted out of
+        // the pending list so that later scans never look at them again.
+        var remaining = startIndex;
+        for (var index = startIndex; index < pendingMessageTypes.Count; index++)
         {
+            var messageType = pendingMessageTypes[index];
             if (handledMessageTypes.Contains(messageType) ||
-                registeredMessageTypes.Contains(messageType) ||
-                !HasHandledBaseType(messageType, handledMessageTypes) &&
+                registeredMessageTypes.Contains(messageType))
+            {
+                continue;
+            }
+
+            if (!HasHandledBaseType(messageType, handledMessageTypes) &&
                 !(hasOpenNotificationHandlers && typeof(INotification).IsAssignableFrom(messageType)))
             {
+                pendingMessageTypes[remaining++] = messageType;
                 continue;
             }
 
             services.AddSingleton(new MessageRegistration(messageType));
             registeredMessageTypes.Add(messageType);
         }
+
+        pendingMessageTypes.RemoveRange(remaining, pendingMessageTypes.Count - remaining);
     }
 
     private static void AddMessageScan(
@@ -224,17 +267,14 @@ internal static class HandlerAssemblyScanner
         Assembly assembly,
         IEnumerable<Type> types)
     {
-        if (scanState.MessageTypes.ContainsKey(assembly))
+        if (!scanState.MessageAssemblies.Add(assembly))
         {
             return;
         }
 
-        scanState.MessageTypes.Add(
-            assembly,
-            types
-                .Where(IsConcreteMessage)
-                .OrderBy(static type => type.FullName, StringComparer.Ordinal)
-                .ToArray());
+        scanState.PendingMessageTypes.AddRange(types
+            .Where(IsConcreteMessage)
+            .OrderBy(static type => type.FullName, StringComparer.Ordinal));
     }
 
     private static (Type ImplementationType, Type ServiceType, HandlerRegistration Registration)[]
@@ -359,7 +399,20 @@ internal static class HandlerAssemblyScanner
     private sealed class AssemblyScanState
     {
         internal HashSet<Assembly> HandlerAssemblies { get; } = [];
-        internal Dictionary<Assembly, Type[]> MessageTypes { get; } = [];
+        internal HashSet<Assembly> MessageAssemblies { get; } = [];
+
+        /// <summary>
+        /// Concrete message types that no scan has been able to route yet, in registration order.
+        /// </summary>
+        internal List<Type> PendingMessageTypes { get; } = [];
+
         internal bool HasOpenNotificationHandlers { get; set; }
+
+        /// <summary>
+        /// The handled message types the pending list was last fully reconsidered against, or
+        /// <see langword="null"/> before the first scan. Comparing the set rather than its size keeps
+        /// a message routable even if a handler is removed and another added between scans.
+        /// </summary>
+        internal HashSet<Type>? LastHandledMessageTypes { get; set; }
     }
 }
