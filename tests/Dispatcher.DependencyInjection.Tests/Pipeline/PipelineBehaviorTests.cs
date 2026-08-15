@@ -17,7 +17,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Grace"));
+            .QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["first-before", "second-before", "handler", "second-after", "first-after"],
@@ -34,7 +34,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Grace"));
+            .QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["first-before", "handler", "first-after"],
@@ -55,7 +55,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Grace"));
+            .QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken);
 
         Assert.Equal(["first-before", "handler", "first-after"], state.Events);
     }
@@ -70,7 +70,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
-            .ExecuteAsync(new RecordCommand("once"));
+            .ExecuteAsync(new RecordCommand("once"), TestContext.Current.CancellationToken);
 
         Assert.Equal(["command-base"], scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
@@ -85,7 +85,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Grace"));
+            .QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["first-before", "handler", "first-after"],
@@ -101,7 +101,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
-            .ExecuteAsync(new SumCommand(10, 20));
+            .ExecuteAsync(new SumCommand(10, 20), TestContext.Current.CancellationToken);
 
         Assert.Equal(42, result);
         Assert.DoesNotContain("sum-handler", scope.ServiceProvider.GetRequiredService<TestState>().Events);
@@ -116,7 +116,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
-            .ExecuteAsync(new RecordCommand("through-pipeline"));
+            .ExecuteAsync(new RecordCommand("through-pipeline"), TestContext.Current.CancellationToken);
 
         var state = scope.ServiceProvider.GetRequiredService<TestState>();
         Assert.Equal("through-pipeline", state.Recorded);
@@ -132,9 +132,9 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
-        await dispatcher.ExecuteAsync(new SumCommand(1, 2));
-        await dispatcher.ExecuteAsync(new RecordCommand("recorded"));
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new SumCommand(1, 2), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new RecordCommand("recorded"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             2,
@@ -151,9 +151,9 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
-        await dispatcher.ExecuteAsync(new SumCommand(1, 2));
-        await dispatcher.ExecuteAsync(new RecordCommand("recorded"));
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new SumCommand(1, 2), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new RecordCommand("recorded"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             1,
@@ -170,8 +170,8 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
 
-        var first = dispatcher.QueryAsync(new GreetingQuery("Ada")).AsTask();
-        var second = dispatcher.QueryAsync(new GreetingQuery("Grace")).AsTask();
+        var first = dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken).AsTask();
+        var second = dispatcher.QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken).AsTask();
 
         Assert.Equal(["Hello, Ada", "Hello, Grace"], await Task.WhenAll(first, second));
     }
@@ -186,8 +186,8 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
 
-        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
-        await dispatcher.QueryAsync(new GreetingQuery("Grace"));
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        await dispatcher.QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken);
 
         Assert.Equal(2, scope.ServiceProvider.GetRequiredService<TestState>().BehaviorInstances);
     }
@@ -201,7 +201,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["first-before", "handler", "first-after"],
@@ -217,7 +217,7 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new DerivedGreetingQuery("Ada"));
+            .QueryAsync(new DerivedGreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Base hello, Ada", result);
         Assert.Equal(

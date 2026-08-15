@@ -35,7 +35,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("RunQueryPipeline", generated, StringComparison.Ordinal);
         Assert.Contains(result.GeneratedTrees, tree =>
             tree.ToString().Contains("AddTestDispatcher", StringComparison.Ordinal));
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -87,7 +87,7 @@ public sealed class DispatcherGeneratorOutputTests
             "GeneratedNotificationHandlerInvoker",
             generated,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -119,7 +119,7 @@ public sealed class DispatcherGeneratorOutputTests
             "A singleton dispatcher would capture the root service provider.",
             generated,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -163,7 +163,7 @@ public sealed class DispatcherGeneratorOutputTests
             registration,
             StringComparison.Ordinal);
         Assert.DoesNotContain("CS0436", registration, StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -231,7 +231,7 @@ public sealed class DispatcherGeneratorOutputTests
             generated,
             StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", generated, StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -272,7 +272,7 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("OpenNotificationCore<global::TestNotification>", dispatcher, StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", dispatcher, StringComparison.Ordinal);
         Assert.DoesNotContain("Keyed", dispatcher, StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -307,7 +307,7 @@ public sealed class DispatcherGeneratorOutputTests
             "internal static global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_",
             registration,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -358,7 +358,7 @@ public sealed class DispatcherGeneratorOutputTests
             "behaviorOptions.ServiceLifetime = options.ServiceLifetime",
             generated,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -418,7 +418,7 @@ public sealed class DispatcherGeneratorOutputTests
             "CommandBehavior<global::TestQuery, string>",
             generated,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -468,7 +468,7 @@ public sealed class DispatcherGeneratorOutputTests
             "UnmanagedBehavior<global::ManagedQuery, int>",
             generated,
             StringComparison.Ordinal);
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 
@@ -513,7 +513,7 @@ public sealed class DispatcherGeneratorOutputTests
             tree.ToString().Contains(
                 "namespace Dispatcher.SourceGeneration;\n\ninternal sealed class Dispatcher",
                 StringComparison.Ordinal));
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 }

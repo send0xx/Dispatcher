@@ -13,9 +13,9 @@ public sealed class DispatcherTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        var queryResult = await dispatcher.QueryAsync(new GreetingQuery("Ada"));
-        var commandResult = await dispatcher.ExecuteAsync(new SumCommand(2, 3));
-        await dispatcher.ExecuteAsync(new RecordCommand("done"));
+        var queryResult = await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        var commandResult = await dispatcher.ExecuteAsync(new SumCommand(2, 3), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new RecordCommand("done"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", queryResult);
         Assert.Equal(5, commandResult);
@@ -44,7 +44,7 @@ public sealed class DispatcherTests
 
         var exception = await Assert.ThrowsAsync<HandlerNotFoundException>(() =>
             scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-                .QueryAsync(new MissingQuery()).AsTask());
+                .QueryAsync(new MissingQuery(), TestContext.Current.CancellationToken).AsTask());
 
         Assert.Equal(typeof(MissingQuery), exception.MessageType);
     }
@@ -56,9 +56,9 @@ public sealed class DispatcherTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        var queryResult = await dispatcher.QueryAsync(new DerivedGreetingQuery("Ada"));
-        var commandResult = await dispatcher.ExecuteAsync(new DerivedSumCommand(2, 3));
-        await dispatcher.ExecuteAsync(new DerivedRecordCommand("polymorphic"));
+        var queryResult = await dispatcher.QueryAsync(new DerivedGreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        var commandResult = await dispatcher.ExecuteAsync(new DerivedSumCommand(2, 3), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new DerivedRecordCommand("polymorphic"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Base hello, Ada", queryResult);
         Assert.Equal(5, commandResult);
@@ -76,7 +76,7 @@ public sealed class DispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new SpecificGreetingQuery("Ada"));
+            .QueryAsync(new SpecificGreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Specific hello, Ada", result);
         Assert.Equal(

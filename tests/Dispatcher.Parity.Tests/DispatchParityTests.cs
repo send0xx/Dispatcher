@@ -27,7 +27,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        var response = await host.Dispatcher.QueryAsync(new GreetQuery("Ada"));
+        var response = await host.Dispatcher.QueryAsync(new GreetQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", response);
         Assert.Equal(["greet-before", "greet", "greet-after"], host.Recorder.Events);
@@ -38,7 +38,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        var response = await host.Dispatcher.ExecuteAsync(new SumCommand(2, 3));
+        var response = await host.Dispatcher.ExecuteAsync(new SumCommand(2, 3), TestContext.Current.CancellationToken);
 
         Assert.Equal(5, response);
         Assert.Equal(["sum"], host.Recorder.Events);
@@ -49,7 +49,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        await host.Dispatcher.ExecuteAsync(new RecordCommand("value"));
+        await host.Dispatcher.ExecuteAsync(new RecordCommand("value"), TestContext.Current.CancellationToken);
 
         Assert.Equal(["record-value"], host.Recorder.Events);
     }
@@ -59,7 +59,11 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        Assert.Equal("base daily", await host.Dispatcher.QueryAsync(new DailyReportQuery("daily")));
+        var response = await host.Dispatcher.QueryAsync(
+            new DailyReportQuery("daily"),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("base daily", response);
     }
 
     [Fact]
@@ -67,7 +71,11 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        Assert.Equal("exact hourly", await host.Dispatcher.QueryAsync(new HourlyReportQuery("hourly")));
+        var response = await host.Dispatcher.QueryAsync(
+            new HourlyReportQuery("hourly"),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("exact hourly", response);
     }
 
     [Fact]
@@ -75,7 +83,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        await host.Dispatcher.PublishAsync(new UserUpdated());
+        await host.Dispatcher.PublishAsync(new UserUpdated(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["domain-a", "domain-b", "audit-UserUpdated"], host.Recorder.Events);
     }
@@ -85,7 +93,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        await host.Dispatcher.PublishAsync(new UserCreated());
+        await host.Dispatcher.PublishAsync(new UserCreated(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["user-created", "audit-UserCreated"], host.Recorder.Events);
     }
@@ -95,7 +103,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        await host.Dispatcher.PublishAsync(new Heartbeat());
+        await host.Dispatcher.PublishAsync(new Heartbeat(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["heartbeat-a", "heartbeat-b"], host.Recorder.Events);
     }
@@ -105,7 +113,7 @@ public abstract class DispatchParityTests
     {
         await using var host = CreateHost();
 
-        await host.Dispatcher.PublishAsync(new Ignored());
+        await host.Dispatcher.PublishAsync(new Ignored(), TestContext.Current.CancellationToken);
 
         Assert.Empty(host.Recorder.Events);
     }

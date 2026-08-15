@@ -26,10 +26,10 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada")));
-        Assert.Equal(5, await dispatcher.ExecuteAsync(new SumCommand(2, 3)));
-        await dispatcher.ExecuteAsync(new RecordCommand("typed"));
-        await dispatcher.PublishAsync(new SomethingHappened());
+        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
+        Assert.Equal(5, await dispatcher.ExecuteAsync(new SumCommand(2, 3), TestContext.Current.CancellationToken));
+        await dispatcher.ExecuteAsync(new RecordCommand("typed"), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         var state = scope.ServiceProvider.GetRequiredService<TestState>();
         Assert.Equal("typed", state.Recorded);
@@ -49,7 +49,7 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new DerivedGreetingQuery("Ada"));
+            .QueryAsync(new DerivedGreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Base hello, Ada", result);
     }
@@ -89,8 +89,8 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada")));
-        await dispatcher.PublishAsync(new SomethingHappened());
+        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
+        await dispatcher.PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["handler", "notification-a"], scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
@@ -108,7 +108,7 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", result);
     }
@@ -126,7 +126,7 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new SomethingHappened());
+            .PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         var state = scope.ServiceProvider.GetRequiredService<TestState>();
         Assert.Equal(["notification-a", "notification-b"], state.Events);
@@ -321,7 +321,7 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", result);
         Assert.Single(provider.GetServices<HandlerRegistration>());
@@ -341,7 +341,7 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new SomethingHappened());
+            .PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["notification-a", "notification-b"], state.Events);
     }

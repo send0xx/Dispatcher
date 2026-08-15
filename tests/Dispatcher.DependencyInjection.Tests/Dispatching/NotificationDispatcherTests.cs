@@ -16,7 +16,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new SomethingHappened());
+            .PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["notification-a", "notification-b"],
@@ -30,7 +30,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new UnhandledNotification());
+            .PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new UserUpdatedEvent());
+            .PublishAsync(new UserUpdatedEvent(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["domain-a", "domain-b"],
@@ -54,7 +54,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new UserCreatedEvent());
+            .PublishAsync(new UserCreatedEvent(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["user-created"],
@@ -72,7 +72,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new OpenOnlyNotification());
+            .PublishAsync(new OpenOnlyNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["open-a-OpenOnlyNotification", "open-b-OpenOnlyNotification"],
@@ -91,7 +91,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new DerivedSharedNotification());
+            .PublishAsync(new DerivedSharedNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             [
@@ -114,7 +114,7 @@ public sealed class NotificationDispatcherTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new ExactSharedNotification());
+            .PublishAsync(new ExactSharedNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             [

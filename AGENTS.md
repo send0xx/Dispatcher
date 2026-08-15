@@ -21,6 +21,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
   Its messages and handlers are declared in the project itself and generated over at build time, so the
   reflection-based and source-generated dispatchers route the same CLR types. Keep every request in it
   handled: the generator reports an unhandled request as an error, so a handlerless request breaks the build.
+- `tests/Dispatcher.SourceGeneration.Tests`: generator diagnostics and emitted output, verified by compiling
+  source through the generator. Targets .NET 10 only, because it runs the generator rather than the runtime.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs`: repository documentation, including maintenance and release guides.

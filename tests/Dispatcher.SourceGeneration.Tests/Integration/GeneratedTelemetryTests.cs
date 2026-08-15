@@ -35,7 +35,7 @@ public sealed class GeneratedTelemetryTests
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
         using var parent = new Activity("parent").Start();
 
-        var response = dispatcher.QueryAsync(new GeneratedDelayedQuery());
+        var response = dispatcher.QueryAsync(new GeneratedDelayedQuery(), TestContext.Current.CancellationToken);
 
         Assert.False(response.IsCompleted);
         Assert.Same(parent, Activity.Current);
@@ -63,9 +63,9 @@ public sealed class GeneratedTelemetryTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        var queryResult = await dispatcher.QueryAsync(new GeneratedDerivedQuery("Ada"));
-        var commandResult = await dispatcher.ExecuteAsync(new GeneratedDerivedCommand(2, 3));
-        await dispatcher.PublishAsync(new GeneratedUserUpdatedEvent());
+        var queryResult = await dispatcher.QueryAsync(new GeneratedDerivedQuery("Ada"), TestContext.Current.CancellationToken);
+        var commandResult = await dispatcher.ExecuteAsync(new GeneratedDerivedCommand(2, 3), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new GeneratedUserUpdatedEvent(), TestContext.Current.CancellationToken);
 
         Assert.Equal("Base hello, Ada", queryResult);
         Assert.Equal(5, commandResult);
@@ -97,7 +97,7 @@ public sealed class GeneratedTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
-            .ExecuteAsync(new GeneratedDerivedResultlessCommand("value"));
+            .ExecuteAsync(new GeneratedDerivedResultlessCommand("value"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["base-resultless-command"],
@@ -121,7 +121,7 @@ public sealed class GeneratedTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GeneratedDerivedQuery("Ada"));
+            .QueryAsync(new GeneratedDerivedQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Base hello, Ada", result);
         Assert.Equal(
@@ -145,8 +145,8 @@ public sealed class GeneratedTelemetryTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        var result = await dispatcher.QueryAsync(new GeneratedSpecificQuery("Ada"));
-        await dispatcher.PublishAsync(new GeneratedUserCreatedEvent());
+        var result = await dispatcher.QueryAsync(new GeneratedSpecificQuery("Ada"), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new GeneratedUserCreatedEvent(), TestContext.Current.CancellationToken);
 
         Assert.Equal("Specific hello, Ada", result);
         Assert.Equal(
@@ -175,7 +175,7 @@ public sealed class GeneratedTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new GeneratedStandaloneEvent());
+            .PublishAsync(new GeneratedStandaloneEvent(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["open-GeneratedStandaloneEvent"],

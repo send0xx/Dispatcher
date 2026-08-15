@@ -255,7 +255,7 @@ public sealed class DispatcherGeneratorModularityTests
     private static void AssertNoErrors(GeneratorTestResult result)
     {
         Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-        Assert.Empty(result.OutputCompilation.GetDiagnostics()
+        Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
     }
 

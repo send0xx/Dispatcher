@@ -36,7 +36,7 @@ public sealed class DispatcherTelemetryTests
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
         using var parent = new Activity("parent").Start();
 
-        var response = dispatcher.QueryAsync(new DelayedQuery());
+        var response = dispatcher.QueryAsync(new DelayedQuery(), TestContext.Current.CancellationToken);
 
         Assert.False(response.IsCompleted);
         Assert.Same(parent, Activity.Current);
@@ -62,7 +62,7 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Empty(capture.Activities);
         Assert.Single(capture.Measurements);
@@ -83,10 +83,10 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
-        await dispatcher.ExecuteAsync(new SumCommand(2, 3));
-        await dispatcher.ExecuteAsync(new RecordCommand("recorded"));
-        await dispatcher.PublishAsync(new SomethingHappened());
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new SumCommand(2, 3), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new RecordCommand("recorded"), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             [
@@ -128,7 +128,7 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             instrumentationName,
@@ -149,7 +149,7 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new DerivedGreetingQuery("Ada"));
+            .QueryAsync(new DerivedGreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         var activity = Assert.Single(capture.Activities);
         Assert.Equal("query DerivedGreetingQuery", activity.DisplayName);
@@ -173,9 +173,9 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        await dispatcher.PublishAsync(new UnhandledNotification());
+        await dispatcher.PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
         await Assert.ThrowsAsync<HandlerNotFoundException>(() =>
-            dispatcher.QueryAsync(new MissingQuery()).AsTask());
+            dispatcher.QueryAsync(new MissingQuery(), TestContext.Current.CancellationToken).AsTask());
 
         Assert.Empty(capture.Activities);
         Assert.Empty(capture.Measurements);
@@ -197,7 +197,7 @@ public sealed class DispatcherTelemetryTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-                .QueryAsync(new FaultingQuery()).AsTask());
+                .QueryAsync(new FaultingQuery(), TestContext.Current.CancellationToken).AsTask());
 
         var activity = Assert.Single(capture.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
@@ -234,7 +234,7 @@ public sealed class DispatcherTelemetryTests
 
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
             scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
-                .ExecuteAsync(new CancellingCommand()).AsTask());
+                .ExecuteAsync(new CancellingCommand(), TestContext.Current.CancellationToken).AsTask());
 
         var activity = Assert.Single(capture.Activities);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
@@ -268,7 +268,7 @@ public sealed class DispatcherTelemetryTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new GreetingQuery("Ada"));
+            .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Single(firstCapture.Activities);
         Assert.Empty(secondCapture.Activities);

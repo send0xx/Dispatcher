@@ -24,7 +24,7 @@ public sealed class CrossAssemblyRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new SharedDerivedQuery("across assemblies"));
+            .QueryAsync(new SharedDerivedQuery("across assemblies"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Handled across assemblies", result);
     }
@@ -44,7 +44,7 @@ public sealed class CrossAssemblyRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new LaterDerivedQuery("module"));
+            .QueryAsync(new LaterDerivedQuery("module"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Handled later module", result);
     }
@@ -65,7 +65,7 @@ public sealed class CrossAssemblyRegistrationTests
         await using var scope = provider.CreateAsyncScope();
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new OpenOnlyNotification());
+            .PublishAsync(new OpenOnlyNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
             ["open-a-OpenOnlyNotification"],
