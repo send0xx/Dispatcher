@@ -22,7 +22,9 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
   reflection-based and source-generated dispatchers route the same CLR types. Keep every request in it
   handled: the generator reports an unhandled request as an error, so a handlerless request breaks the build.
 - `tests/Dispatcher.SourceGeneration.Tests`: generator diagnostics and emitted output, verified by compiling
-  source through the generator. Targets .NET 10 only, because it runs the generator rather than the runtime.
+  source through the generator. It targets .NET 8 and .NET 10 like the other suites, because the harness
+  compiles against the running runtime's reference assemblies, so each framework proves the emitted source
+  compiles and runs there.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs`: repository documentation, including maintenance and release guides.
@@ -162,12 +164,16 @@ For normal changes, run:
 dotnet format Dispatcher.slnx --verify-no-changes
 dotnet build Dispatcher.slnx -c Release
 dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
 ```
 
 Run .NET 8 tests as well when a .NET 8 runtime is installed:
 
 ```bash
 dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net8.0
 ```
 
 For package-affecting changes, pack all libraries and inspect their dependencies and XML documentation:

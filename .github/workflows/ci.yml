@@ -54,9 +54,15 @@ jobs:
             8.0.x
             10.0.x
 
-      - name: Test runtime
+      - name: Test reflection implementation
         run: >-
           dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj
+          -c Release
+          --framework ${{ matrix.framework }}
+
+      - name: Test source generation
+        run: >-
+          dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
 
@@ -65,13 +71,6 @@ jobs:
           dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
-
-      - name: Test source generation
-        if: matrix.framework == 'net10.0'
-        run: >-
-          dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj
-          -c Release
-          --framework net10.0
 
   pack:
     name: Pack
