@@ -48,4 +48,27 @@ public sealed class CrossAssemblyRegistrationTests
 
         Assert.Equal("Handled later module", result);
     }
+
+    [Fact]
+    public async Task Open_notification_handler_registered_after_a_scan_observes_that_scan_s_messages()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<HandlerAssemblyMarker>();
+        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
+        services.AddDispatcher();
+        services.AddSingleton<OpenNotificationRecorder>();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new OpenOnlyNotification());
+
+        Assert.Equal(
+            ["open-a-OpenOnlyNotification"],
+            scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
+    }
 }

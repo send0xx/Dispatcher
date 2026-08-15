@@ -48,6 +48,22 @@ public class ModularScanningBenchmarks
         return ScanAll(services);
     }
 
+    /// <summary>
+    /// Measures the whole startup path for the unroutable case: scanning, and then the registry
+    /// creation that reconsiders every message scanning left pending.
+    /// </summary>
+    [Benchmark]
+    public int BuildRegistryForUnroutableModules()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
+        ScanAll(services);
+        services.AddDispatcher();
+        using var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<DispatcherRegistry>();
+        return services.Count;
+    }
+
     private int ScanAll(IServiceCollection services)
     {
         foreach (var module in _modules)

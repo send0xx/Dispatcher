@@ -56,6 +56,10 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly
   later as a notification that never arrives or a missing request handler. Collect every offending type and
   throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.
+- Registration order must not change which messages are routable. Scanning cannot route a message whose
+  handler is registered by a later call, so it keeps that message pending and registry creation reconsiders
+  every pending message against the final registrations. Without that, registering an open generic
+  notification handler after the scan that discovered its notifications silently delivered nothing.
 - `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI registrations of `IPipelineBehavior<,>` must continue to work.
 - `AddPipelineBehavior` is idempotent for the same behavior and service type, in both the typed and the
   reflection overloads. Registering a behavior twice would otherwise run it twice in every pipeline it

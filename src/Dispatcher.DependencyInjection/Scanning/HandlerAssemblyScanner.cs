@@ -178,15 +178,4 @@ internal static class HandlerAssemblyScanner
         Assembly Assembly,
         Type[] Types,
         HandlerCandidate[] Candidates);
-
-    /// <summary>
-    /// What one service collection has already been scanned into, kept as a singleton so that later
-    /// calls stay idempotent and can route messages their own assemblies did not declare.
-    /// </summary>
-    private sealed class AssemblyScanState
-    {
-        internal HashSet<Assembly> HandlerAssemblies { get; } = [];
-        internal MessageRouteTargets RouteTargets { get; } = new();
-        internal bool HasOpenNotificationHandlers { get; set; }
-    }
 }

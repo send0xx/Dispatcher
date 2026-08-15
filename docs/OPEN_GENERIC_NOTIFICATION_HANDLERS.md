@@ -131,6 +131,12 @@ An open handler does not by itself define an infinite set of routes. Open-only p
 the concrete notification is already known from scanned modules, handled-message assemblies, a
 generated host, a generic constraint assembly, or explicit `MessageRegistration` metadata.
 
+Registration order does not matter. A scan that finds a notification before any handler can route it
+keeps that notification pending rather than discarding it, and registry creation reconsiders every
+pending notification against the final registrations. Registering an open handler with
+`AddNotificationHandler(typeof(AuditHandler<>))` after the scan that discovered the notifications
+therefore observes them, exactly as registering it first does.
+
 ## Telemetry and failure behavior
 
 Telemetry should wrap the combined operation: selected closed handlers followed by open generic

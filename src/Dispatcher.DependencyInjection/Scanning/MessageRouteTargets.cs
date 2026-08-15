@@ -20,8 +20,50 @@ internal sealed class MessageRouteTargets
     private readonly HashSet<Assembly> _scannedAssemblies = [];
     private readonly List<Type> _pending = [];
     private HashSet<Type>? _lastHandledMessageTypes;
+    private bool _lastHasOpenNotificationHandlers;
 
     internal bool NeedsScan(Assembly assembly) => !_scannedAssemblies.Contains(assembly);
+
+    /// <summary>
+    /// The message types still awaiting a route, when the registrations they are measured against
+    /// have moved since the last scan; otherwise none.
+    /// </summary>
+    /// <param name="handlers">Every handler registration the registry is being created from.</param>
+    /// <remarks>
+    /// Registration methods called after the last scan can make a pending message routable, and no
+    /// scan runs afterwards to notice. Registry creation therefore reconsiders these against the
+    /// final registrations, which is what keeps routing independent of registration order.
+    /// Reconsidering a message never asserts that it routes: route creation drops it exactly as
+    /// before when it still does not.
+    /// </remarks>
+    internal IEnumerable<Type> PendingRouteTargets(IEnumerable<HandlerRegistration> handlers)
+    {
+        if (_pending.Count == 0 || _lastHandledMessageTypes is null)
+        {
+            return _pending;
+        }
+
+        var handledMessageTypes = new HashSet<Type>();
+        var hasOpenNotificationHandlers = false;
+        foreach (var handler in handlers)
+        {
+            if (handler is NotificationHandlerRegistration { IsOpenGeneric: true })
+            {
+                hasOpenNotificationHandlers = true;
+            }
+            else
+            {
+                handledMessageTypes.Add(handler.MessageType);
+            }
+        }
+
+        // Routability is a function of these two alone, so when neither moved since the last scan
+        // every pending message is still unroutable and reconsidering it cannot find a new route.
+        return hasOpenNotificationHandlers == _lastHasOpenNotificationHandlers &&
+            handledMessageTypes.SetEquals(_lastHandledMessageTypes)
+            ? []
+            : _pending;
+    }
 
     /// <summary>
     /// Marks the current end of the pending list, so that <see cref="Register"/> can tell the message
@@ -85,6 +127,7 @@ internal sealed class MessageRouteTargets
 
         _pending.RemoveRange(remaining, _pending.Count - remaining);
         _lastHandledMessageTypes = existing.HandledMessageTypes;
+        _lastHasOpenNotificationHandlers = hasOpenNotificationHandlers;
     }
 
     private static bool IsRoutable(
