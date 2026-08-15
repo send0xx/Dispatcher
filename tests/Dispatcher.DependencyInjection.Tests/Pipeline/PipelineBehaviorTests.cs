@@ -42,6 +42,25 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Registering_a_behavior_already_registered_as_an_instance_runs_it_once()
+    {
+        var state = new TestState();
+        var services = new ServiceCollection();
+        services.AddDispatcher();
+        services.AddDispatcherHandlers<TestAssemblyMarker>();
+        services.AddSingleton(state);
+        services.AddSingleton<IPipelineBehavior<GreetingQuery, string>>(new FirstGreetingBehavior(state));
+        services.AddPipelineBehavior<FirstGreetingBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new GreetingQuery("Grace"));
+
+        Assert.Equal(["first-before", "handler", "first-after"], state.Events);
+    }
+
+    [Fact]
     public async Task Registering_the_same_open_generic_behavior_twice_runs_it_once()
     {
         var services = TestServices.CreateServices();

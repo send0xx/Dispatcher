@@ -94,7 +94,11 @@ internal sealed class ExistingRegistrations
             return;
         }
 
-        if (descriptor.ImplementationType is { } implementationType)
+        // A service registered as an instance carries no implementation type, but its runtime type
+        // identifies it just as well. A factory descriptor cannot be matched at all, because
+        // Microsoft DI does not expose what a factory will return.
+        if ((descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) is
+            { } implementationType)
         {
             _unregisteredServices.Remove((descriptor.ServiceType, implementationType));
         }

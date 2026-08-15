@@ -56,9 +56,13 @@ internal static class PipelineBehaviorTypeRegistrar
 
         foreach (var serviceType in serviceTypes)
         {
+            // A behavior registered as an instance carries no implementation type, but its runtime
+            // type identifies it just as well. A factory descriptor cannot be matched at all,
+            // because Microsoft DI does not expose what a factory will return.
             if (services.Any(descriptor =>
                     descriptor.ServiceType == serviceType &&
-                    descriptor.ImplementationType == behaviorType))
+                    (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) ==
+                    behaviorType))
             {
                 continue;
             }

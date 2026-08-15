@@ -53,6 +53,11 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - Handler assembly registration is idempotent, and it must stay idempotent against the typed registration
   methods too. Registering one handler through both paths must not duplicate its service descriptor, which
   would run a notification handler twice and make a query or command look like it has duplicate handlers.
+- Every check for an already-registered handler or behavior must match a descriptor registered as an
+  instance as well as one registered by type, through
+  `descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()`. A descriptor added by
+  factory delegate cannot be matched, because Microsoft DI does not expose what a factory returns; a
+  handler or behavior registered that way and then registered again does run twice.
 - Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly
   later as a notification that never arrives or a missing request handler. Collect every offending type and
   throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.

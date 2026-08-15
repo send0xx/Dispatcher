@@ -329,6 +329,24 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
+    public async Task Scanning_does_not_duplicate_a_handler_already_registered_as_an_instance()
+    {
+        var state = new TestState();
+        var services = new ServiceCollection();
+        services.AddSingleton(state);
+        services.AddSingleton<INotificationHandler<SomethingHappened>>(new ANotificationHandler(state));
+        services.AddDispatcherHandlers<TestAssemblyMarker>();
+        services.AddDispatcher();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new SomethingHappened());
+
+        Assert.Equal(["notification-a", "notification-b"], state.Events);
+    }
+
+    [Fact]
     public void Open_notification_registration_is_idempotent_and_uses_self_registration()
     {
         var services = new ServiceCollection();

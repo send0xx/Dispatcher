@@ -205,9 +205,7 @@ public static class ServiceCollectionExtensions
 
         var messageType = GetOpenNotificationTypeParameter(handlerType);
         var lifetime = GetLifetime(configure);
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == handlerType &&
-                descriptor.ImplementationType == handlerType))
+        if (!IsRegistered(services, handlerType, handlerType))
         {
             services.Add(ServiceDescriptor.Describe(handlerType, handlerType, lifetime));
         }
@@ -263,9 +261,7 @@ public static class ServiceCollectionExtensions
 
         // Registering the same behavior twice would run it twice in every pipeline it applies to.
         // The first registration wins, so the outermost-first behavior order is preserved.
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(IPipelineBehavior<TRequest, TResponse>) &&
-                descriptor.ImplementationType == typeof(TBehavior)))
+        if (!IsRegistered(services, typeof(IPipelineBehavior<TRequest, TResponse>), typeof(TBehavior)))
         {
             services.Add(ServiceDescriptor.Describe(
                 typeof(IPipelineBehavior<TRequest, TResponse>),
@@ -286,9 +282,7 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(TService) &&
-                descriptor.ImplementationType == typeof(THandler)))
+        if (!IsRegistered(services, typeof(TService), typeof(THandler)))
         {
             services.Add(ServiceDescriptor.Describe(
                 typeof(TService),
@@ -306,6 +300,24 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Whether the service collection already registers <paramref name="implementationType"/> as
+    /// <paramref name="serviceType"/>, so that registering it again would run it twice.
+    /// </summary>
+    /// <remarks>
+    /// A service registered as an instance carries no implementation type, but its runtime type
+    /// identifies it just as well. A factory descriptor cannot be matched at all, because Microsoft
+    /// DI does not expose what a factory will return.
+    /// </remarks>
+    private static bool IsRegistered(
+        IServiceCollection services,
+        Type serviceType,
+        Type implementationType) =>
+        services.Any(descriptor =>
+            descriptor.ServiceType == serviceType &&
+            (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) ==
+            implementationType);
 
     private static ServiceLifetime GetLifetime(Action<DispatcherOptions> configure)
     {
