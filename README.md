@@ -290,6 +290,8 @@ builder.Services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
 The first registered behavior is the outermost. Behaviors may short-circuit by returning without calling `next`, and they may pass a replacement cancellation token to `next`.
 
 The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and both command shapes. A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain resultless.
+Constrain `TRequest` to `ICommandBase` for both command shapes, to `ICommand` for resultless
+commands only, or to `ICommand<TResponse>` for response-bearing commands only.
 
 ## OpenTelemetry
 

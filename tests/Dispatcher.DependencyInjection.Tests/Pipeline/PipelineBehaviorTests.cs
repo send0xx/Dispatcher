@@ -75,6 +75,25 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Response_command_behavior_does_not_apply_to_resultless_commands_or_queries()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior(typeof(ResponseCommandBehavior<,>));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        await dispatcher.QueryAsync(new GreetingQuery("Ada"));
+        await dispatcher.ExecuteAsync(new SumCommand(1, 2));
+        await dispatcher.ExecuteAsync(new RecordCommand("recorded"));
+
+        Assert.Equal(
+            1,
+            scope.ServiceProvider.GetRequiredService<TestState>().Events.Count(@event =>
+                @event == "response-command"));
+    }
+
+    [Fact]
     public async Task Pipeline_is_safe_for_concurrent_requests_in_the_same_scope()
     {
         var services = TestServices.CreateServices();
