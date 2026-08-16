@@ -192,6 +192,15 @@ internal static class DispatcherAnalyzer
         var localOpenNotificationHandlers = openNotificationHandlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
+        if (dispatcherAttribute is not null && attribute is null &&
+            (localHandlers.Length > 0 || localOpenNotificationHandlers.Length > 0))
+        {
+            diagnostics.Add(Diagnostic.Create(
+                GeneratorDiagnostics.UnregisteredLocalHandlers,
+                dispatcherAttribute.ApplicationSyntaxReference?.GetSyntax(cancellationToken).GetLocation(),
+                compilation.Assembly.Name));
+        }
+
         var dispatchHandlers = ImmutableArray.CreateBuilder<HandlerModel>();
         dispatchHandlers.AddRange(localHandlers);
         var dispatchOpenNotificationHandlers = ImmutableArray.CreateBuilder<OpenGenericNotificationHandlerModel>();

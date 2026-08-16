@@ -13,3 +13,4 @@ DSPG006 | Dispatcher.SourceGeneration | Error | Invalid generated dispatcher reg
 DSPG007 | Dispatcher.SourceGeneration | Error | Referenced handler message is inaccessible to the host dispatcher
 DSPG008 | Dispatcher.SourceGeneration | Error | Open generic pipeline behavior cannot be generated safely
 DSPG009 | Dispatcher.SourceGeneration | Error | Polymorphic handler route is ambiguous
+DSPG010 | Dispatcher.SourceGeneration | Error | Generated dispatcher routes to handlers this assembly never registers

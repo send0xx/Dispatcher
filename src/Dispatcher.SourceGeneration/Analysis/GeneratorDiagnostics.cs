@@ -31,6 +31,10 @@ internal static class GeneratorDiagnostics
     internal static readonly DiagnosticDescriptor AmbiguousHandlerRoute = Create(
         "DSPG009", "Ambiguous polymorphic handler route",
         "Message '{0}' matches multiple equally specific handled message types: {1}");
+    internal static readonly DiagnosticDescriptor UnregisteredLocalHandlers = Create(
+        "DSPG010", "Generated dispatcher routes to unregistered handlers",
+        "Assembly '{0}' declares handlers that its generated dispatcher routes to but does not apply " +
+        "GenerateDispatcherHandlersAttribute, so nothing registers them and dispatch fails at runtime");
 
     private static DiagnosticDescriptor Create(string id, string title, string message) => new(
         id,

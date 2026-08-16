@@ -11,6 +11,7 @@ public sealed class DispatcherGeneratorDiagnosticTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal interface IFirstQuery : IQuery<string>;
@@ -172,6 +173,75 @@ public sealed class DispatcherGeneratorDiagnosticTests
             """;
 
         AssertDiagnostic(source, "DSPG008");
+    }
+
+    [Fact]
+    public void Reports_local_handlers_that_the_generated_dispatcher_never_registers()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestQuery : IQuery<string>;
+            internal sealed class TestQueryHandler : IQueryHandler<TestQuery, string>
+            {
+                public ValueTask<string> HandleAsync(TestQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("value");
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG010");
+    }
+
+    [Fact]
+    public void Reports_local_open_notification_handlers_that_are_never_registered()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddTestDispatcher")]
+
+            internal sealed record TestNotification : INotification;
+            internal sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                where TNotification : INotification
+            {
+                public ValueTask HandleAsync(
+                    TNotification notification,
+                    CancellationToken cancellationToken) => ValueTask.CompletedTask;
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG010");
+    }
+
+    [Fact]
+    public void Does_not_report_a_host_dispatcher_that_declares_no_handlers()
+    {
+        var module = GeneratorTestHarness.CompileModule(
+            """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddModuleHandlers")]
+            namespace Module;
+            public sealed record ModuleQuery : IQuery<string>;
+            internal sealed class ModuleQueryHandler : IQueryHandler<ModuleQuery, string>
+            {
+                public ValueTask<string> HandleAsync(ModuleQuery query, CancellationToken cancellationToken) =>
+                    ValueTask.FromResult("module");
+            }
+            """,
+            "Registered.Module");
+
+        var result = GeneratorTestHarness.Run(
+            """
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcher("AddDispatcher")]
+            """,
+            additionalReferences: [module],
+            assemblyName: "Registered.Host");
+
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "DSPG010");
     }
 
     private static void AssertDiagnostic(string source, string diagnosticId) =>

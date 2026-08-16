@@ -12,6 +12,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -45,6 +46,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal abstract record BaseQuery : IQuery<string>;
@@ -129,6 +131,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -317,6 +320,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -368,6 +372,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal sealed record TestQuery : IQuery<string>;
@@ -428,6 +433,7 @@ public sealed class DispatcherGeneratorOutputTests
         const string source = """
             using Dispatcher;
             using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
             [assembly: GenerateDispatcher("AddTestDispatcher")]
 
             internal readonly record struct UnmanagedQuery(int Value) : IQuery<int>;
