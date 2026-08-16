@@ -6,12 +6,22 @@
 
 Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
 
-Dispatcher supports two registration modes:
+## Main features
 
-- Reflection-based registration for a straightforward application setup.
-- Source-generated registration and dispatch for trimming and Native AOT.
+- **Queries, commands, and notifications.** A query always returns a response, a command may return one, and a notification runs zero or more handlers sequentially.
+- **Reflection-free dispatch.** Handler routes are stored in frozen dictionaries, and handlers and pipeline behaviors are resolved from the current dependency-injection scope.
+- **Trimming and Native AOT support.** The source generator emits registrations and dispatch tables at compile time, and its package does not reference the reflection-based implementation at all.
+- **Polymorphic routes.** A message uses its exact handler when one exists, and otherwise the most-specific compatible base class or interface handler. Routes are decided during registry creation or at compile time, not per dispatch.
+- **Pipeline behaviors.** Cross-cutting work wraps queries and commands, runs outermost-first, may short-circuit, and is scoped to a subset of requests by a generic constraint.
+- **Internal handlers and modular composition.** Handlers never have to be public, and an application split across assemblies registers each module's handlers separately, under either registration mode.
+- **Built-in OpenTelemetry.** Tracing activities and an operation-duration histogram, disabled by default, adding no work to the dispatch path while off.
 
-Dispatch itself does not use reflection. Handler routes are stored in frozen dictionaries, and handlers and pipeline behaviors are resolved from the current dependency-injection scope.
+## Registration modes
+
+- **Reflection-based registration** for a straightforward application setup.
+- **Source-generated registration and dispatch** for trimming and Native AOT.
+
+Handlers and call sites are identical under both modes; only registration differs. A parity test suite runs the same scenarios against each implementation.
 
 ## Install
 
@@ -61,23 +71,6 @@ builder.Services
 `AddDispatcher()` registers infrastructure only and never scans assemblies implicitly.
 `AddDispatcherHandlers()` registers internal handler classes. Registering the same assembly more than once is safe.
 
-Handler scanning accepts the same options type when a different handler lifetime is required:
-
-```csharp
-builder.Services.AddDispatcherHandlers(
-    typeof(Program).Assembly,
-    options => options.ServiceLifetime = ServiceLifetime.Singleton);
-```
-
-Typed registration methods use the same shape:
-
-```csharp
-using Dispatcher;
-
-builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>(options =>
-    options.ServiceLifetime = ServiceLifetime.Singleton);
-```
-
 Inject a focused dispatcher interface and send the query:
 
 ```csharp
@@ -94,18 +87,62 @@ app.MapGet("/greetings/{name}", async (
 });
 ```
 
+Four dispatcher interfaces are available. Inject the narrowest one a class needs:
+
+| Interface | Method | Dispatches |
+| --- | --- | --- |
+| `IQueryDispatcher` | `QueryAsync` | Queries |
+| `ICommandDispatcher` | `ExecuteAsync` | Commands, with or without a response |
+| `INotificationDispatcher` | `PublishAsync` | Notifications |
+| `IDispatcher` | all of the above | Anything, for classes that need more than one kind |
+
+## Registration and lifetimes
+
 Dispatcher and handlers are scoped by default. Resolve them inside a DI scope, as ASP.NET Core does for each request.
 
-The dispatcher itself can be registered as transient when an application needs a new instance for every resolution:
+A single handler can be registered explicitly instead of scanning for it:
+
+```csharp
+using Dispatcher;
+
+builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>();
+```
+
+There is one method per handler kind: `AddQueryHandler`, `AddCommandHandler`, and `AddNotificationHandler`. Each takes an optional delegate that sets the handler lifetime, and assembly scanning takes the same delegate:
+
+```csharp
+builder.Services.AddQueryHandler<GetGreetingQuery, string, GetGreetingQueryHandler>(options =>
+    options.ServiceLifetime = ServiceLifetime.Singleton);
+
+builder.Services.AddDispatcherHandlers(
+    typeof(Program).Assembly,
+    options => options.ServiceLifetime = ServiceLifetime.Singleton);
+```
+
+The dispatcher itself is configured the same way, for applications that need a new instance for every resolution:
 
 ```csharp
 builder.Services.AddDispatcher(options =>
     options.ServiceLifetime = ServiceLifetime.Transient);
 ```
 
-`DispatcherOptions` and `DispatcherTelemetryOptions` are in the `Dispatcher` namespace and are provided by the core `Send0xx.Dispatcher` package. Dispatcher registration supports `Scoped` and `Transient`; `Singleton` is rejected because it would capture the root service provider and could not safely resolve scoped handlers or pipeline behaviors. Handler registration supports all three Microsoft DI lifetimes. Behavior lifetimes are configured independently through their registration methods.
+Which lifetimes are accepted differs by what is being registered:
+
+- The dispatcher supports `Scoped` and `Transient`. `Singleton` is rejected, because it would capture the root service provider and could not safely resolve scoped handlers or pipeline behaviors.
+- Handlers support all three Microsoft DI lifetimes.
+- Pipeline behaviors are configured independently of both, through their own registration methods.
+
+`DispatcherOptions` and `DispatcherTelemetryOptions` are in the `Dispatcher` namespace and ship in the core `Send0xx.Dispatcher` package.
 
 ## Messages and handlers
+
+There are three kinds of message, each with its own contracts:
+
+| Kind | Message implements | Handler implements |
+| --- | --- | --- |
+| Query | `IQuery<TResponse>` | `IQueryHandler<TQuery, TResponse>` |
+| Command | `ICommand` or `ICommand<TResponse>` | `ICommandHandler<TCommand>` or `ICommandHandler<TCommand, TResponse>` |
+| Notification | `INotification` | `INotificationHandler<TNotification>` |
 
 All dispatchable messages implement `IMessage`. Queries and commands additionally implement `IRequest`
 through their `IQueryBase` and `ICommandBase` family markers, while notifications implement `IMessage`
@@ -200,7 +237,7 @@ internal sealed class RecordOrderCreated
 Publish a notification with `PublishAsync`:
 
 ```csharp
-await publisher.PublishAsync(new OrderCreated(orderId), cancellationToken);
+await notifications.PublishAsync(new OrderCreated(orderId), cancellationToken);
 ```
 
 Notification handlers run sequentially in registration order. Publishing a notification with no handlers is a no-op.
@@ -227,21 +264,29 @@ handlers in registration order, closed over the concrete published type. Open ha
 as their own services and therefore do not appear in `IEnumerable<INotificationHandler<TNotification>>`;
 that enumerable remains the closed-handler view.
 
+### Routing
+
 Queries and commands require exactly one selected handler. A missing handler throws
 `HandlerNotFoundException`, and duplicate handlers for the same handled message type throw
-`DuplicateHandlerException`.
+`DuplicateHandlerException`. Notifications have no such requirement.
 
-Dispatch supports precomputed polymorphic routes. A concrete message first uses an exact
-handler when one exists; otherwise Dispatcher selects the most-specific compatible base class
-or interface handler. For example, `UserCreatedEvent : DomainEvent` routes to a
-`INotificationHandler<DomainEvent>` when no `UserCreatedEvent` handler exists. Notification
-dispatch invokes every registered handler for the one selected message type, sequentially in
-registration order; it does not broadcast across the inheritance hierarchy. Queries and
-commands invoke the single handler for the selected message type, including that type's
-pipeline behaviors. Unrelated equally specific candidates make the route ambiguous and fail
-during registry creation or source generation.
+Routes are polymorphic and precomputed. A concrete message uses its exact handler when one exists;
+otherwise Dispatcher selects the most-specific compatible base class or interface handler. For
+example, `UserCreatedEvent : DomainEvent` routes to a `INotificationHandler<DomainEvent>` when no
+`UserCreatedEvent` handler exists, as long as `UserCreatedEvent` is a known route target; the next
+section covers how a concrete type becomes one. A message type is selected this way, and then:
 
-Reflection assembly scanning discovers concrete route targets declared in handler assemblies and in
+- Notification dispatch invokes every registered handler for that one selected type, sequentially in
+  registration order. It does not broadcast across the inheritance hierarchy, so a handler for the
+  derived type and a handler for its base type never both run. Compatible open generic handlers still
+  run afterwards, as described above.
+- Query and command dispatch invokes the single handler for the selected type, including that type's
+  pipeline behaviors.
+- Unrelated equally specific candidates make the route ambiguous, which fails during registry
+  creation or source generation rather than at dispatch.
+
+A fallback route is precomputed only for concrete message types Dispatcher knows about, its route
+targets. Reflection assembly scanning discovers route targets declared in handler assemblies and in
 the assemblies that declare their handled message types. Source generation uses the same assemblies,
 plus concrete messages declared by the generated host. This supports shared contracts assemblies
 without scanning every application and framework reference.
@@ -256,6 +301,10 @@ builder.Services
     .AddQueryHandler<BaseQuery, Result, BaseQueryHandler>()
     .AddSingleton(new MessageRegistration(typeof(DerivedQuery)));
 ```
+
+Without that metadata the derived type has no fallback route, and the base handler is never reached:
+dispatching `DerivedQuery` throws `HandlerNotFoundException`, and publishing a derived notification
+finds no handler and does nothing.
 
 `MessageRegistration` is consumed by the reflection-based registry only. Source-generated routes must
 be known at build time from the generated host, a generated handler module, or an assembly that declares
@@ -292,8 +341,16 @@ The first registered behavior is the outermost. Behaviors may short-circuit by r
 Registering the same behavior more than once is safe: the first registration wins and later ones are ignored, so a behavior never runs twice in one pipeline.
 
 The same `IPipelineBehavior<TRequest, TResponse>` contract handles queries and both command shapes. A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain resultless.
-Constrain `TRequest` to `ICommandBase` for both command shapes, to `ICommand` for resultless
-commands only, or to `ICommand<TResponse>` for response-bearing commands only.
+
+The constraint on `TRequest` decides which requests a behavior applies to:
+
+| Constraint | Applies to |
+| --- | --- |
+| `IRequest` | Every query and command |
+| `IQueryBase` | Queries only |
+| `ICommandBase` | Both command shapes |
+| `ICommand` | Resultless commands only |
+| `ICommand<TResponse>` | Response-bearing commands only |
 
 ## OpenTelemetry
 
@@ -442,6 +499,7 @@ The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the a
 - Queries and commands select the most-specific compatible handled message type and require one handler for it.
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.
+- Registering a handler or behavior through a factory delegate is not recommended when it is also covered by scanning or a typed registration method. Duplicate registrations are otherwise detected and ignored, but Microsoft DI does not expose the type a factory returns, so a factory registration cannot be matched against another one. Both survive: a notification handler fires twice per publish, and a pipeline behavior runs twice per request. Register such handlers and behaviors by type or as an instance instead.
 
 ## Project
 
