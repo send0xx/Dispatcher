@@ -10,6 +10,14 @@ Keep changes focused and preserve unrelated work in the repository. Every public
 
 ## Build and test
 
+The test projects run on [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/microsoft-testing-platform-intro) rather than VSTest, selected by the `test` section of [`global.json`](global.json). Removing that file makes `dotnet test` fail, because xUnit v3 no longer ships a VSTest adapter.
+
+Run every test project and both target frameworks at once:
+
+```bash
+dotnet test Dispatcher.slnx -c Release
+```
+
 Build and test changes from the repository root:
 
 ```bash
