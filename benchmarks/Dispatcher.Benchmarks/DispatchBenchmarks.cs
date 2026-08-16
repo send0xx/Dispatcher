@@ -75,6 +75,15 @@ public class PipelineBenchmarks
     private IServiceScope _scope = null!;
     private IDispatcher _dispatcher = null!;
 
+    // Every behavior has to be a distinct type. AddPipelineBehavior is idempotent, so registering one
+    // type repeatedly measures a single behavior however high BehaviorCount is.
+    private static readonly Action<IServiceCollection>[] BehaviorRegistrations =
+    [
+        static services => services.AddPipelineBehavior<FirstPassthroughBehavior>(),
+        static services => services.AddPipelineBehavior<SecondPassthroughBehavior>(),
+        static services => services.AddPipelineBehavior<ThirdPassthroughBehavior>()
+    ];
+
     [Params(0, 1, 3)]
     public int BehaviorCount { get; set; }
 
@@ -88,7 +97,7 @@ public class PipelineBenchmarks
 
         for (var index = 0; index < BehaviorCount; index++)
         {
-            services.AddPipelineBehavior<PassthroughBehavior<PingQuery, int>>();
+            BehaviorRegistrations[index](services);
         }
 
         _provider = services.BuildServiceProvider();
@@ -161,6 +170,33 @@ internal sealed class PassthroughBehavior<TRequest, TResponse> : IPipelineBehavi
     public ValueTask<TResponse> HandleAsync(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class FirstPassthroughBehavior : IPipelineBehavior<PingQuery, int>
+{
+    public ValueTask<int> HandleAsync(
+        PingQuery request,
+        RequestHandlerDelegate<int> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class SecondPassthroughBehavior : IPipelineBehavior<PingQuery, int>
+{
+    public ValueTask<int> HandleAsync(
+        PingQuery request,
+        RequestHandlerDelegate<int> next,
+        CancellationToken cancellationToken) =>
+        next(cancellationToken);
+}
+
+internal sealed class ThirdPassthroughBehavior : IPipelineBehavior<PingQuery, int>
+{
+    public ValueTask<int> HandleAsync(
+        PingQuery request,
+        RequestHandlerDelegate<int> next,
         CancellationToken cancellationToken) =>
         next(cancellationToken);
 }
