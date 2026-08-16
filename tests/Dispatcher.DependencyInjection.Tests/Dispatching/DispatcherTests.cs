@@ -66,6 +66,21 @@ public sealed class DispatcherTests
     }
 
     [Fact]
+    public async Task Missing_resultless_command_handler_throws_synchronously()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
+
+        var exception = Assert.Throws<HandlerNotFoundException>(() =>
+        {
+            _ = dispatcher.ExecuteAsync(new MissingCommand(), TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(typeof(MissingCommand), exception.MessageType);
+    }
+
+    [Fact]
     public async Task Dispatching_a_message_through_the_wrong_shape_throws()
     {
         await using var provider = TestServices.CreateProvider();

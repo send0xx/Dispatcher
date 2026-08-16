@@ -15,5 +15,6 @@
     <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="true" />
+    <ProjectReference Include="../Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
   </ItemGroup>
 </Project>

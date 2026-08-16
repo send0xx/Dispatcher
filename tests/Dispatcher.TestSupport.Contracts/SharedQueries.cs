@@ -8,6 +8,12 @@ public abstract record LaterBaseQuery(string Value) : IQuery<string>;
 
 public sealed record LaterDerivedQuery(string Value) : LaterBaseQuery(Value);
 
+/// <summary>
+/// A command declared outside any handler assembly, so a module can reference it without being
+/// required to handle it. Dispatching it exercises the missing-handler path.
+/// </summary>
+public sealed record UnhandledCommand : ICommand;
+
 public sealed record OpenOnlyNotification : INotification;
 
 public abstract record SharedNotification : INotification;

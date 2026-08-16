@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Dispatcher.SourceGeneration;
+using Dispatcher.TestSupport.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -102,6 +103,30 @@ public sealed class GeneratedTelemetryTests
         Assert.Equal(
             ["base-resultless-command"],
             scope.ServiceProvider.GetRequiredService<GeneratedTestState>().Events);
+    }
+
+    [Fact]
+    public async Task Resultless_command_without_a_handler_throws_synchronously()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<GeneratedTestState>();
+        services
+            .AddGeneratedIntegrationHandlers()
+            .AddGeneratedIntegrationDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
+
+        var exception = Assert.Throws<HandlerNotFoundException>(() =>
+        {
+            _ = dispatcher.ExecuteAsync(new UnhandledCommand(), TestContext.Current.CancellationToken);
+        });
+
+        Assert.Equal(typeof(UnhandledCommand), exception.MessageType);
     }
 
     [Fact]

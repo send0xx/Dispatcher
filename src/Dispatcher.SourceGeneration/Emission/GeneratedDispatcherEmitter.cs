@@ -339,10 +339,13 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(command);");
-        source.AppendLine("        return CommandHandlers.TryGetValue(command.GetType(), out var handler)");
-        source.AppendLine("            ? handler(this, command, cancellationToken)");
-        source.AppendLine("            : global::System.Threading.Tasks.ValueTask.FromException(");
-        source.AppendLine("                new global::Dispatcher.HandlerNotFoundException(command.GetType()));");
+        // Throws instead of returning a faulted task, so a missing handler surfaces the same way as
+        // it does on the other dispatch methods and on the reflection-based implementation.
+        source.AppendLine("        if (!CommandHandlers.TryGetValue(command.GetType(), out var handler))");
+        source.AppendLine("        {");
+        source.AppendLine("            throw new global::Dispatcher.HandlerNotFoundException(command.GetType());");
+        source.AppendLine("        }");
+        source.AppendLine("        return handler(this, command, cancellationToken);");
         source.AppendLine("    }");
         source.AppendLine();
         source.AppendLine("    public global::System.Threading.Tasks.ValueTask PublishAsync<TNotification>(");
