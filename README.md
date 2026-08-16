@@ -8,33 +8,29 @@ Dispatcher is a small CQRS library for .NET applications that use dependency inj
 
 ## Main features
 
-- **Queries, commands, and notifications.** A query always returns a response, a command may return one, and a notification runs zero or more handlers sequentially.
 - **Reflection-free dispatch.** Handler routes are stored in frozen dictionaries, and handlers and pipeline behaviors are resolved from the current dependency-injection scope.
-- **Trimming and Native AOT support.** The source generator emits registrations and dispatch tables at compile time, and its package does not reference the reflection-based implementation at all.
 - **Polymorphic routes.** A message uses its exact handler when one exists, and otherwise the most-specific compatible base class or interface handler. Routes are decided during registry creation or at compile time, not per dispatch.
-- **Pipeline behaviors.** Cross-cutting work wraps queries and commands, runs outermost-first, may short-circuit, and is scoped to a subset of requests by a generic constraint.
 - **Internal handlers and modular composition.** Handlers never have to be public, and an application split across assemblies registers each module's handlers separately, under either registration mode.
+- **Trimming and Native AOT support.** The source generator emits registrations and dispatch tables at compile time, and its package does not reference the reflection-based implementation at all.
 - **Built-in OpenTelemetry.** Tracing activities and an operation-duration histogram, disabled by default, adding no work to the dispatch path while off.
 
-## Registration modes
+## Two modes supported
 
 - **Reflection-based registration** for a straightforward application setup.
 - **Source-generated registration and dispatch** for trimming and Native AOT.
-
-Handlers and call sites are identical under both modes; only registration differs. A parity test suite runs the same scenarios against each implementation.
 
 ## Install
 
 For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-preview.12
+dotnet add package Send0xx.Dispatcher.DependencyInjection --version 1.0.0-rc.1
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-preview.12
+dotnet add package Send0xx.Dispatcher.SourceGeneration --version 1.0.0-rc.1
 ```
 
 Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
@@ -495,8 +491,6 @@ The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the a
 
 ## Current limitations
 
-- Reflection-based registration is not trimming or Native AOT safe; use `Send0xx.Dispatcher.SourceGeneration` for those deployment modes.
-- Queries and commands select the most-specific compatible handled message type and require one handler for it.
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.
 - Registering a handler or behavior through a factory delegate is not recommended when it is also covered by scanning or a typed registration method. Duplicate registrations are otherwise detected and ignored, but Microsoft DI does not expose the type a factory returns, so a factory registration cannot be matched against another one. Both survive: a notification handler fires twice per publish, and a pipeline behavior runs twice per request. Register such handlers and behaviors by type or as an instance instead.
