@@ -85,6 +85,55 @@ public sealed class DispatcherGeneratorDiagnosticTests
             }
             """;
 
+        var diagnostic = Assert.Single(
+            GeneratorTestHarness.Run(source).Diagnostics
+                .Where(candidate => candidate.Id == "DSPG003")
+                .Select(candidate => candidate.GetMessage())
+                .Distinct(StringComparer.Ordinal));
+
+        Assert.Contains("Use a closed handler type", diagnostic, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Reports_handler_nested_in_a_generic_type()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            internal sealed record Ping : INotification;
+            internal static class Outer<T>
+            {
+                internal sealed class PingHandler : INotificationHandler<Ping>
+                {
+                    public ValueTask HandleAsync(Ping notification, CancellationToken cancellationToken) =>
+                        ValueTask.CompletedTask;
+                }
+            }
+            """;
+
+        AssertDiagnostic(source, "DSPG003");
+    }
+
+    [Fact]
+    public void Reports_open_notification_handler_nested_in_a_generic_type()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            internal static class Outer<T>
+            {
+                internal sealed class AuditHandler<TNotification> : INotificationHandler<TNotification>
+                    where TNotification : INotification
+                {
+                    public ValueTask HandleAsync(
+                        TNotification notification,
+                        CancellationToken cancellationToken) => ValueTask.CompletedTask;
+                }
+            }
+            """;
+
         AssertDiagnostic(source, "DSPG003");
     }
 

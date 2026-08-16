@@ -6,7 +6,7 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 DSPG001 | Dispatcher.SourceGeneration | Error | Invalid generated registration method name
 DSPG002 | Dispatcher.SourceGeneration | Error | Multiple request handlers
-DSPG003 | Dispatcher.SourceGeneration | Error | Open generic handler does not use the supported notification shape
+DSPG003 | Dispatcher.SourceGeneration | Error | Generic handler does not use the supported open generic notification shape
 DSPG004 | Dispatcher.SourceGeneration | Error | Handler cannot be activated
 DSPG005 | Dispatcher.SourceGeneration | Error | Request has no handler
 DSPG006 | Dispatcher.SourceGeneration | Error | Invalid generated dispatcher registration method name

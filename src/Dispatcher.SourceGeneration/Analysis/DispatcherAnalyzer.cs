@@ -136,7 +136,8 @@ internal static class DispatcherAnalyzer
                 continue;
             }
 
-            if (type.Arity != 0 || implementedHandlers.Any(ContainsTypeParameter))
+            if (type.Arity != 0 || IsNestedInGenericType(type) ||
+                implementedHandlers.Any(ContainsTypeParameter))
             {
                 if (IsCanonicalOpenNotificationHandler(type, implementedHandlers, notificationHandler))
                 {
@@ -438,7 +439,8 @@ internal static class DispatcherAnalyzer
 
                 foreach (var handlerInterface in implementedHandlers)
                 {
-                    if (type.Arity != 0 || ContainsTypeParameter(handlerInterface))
+                    if (type.Arity != 0 || IsNestedInGenericType(type) ||
+                        ContainsTypeParameter(handlerInterface))
                     {
                         continue;
                     }
@@ -473,7 +475,8 @@ internal static class DispatcherAnalyzer
         INamedTypeSymbol notificationHandler)
     {
         if (type is not { TypeKind: TypeKind.Class, IsAbstract: false, Arity: 1 } ||
-            implementedHandlers.Length != 1)
+            implementedHandlers.Length != 1 ||
+            IsNestedInGenericType(type))
         {
             return false;
         }
@@ -641,6 +644,21 @@ internal static class DispatcherAnalyzer
 
     private static bool ContainsTypeParameter(INamedTypeSymbol type) =>
         type.TypeArguments.Any(argument => argument.TypeKind == TypeKind.TypeParameter);
+
+    // A handler nested in a generic type cannot be named in a registration without closing the outer
+    // type, so it is as unregistrable as an open generic handler.
+    private static bool IsNestedInGenericType(INamedTypeSymbol type)
+    {
+        for (var containing = type.ContainingType; containing is not null; containing = containing.ContainingType)
+        {
+            if (containing.Arity != 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
     {
