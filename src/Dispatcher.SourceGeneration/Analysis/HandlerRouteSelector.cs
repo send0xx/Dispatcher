@@ -12,7 +12,30 @@ internal sealed class HandlerRouteSelector
     private readonly INamedTypeSymbol _resultlessCommand;
     private readonly INamedTypeSymbol _notification;
 
-    internal HandlerRouteSelector(Compilation compilation, IEnumerable<HandlerModel> handlers)
+    /// <summary>
+    /// Creates a selector, or returns <see langword="null"/> when the compilation does not have the
+    /// message contracts routing is defined in terms of.
+    /// </summary>
+    internal static HandlerRouteSelector? TryCreate(
+        Compilation compilation,
+        IEnumerable<HandlerModel> handlers)
+    {
+        var query = compilation.GetTypeByMetadataName("Dispatcher.IQuery`1");
+        var command = compilation.GetTypeByMetadataName("Dispatcher.ICommand`1");
+        var resultlessCommand = compilation.GetTypeByMetadataName("Dispatcher.ICommand");
+        var notification = compilation.GetTypeByMetadataName("Dispatcher.INotification");
+
+        return query is null || command is null || resultlessCommand is null || notification is null
+            ? null
+            : new HandlerRouteSelector(handlers, query, command, resultlessCommand, notification);
+    }
+
+    private HandlerRouteSelector(
+        IEnumerable<HandlerModel> handlers,
+        INamedTypeSymbol query,
+        INamedTypeSymbol command,
+        INamedTypeSymbol resultlessCommand,
+        INamedTypeSymbol notification)
     {
         _handlersByMessageType = handlers
             .GroupBy(
@@ -22,10 +45,10 @@ internal sealed class HandlerRouteSelector
                 static group => group.Key,
                 static group => group.ToImmutableArray(),
                 StringComparer.Ordinal);
-        _query = compilation.GetTypeByMetadataName("Dispatcher.IQuery`1")!;
-        _command = compilation.GetTypeByMetadataName("Dispatcher.ICommand`1")!;
-        _resultlessCommand = compilation.GetTypeByMetadataName("Dispatcher.ICommand")!;
-        _notification = compilation.GetTypeByMetadataName("Dispatcher.INotification")!;
+        _query = query;
+        _command = command;
+        _resultlessCommand = resultlessCommand;
+        _notification = notification;
     }
 
     internal HandlerModel? Select(

@@ -18,7 +18,8 @@ internal static class GeneratorDiagnostics
         "DSPG004", "Handler cannot be activated",
         "Handler '{0}' must be accessible and expose at least one public constructor");
     internal static readonly DiagnosticDescriptor MissingRequestHandler = Create(
-        "DSPG005", "Request has no handler", "Request '{0}' has no handler in this generated module");
+        "DSPG005", "Request has no handler",
+        "Request '{0}' has no handler in this assembly or in the modules it references");
     internal static readonly DiagnosticDescriptor InvalidDispatcherMethodName = Create(
         "DSPG006", "Invalid generated dispatcher registration method name",
         "'{0}' is not a valid generated dispatcher registration method name");

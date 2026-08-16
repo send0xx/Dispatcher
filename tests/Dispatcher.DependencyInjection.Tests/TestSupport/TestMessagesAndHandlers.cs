@@ -6,7 +6,7 @@ internal sealed class GreetingQueryHandler(TestState state) : IQueryHandler<Gree
 {
     public ValueTask<string> HandleAsync(GreetingQuery query, CancellationToken cancellationToken)
     {
-        state.Events.Add("handler");
+        state.Record("handler");
         return ValueTask.FromResult($"Hello, {query.Name}");
     }
 }
@@ -33,7 +33,7 @@ internal sealed class SumCommandHandler(TestState state) : ICommandHandler<SumCo
 {
     public ValueTask<int> HandleAsync(SumCommand command, CancellationToken cancellationToken)
     {
-        state.Events.Add("sum-handler");
+        state.Record("sum-handler");
         return ValueTask.FromResult(command.Left + command.Right);
     }
 }
@@ -55,7 +55,7 @@ internal sealed class ANotificationHandler(TestState state) : INotificationHandl
 {
     public ValueTask HandleAsync(SomethingHappened notification, CancellationToken cancellationToken)
     {
-        state.Events.Add("notification-a");
+        state.Record("notification-a");
         return ValueTask.CompletedTask;
     }
 }
@@ -64,7 +64,7 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 {
     public ValueTask HandleAsync(SomethingHappened notification, CancellationToken cancellationToken)
     {
-        state.Events.Add("notification-b");
+        state.Record("notification-b");
         return ValueTask.CompletedTask;
     }
 }
@@ -141,7 +141,7 @@ internal sealed class BaseGreetingQueryHandler(TestState state)
         BaseGreetingQuery query,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("base-query");
+        state.Record("base-query");
         return ValueTask.FromResult($"Base hello, {query.Name}");
     }
 }
@@ -153,7 +153,7 @@ internal sealed class SpecificGreetingQueryHandler(TestState state)
         SpecificGreetingQuery query,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("specific-query");
+        state.Record("specific-query");
         return ValueTask.FromResult($"Specific hello, {query.Name}");
     }
 }
@@ -166,7 +166,7 @@ internal sealed class VehicleQueryHandler(TestState state) : IQueryHandler<IVehi
 {
     public ValueTask<string> HandleAsync(IVehicleQuery query, CancellationToken cancellationToken)
     {
-        state.Events.Add("vehicle-query");
+        state.Record("vehicle-query");
         return ValueTask.FromResult("vehicle");
     }
 }
@@ -175,7 +175,7 @@ internal sealed class CarQueryHandler(TestState state) : IQueryHandler<ICarQuery
 {
     public ValueTask<string> HandleAsync(ICarQuery query, CancellationToken cancellationToken)
     {
-        state.Events.Add("car-query");
+        state.Record("car-query");
         return ValueTask.FromResult("car");
     }
 }
@@ -190,7 +190,7 @@ internal sealed class BaseSumCommandHandler(TestState state)
         BaseSumCommand command,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("base-response-command");
+        state.Record("base-response-command");
         return ValueTask.FromResult(command.Left + command.Right);
     }
 }
@@ -205,7 +205,7 @@ internal sealed class BaseRecordCommandHandler(TestState state)
         BaseRecordCommand command,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("base-command");
+        state.Record("base-command");
         state.Recorded = command.Value;
         return ValueTask.CompletedTask;
     }
@@ -219,7 +219,7 @@ internal sealed class FirstDomainEventHandler(TestState state) : INotificationHa
 {
     public ValueTask HandleAsync(DomainEvent notification, CancellationToken cancellationToken)
     {
-        state.Events.Add("domain-a");
+        state.Record("domain-a");
         return ValueTask.CompletedTask;
     }
 }
@@ -228,7 +228,7 @@ internal sealed class SecondDomainEventHandler(TestState state) : INotificationH
 {
     public ValueTask HandleAsync(DomainEvent notification, CancellationToken cancellationToken)
     {
-        state.Events.Add("domain-b");
+        state.Record("domain-b");
         return ValueTask.CompletedTask;
     }
 }
@@ -237,7 +237,7 @@ internal sealed class UserCreatedEventHandler(TestState state) : INotificationHa
 {
     public ValueTask HandleAsync(UserCreatedEvent notification, CancellationToken cancellationToken)
     {
-        state.Events.Add("user-created");
+        state.Record("user-created");
         return ValueTask.CompletedTask;
     }
 }

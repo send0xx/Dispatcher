@@ -71,6 +71,24 @@ public sealed class DispatcherGeneratorDiagnosticTests
     }
 
     [Fact]
+    public void Does_not_report_a_request_nested_in_a_generic_type()
+    {
+        const string source = """
+            using Dispatcher;
+            using Dispatcher.SourceGeneration;
+            [assembly: GenerateDispatcherHandlers("AddGeneratedTestHandlers")]
+            internal static class Outer<T>
+            {
+                internal sealed record NestedQuery : IQuery<int>;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "DSPG005");
+    }
+
+    [Fact]
     public void Reports_open_generic_handler()
     {
         const string source = """

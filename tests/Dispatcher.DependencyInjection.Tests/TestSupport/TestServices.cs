@@ -29,9 +29,32 @@ internal sealed class TestAssemblyMarker;
 
 internal sealed class TestState
 {
+    // Concurrent dispatches in one scope share this state, so recording is synchronized.
+    private readonly List<string> _events = [];
+
     internal string? Recorded { get; set; }
-    internal List<string> Events { get; } = [];
+
+    internal IReadOnlyList<string> Events
+    {
+        get
+        {
+            lock (_events)
+            {
+                return _events.ToArray();
+            }
+        }
+    }
+
     internal TaskCompletionSource<string> DelayedQueryCompletion { get; } =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     internal int BehaviorInstances { get; set; }
+
+    internal void Record(string @event)
+    {
+        lock (_events)
+        {
+            _events.Add(@event);
+        }
+    }
 }

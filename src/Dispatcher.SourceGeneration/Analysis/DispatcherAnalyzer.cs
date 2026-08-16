@@ -232,8 +232,8 @@ internal static class DispatcherAnalyzer
         var orderedDispatchOpenNotificationHandlers = dispatchOpenNotificationHandlers
             .OrderBy(handler => handler.SortKey, StringComparer.Ordinal)
             .ToImmutableArray();
-        var routeSelector = new HandlerRouteSelector(compilation, orderedDispatchHandlers);
-        var dispatchRoutes = dispatcherAttribute is null
+        var routeSelector = HandlerRouteSelector.TryCreate(compilation, orderedDispatchHandlers);
+        var dispatchRoutes = dispatcherAttribute is null || routeSelector is null
             ? ImmutableArray<DispatchRouteModel>.Empty
             : CreateDispatchRoutes(
                 compilation,
@@ -243,7 +243,10 @@ internal static class DispatcherAnalyzer
                 routeSelector,
                 diagnostics,
                 cancellationToken);
-        AddMissingHandlerDiagnostics(routeSelector, allTypes, compilation, diagnostics);
+        if (routeSelector is not null)
+        {
+            AddMissingHandlerDiagnostics(routeSelector, allTypes, compilation, diagnostics);
+        }
 
         return new GenerationResult(
             methodName,
@@ -603,9 +606,12 @@ internal static class DispatcherAnalyzer
             return;
         }
 
+        // A request nested in a generic type is as unroutable as a generic request: no handler can be
+        // written for its unbound form, so demanding one would be a diagnostic nobody can satisfy.
         foreach (var type in allTypes.Where(type =>
                      type.Locations.Any(location => location.IsInSource) &&
                      type.Arity == 0 &&
+                     !IsNestedInGenericType(type) &&
                      !type.IsAbstract &&
                      IsRequest(type, query, command, commandWithoutResponse)))
         {

@@ -7,9 +7,9 @@ internal sealed class FirstGreetingBehavior(TestState state) : IPipelineBehavior
         RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("first-before");
+        state.Record("first-before");
         var result = await next(cancellationToken);
-        state.Events.Add("first-after");
+        state.Record("first-after");
         return result;
     }
 }
@@ -21,9 +21,9 @@ internal sealed class SecondGreetingBehavior(TestState state) : IPipelineBehavio
         RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("second-before");
+        state.Record("second-before");
         var result = await next(cancellationToken);
-        state.Events.Add("second-after");
+        state.Record("second-after");
         return result;
     }
 }
@@ -52,9 +52,9 @@ internal sealed class RecordCommandBehavior(TestState state) : IPipelineBehavior
         RequestHandlerDelegate<Unit> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("record-before");
+        state.Record("record-before");
         var result = await next(cancellationToken);
-        state.Events.Add("record-after");
+        state.Record("record-after");
         return result;
     }
 }
@@ -68,7 +68,7 @@ internal sealed class CommandBaseBehavior<TCommand, TResponse>(TestState state)
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("command-base");
+        state.Record("command-base");
         return next(cancellationToken);
     }
 }
@@ -82,7 +82,7 @@ internal sealed class ResponseCommandBehavior<TCommand, TResponse>(TestState sta
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("response-command");
+        state.Record("response-command");
         return next(cancellationToken);
     }
 }
@@ -117,9 +117,9 @@ internal sealed class BaseGreetingBehavior(TestState state) : IPipelineBehavior<
         RequestHandlerDelegate<string> next,
         CancellationToken cancellationToken)
     {
-        state.Events.Add("base-before");
+        state.Record("base-before");
         var result = await next(cancellationToken);
-        state.Events.Add("base-after");
+        state.Record("base-after");
         return result;
     }
 }
