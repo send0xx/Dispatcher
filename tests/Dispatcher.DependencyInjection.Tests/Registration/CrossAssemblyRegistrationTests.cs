@@ -1,5 +1,6 @@
 using Dispatcher.DependencyInjection;
 using Dispatcher.TestSupport.AdditionalHandlers;
+using Dispatcher.TestSupport.ConflictingHandlers;
 using Dispatcher.TestSupport.Contracts;
 using Dispatcher.TestSupport.Handlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +48,48 @@ public sealed class CrossAssemblyRegistrationTests
             .QueryAsync(new LaterDerivedQuery("module"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Handled later module", result);
+    }
+
+    [Fact]
+    public async Task Scanned_and_explicitly_registered_handlers_for_one_query_are_rejected()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<HandlerAssemblyMarker>();
+        services.AddQueryHandler<SharedBaseQuery, string, ConflictingSharedBaseQueryHandler>();
+        services.AddDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        var exception = Assert.Throws<DuplicateHandlerException>(
+            scope.ServiceProvider.GetRequiredService<IQueryDispatcher>);
+
+        Assert.Equal(typeof(SharedBaseQuery), exception.MessageType);
+    }
+
+    [Fact]
+    public async Task Scanned_handlers_for_two_equally_specific_interfaces_are_rejected()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<ConflictingHandlerAssemblyMarker>();
+        services.AddDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        var exception = Assert.Throws<AmbiguousHandlerException>(
+            scope.ServiceProvider.GetRequiredService<IQueryDispatcher>);
+
+        Assert.Equal(typeof(AmbiguousScanQuery), exception.MessageType);
+        Assert.Equal(
+            [typeof(IAlphaQuery), typeof(IBetaQuery)],
+            exception.CandidateMessageTypes);
     }
 
     [Fact]

@@ -127,6 +127,28 @@ internal sealed class SpecificGreetingQueryHandler(TestState state)
     }
 }
 
+internal interface IVehicleQuery : IQuery<string>;
+internal interface ICarQuery : IVehicleQuery;
+internal sealed record CarQuery : ICarQuery;
+
+internal sealed class VehicleQueryHandler(TestState state) : IQueryHandler<IVehicleQuery, string>
+{
+    public ValueTask<string> HandleAsync(IVehicleQuery query, CancellationToken cancellationToken)
+    {
+        state.Events.Add("vehicle-query");
+        return ValueTask.FromResult("vehicle");
+    }
+}
+
+internal sealed class CarQueryHandler(TestState state) : IQueryHandler<ICarQuery, string>
+{
+    public ValueTask<string> HandleAsync(ICarQuery query, CancellationToken cancellationToken)
+    {
+        state.Events.Add("car-query");
+        return ValueTask.FromResult("car");
+    }
+}
+
 internal abstract record BaseSumCommand(int Left, int Right) : ICommand<int>;
 internal sealed record DerivedSumCommand(int Left, int Right) : BaseSumCommand(Left, Right);
 

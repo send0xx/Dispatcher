@@ -83,4 +83,19 @@ public sealed class DispatcherTests
             ["specific-query"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
+
+    [Fact]
+    public async Task Selects_the_most_specific_handled_interface_when_no_handler_is_exact()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new CarQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("car", result);
+        Assert.Equal(
+            ["car-query"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
 }

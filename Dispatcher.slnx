@@ -31,6 +31,7 @@
     <Project Path="tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj" />
     <Project Path="tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
+    <Project Path="tests/Dispatcher.TestSupport.ConflictingHandlers/Dispatcher.TestSupport.ConflictingHandlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
