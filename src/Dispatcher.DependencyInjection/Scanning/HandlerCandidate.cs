@@ -15,6 +15,5 @@ internal readonly record struct HandlerCandidate(
     Type ServiceType,
     HandlerRegistration Registration)
 {
-    internal bool IsOpenNotificationHandler =>
-        Registration is NotificationHandlerRegistration { IsOpenGeneric: true };
+    internal bool IsOpenNotificationHandler => Registration is NotificationHandlerRegistration { IsOpenGeneric: true };
 }

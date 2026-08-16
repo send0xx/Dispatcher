@@ -43,7 +43,7 @@ internal static class DispatcherRegistryFactory
         var wrappers = new Dictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)>();
         foreach (var registration in registrations)
         {
-            RequestHandlerWrapper? wrapper = registration switch
+            var wrapper = registration switch
             {
                 QueryHandlerRegistration query => (RequestHandlerWrapper)CreateWrapper(
                     typeof(QueryHandlerWrapper<,>),

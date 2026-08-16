@@ -20,6 +20,5 @@ internal sealed class AssemblyScanState
     /// </summary>
     /// <param name="handlers">Every handler registration the registry is being created from.</param>
     internal IEnumerable<MessageRegistration> PendingRouteTargets(IEnumerable<HandlerRegistration> handlers) =>
-        RouteTargets.PendingRouteTargets(handlers)
-            .Select(static messageType => new MessageRegistration(messageType));
+        RouteTargets.PendingRouteTargets(handlers).Select(static messageType => new MessageRegistration(messageType));
 }
