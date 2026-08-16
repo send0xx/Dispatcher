@@ -10,8 +10,6 @@ internal static class GeneratedDispatcherEmitter
     internal static void Emit(SourceProductionContext context, GenerationResult result)
     {
         const string className = "Dispatcher";
-        // Not the "Dispatcher" namespace: a type of the same name there would shadow the namespace
-        // for the consuming assembly.
         const string generatedNamespace = "Dispatcher.SourceGeneration";
         var generatedTypeName = "global::" + generatedNamespace + "." + className;
         var queries = result.DispatchRoutes.Where(route => route.Handler?.Kind == HandlerModelKind.Query).ToArray();
@@ -339,8 +337,6 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        global::System.Threading.CancellationToken cancellationToken = default)");
         source.AppendLine("    {");
         source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(command);");
-        // Throws instead of returning a faulted task, so a missing handler surfaces the same way as
-        // it does on the other dispatch methods and on the reflection-based implementation.
         source.AppendLine("        if (!CommandHandlers.TryGetValue(command.GetType(), out var handler))");
         source.AppendLine("        {");
         source.AppendLine("            throw new global::Dispatcher.HandlerNotFoundException(command.GetType());");
