@@ -70,6 +70,37 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 }
 
 internal sealed record UnhandledNotification : INotification;
+internal sealed record MissingCommand : ICommand;
+internal sealed record MissingResponseCommand : ICommand<int>;
+
+// Messages that satisfy two dispatch shapes but are handled as one of them, so dispatching them
+// through the other shape must fail instead of resolving the wrong wrapper.
+internal sealed record CommandShapedQuery : IQuery<string>, ICommand<string>;
+
+internal sealed class CommandShapedQueryHandler : ICommandHandler<CommandShapedQuery, string>
+{
+    public ValueTask<string> HandleAsync(CommandShapedQuery command, CancellationToken cancellationToken) =>
+        ValueTask.FromResult("command");
+}
+
+internal sealed record QueryShapedCommand : ICommand<int>, IQuery<int>;
+
+internal sealed class QueryShapedCommandHandler : IQueryHandler<QueryShapedCommand, int>
+{
+    public ValueTask<int> HandleAsync(QueryShapedCommand query, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(1);
+}
+
+internal sealed record QueryShapedResultlessCommand : ICommand, IQuery<string>;
+
+internal sealed class QueryShapedResultlessCommandHandler
+    : IQueryHandler<QueryShapedResultlessCommand, string>
+{
+    public ValueTask<string> HandleAsync(
+        QueryShapedResultlessCommand query,
+        CancellationToken cancellationToken) => ValueTask.FromResult("query");
+}
+
 internal sealed record FaultingNotification : INotification;
 
 internal sealed class FaultingNotificationHandler : INotificationHandler<FaultingNotification>

@@ -50,6 +50,44 @@ public sealed class DispatcherTests
     }
 
     [Fact]
+    public async Task Missing_handler_throws_for_both_command_overloads()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
+
+        var resultless = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
+            await dispatcher.ExecuteAsync(new MissingCommand(), TestContext.Current.CancellationToken));
+        var withResponse = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
+            await dispatcher.ExecuteAsync(new MissingResponseCommand(), TestContext.Current.CancellationToken));
+
+        Assert.Equal(typeof(MissingCommand), resultless.MessageType);
+        Assert.Equal(typeof(MissingResponseCommand), withResponse.MessageType);
+    }
+
+    [Fact]
+    public async Task Dispatching_a_message_through_the_wrong_shape_throws()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var query = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await dispatcher.QueryAsync(new CommandShapedQuery(), TestContext.Current.CancellationToken));
+        var command = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await dispatcher.ExecuteAsync(new QueryShapedCommand(), TestContext.Current.CancellationToken));
+        var resultless = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await dispatcher.ExecuteAsync(new QueryShapedResultlessCommand(), TestContext.Current.CancellationToken));
+
+        Assert.All(
+            [query, command, resultless],
+            exception => Assert.Contains("does not match message type", exception.Message, StringComparison.Ordinal));
+        Assert.Contains(typeof(CommandShapedQuery).FullName!, query.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(QueryShapedCommand).FullName!, command.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(QueryShapedResultlessCommand).FullName!, resultless.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Routes_derived_queries_and_commands_to_base_handlers()
     {
         await using var provider = TestServices.CreateProvider();
