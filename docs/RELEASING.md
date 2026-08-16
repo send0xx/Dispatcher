@@ -2,7 +2,7 @@
 
 ## GitHub Actions
 
-The [CI workflow](../.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, packs every library, and retains the packages as workflow artifacts for seven days.
+The [CI workflow](../.github/workflows/ci.yml) builds the complete solution, tests the .NET 8 and .NET 10 targets, publishes the Native AOT sample, packs every library, and retains the packages as workflow artifacts for seven days. Packing runs only after the Native AOT publish succeeds, and each package is unzipped afterwards to confirm it contains the assemblies it is supposed to ship.
 
 NuGet publishing runs only for version tags such as `v1.0.0-preview.12`. Before publishing, the workflow verifies that the tag matches the central `Version` in [`Directory.Build.props`](../Directory.Build.props) and pushes an explicit list of package files.
 

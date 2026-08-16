@@ -72,12 +72,28 @@ jobs:
           -c Release
           --framework ${{ matrix.framework }}
 
+  publish_aot:
+    name: Publish Native AOT sample
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: dotnet publish samples/NativeAot/Dispatcher.NativeAotHostSample -c Release
+
   pack:
     name: Pack
     runs-on: ubuntu-latest
     needs:
       - build
       - test
+      - publish_aot
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -104,6 +120,31 @@ jobs:
           dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj
           -c Release
           -o artifacts/packages
+
+      - name: Verify package contents
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_VERSION="$(dotnet msbuild src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj -nologo -getProperty:Version | tail -n 1 | tr -d '\r')"
+
+          assert_entry() {
+            local PACKAGE_PATH="artifacts/packages/${1}.${PACKAGE_VERSION}.nupkg"
+
+            if ! unzip -l "$PACKAGE_PATH" | grep -qF "$2"; then
+              echo "Package '$1' is missing '$2'."
+              exit 1
+            fi
+          }
+
+          assert_entry Send0xx.Dispatcher.SourceGeneration analyzers/dotnet/cs/Dispatcher.SourceGeneration.dll
+
+          for TARGET_FRAMEWORK in net8.0 net10.0
+          do
+            assert_entry Send0xx.Dispatcher.Abstractions "lib/${TARGET_FRAMEWORK}/Dispatcher.Abstractions.dll"
+            assert_entry Send0xx.Dispatcher "lib/${TARGET_FRAMEWORK}/Dispatcher.dll"
+            assert_entry Send0xx.Dispatcher.DependencyInjection "lib/${TARGET_FRAMEWORK}/Dispatcher.DependencyInjection.dll"
+          done
 
       - name: Upload packages
         uses: actions/upload-artifact@v7
