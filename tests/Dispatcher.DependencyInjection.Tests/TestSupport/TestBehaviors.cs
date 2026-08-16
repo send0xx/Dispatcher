@@ -36,6 +36,15 @@ internal sealed class ShortCircuitSumBehavior : IPipelineBehavior<SumCommand, in
         CancellationToken cancellationToken) => ValueTask.FromResult(42);
 }
 
+internal sealed class TokenReplacingBehavior(CancellationToken replacement)
+    : IPipelineBehavior<TokenQuery, CancellationToken>
+{
+    public ValueTask<CancellationToken> HandleAsync(
+        TokenQuery query,
+        RequestHandlerDelegate<CancellationToken> next,
+        CancellationToken cancellationToken) => next(replacement);
+}
+
 internal sealed class RecordCommandBehavior(TestState state) : IPipelineBehavior<RecordCommand, Unit>
 {
     public async ValueTask<Unit> HandleAsync(

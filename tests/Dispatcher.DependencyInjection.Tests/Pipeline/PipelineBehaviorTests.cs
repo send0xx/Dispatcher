@@ -108,6 +108,24 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Behavior_can_replace_the_cancellation_token_passed_to_next()
+    {
+        using var replacement = new CancellationTokenSource();
+        using var dispatch = new CancellationTokenSource();
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<TokenQuery, CancellationToken>>(
+            _ => new TokenReplacingBehavior(replacement.Token));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var received = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new TokenQuery(), dispatch.Token);
+
+        Assert.Equal(replacement.Token, received);
+        Assert.NotEqual(dispatch.Token, received);
+    }
+
+    [Fact]
     public async Task Resultless_command_uses_the_same_typed_pipeline_behavior()
     {
         var services = TestServices.CreateServices();
