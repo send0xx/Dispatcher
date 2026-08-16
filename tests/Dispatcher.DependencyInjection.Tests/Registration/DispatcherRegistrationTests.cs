@@ -331,4 +331,47 @@ public sealed class DispatcherRegistrationTests
         Assert.Throws<ArgumentException>(() =>
             services.AddNotificationHandler(typeof(Dictionary<,>)));
     }
+
+    [Fact]
+    public void Registration_methods_reject_a_null_service_collection()
+    {
+        IServiceCollection services = null!;
+
+        Assert.Throws<ArgumentNullException>(() => services.AddDispatcher());
+        Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers<TestAssemblyMarker>());
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddDispatcherHandlers(typeof(TestAssemblyMarker).Assembly));
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>());
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddCommandHandler<RecordCommand, RecordCommandHandler>());
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddNotificationHandler<SomethingHappened, ANotificationHandler>());
+        Assert.Throws<ArgumentNullException>(() => services.AddPipelineBehavior<FirstGreetingBehavior>());
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddPipelineBehavior<GreetingQuery, string, FirstGreetingBehavior>());
+    }
+
+    [Fact]
+    public void Registration_methods_reject_a_null_options_delegate()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddDispatcher(configure: null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddDispatcherHandlers<TestAssemblyMarker>(configure: null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>(configure: null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddPipelineBehavior<FirstGreetingBehavior>(configure: null!));
+    }
+
+    [Fact]
+    public void Assembly_and_handler_type_arguments_reject_null()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers(assembly: null!));
+        Assert.Throws<ArgumentNullException>(() => services.AddNotificationHandler(handlerType: null!));
+    }
 }

@@ -51,6 +51,30 @@ public sealed class CrossAssemblyRegistrationTests
     }
 
     [Fact]
+    public async Task Constrained_open_notification_handler_observes_only_notifications_it_can_close_over()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<HandlerAssemblyMarker>();
+        services.AddNotificationHandler(typeof(RestrictedOpenNotificationHandler<>));
+        services.AddDispatcher();
+        services.AddSingleton<OpenNotificationRecorder>();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+
+        await dispatcher.PublishAsync(new RestrictedNotification(), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new OpenOnlyNotification(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["open-restricted-RestrictedNotification"],
+            scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
+    }
+
+    [Fact]
     public async Task Scanned_and_explicitly_registered_handlers_for_one_query_are_rejected()
     {
         var services = new ServiceCollection();

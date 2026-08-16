@@ -109,8 +109,9 @@ public sealed class DispatcherTelemetryTests
             Assert.True(measurement.Value >= 0);
             Assert.DoesNotContain(measurement.Tags, tag => tag.Key == "error.type");
         });
-        Assert.Single(capture.Activities, activity =>
-            Equals(activity.GetTagItem("dispatcher.message.kind"), "notification"));
+        Assert.Equal(
+            ["query", "command", "command", "notification"],
+            capture.Activities.Select(activity => activity.GetTagItem("dispatcher.message.kind")));
     }
 
     [Fact]

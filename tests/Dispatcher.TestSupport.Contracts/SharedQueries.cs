@@ -23,3 +23,9 @@ public sealed record DerivedSharedNotification : SharedNotification;
 public sealed record ExactSharedNotification : SharedNotification;
 
 public interface IRestrictedNotification : INotification;
+
+/// <summary>
+/// The only notification an open generic handler constrained to <see cref="IRestrictedNotification"/>
+/// can close over, so a scan can be shown to skip the handler for every other notification.
+/// </summary>
+public sealed record RestrictedNotification : IRestrictedNotification;
