@@ -39,6 +39,92 @@ internal sealed class GreetBehavior(ParityRecorder recorder) : IPipelineBehavior
     }
 }
 
+/// <summary>A query with two behaviors, so the pipeline order is observable.</summary>
+public sealed record OrderedQuery : IQuery<string>;
+
+internal sealed class OrderedQueryHandler(ParityRecorder recorder) : IQueryHandler<OrderedQuery, string>
+{
+    public ValueTask<string> HandleAsync(OrderedQuery query, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("ordered");
+        return ValueTask.FromResult("ordered");
+    }
+}
+
+internal sealed class FirstOrderedBehavior(ParityRecorder recorder) : IPipelineBehavior<OrderedQuery, string>
+{
+    public async ValueTask<string> HandleAsync(
+        OrderedQuery request,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("first-before");
+        var response = await next(cancellationToken);
+        recorder.Events.Add("first-after");
+        return response;
+    }
+}
+
+internal sealed class SecondOrderedBehavior(ParityRecorder recorder) : IPipelineBehavior<OrderedQuery, string>
+{
+    public async ValueTask<string> HandleAsync(
+        OrderedQuery request,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("second-before");
+        var response = await next(cancellationToken);
+        recorder.Events.Add("second-after");
+        return response;
+    }
+}
+
+/// <summary>A query whose behavior answers without invoking the handler.</summary>
+public sealed record CachedQuery : IQuery<string>;
+
+internal sealed class CachedQueryHandler(ParityRecorder recorder) : IQueryHandler<CachedQuery, string>
+{
+    public ValueTask<string> HandleAsync(CachedQuery query, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("cached-handler");
+        return ValueTask.FromResult("handled");
+    }
+}
+
+internal sealed class CachedQueryBehavior : IPipelineBehavior<CachedQuery, string>
+{
+    public ValueTask<string> HandleAsync(
+        CachedQuery request,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken) => ValueTask.FromResult("cached");
+}
+
+/// <summary>A resultless command with a behavior, so its adaptation to <see cref="Unit"/> is observable.</summary>
+public sealed record TrackedCommand(string Value) : ICommand;
+
+internal sealed class TrackedCommandHandler(ParityRecorder recorder) : ICommandHandler<TrackedCommand>
+{
+    public ValueTask HandleAsync(TrackedCommand command, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("tracked-" + command.Value);
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal sealed class TrackedCommandBehavior(ParityRecorder recorder) : IPipelineBehavior<TrackedCommand, Unit>
+{
+    public async ValueTask<Unit> HandleAsync(
+        TrackedCommand request,
+        RequestHandlerDelegate<Unit> next,
+        CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("tracked-before");
+        var response = await next(cancellationToken);
+        recorder.Events.Add("tracked-after-" + response.Equals(Unit.Value));
+        return response;
+    }
+}
+
 /// <summary>A query whose handler observes the dispatched cancellation token.</summary>
 public sealed record CancellationQuery : IQuery<string>;
 

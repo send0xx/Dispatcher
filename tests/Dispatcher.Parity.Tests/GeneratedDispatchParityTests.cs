@@ -19,5 +19,9 @@ public sealed class GeneratedDispatchParityTests : DispatchParityTests
         // runtime generic construction. The generator emits AddPipelineBehavior only for the open
         // generic shape, which cannot be registered that way.
         services.AddPipelineBehavior<GreetQuery, string, GreetBehavior>();
+        services.AddPipelineBehavior<OrderedQuery, string, FirstOrderedBehavior>();
+        services.AddPipelineBehavior<OrderedQuery, string, SecondOrderedBehavior>();
+        services.AddPipelineBehavior<CachedQuery, string, CachedQueryBehavior>();
+        services.AddPipelineBehavior<TrackedCommand, Unit, TrackedCommandBehavior>();
     }
 }

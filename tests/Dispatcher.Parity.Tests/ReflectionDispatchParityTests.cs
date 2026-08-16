@@ -15,5 +15,9 @@ public sealed class ReflectionDispatchParityTests : DispatchParityTests
         services.AddDispatcher();
         services.AddDispatcherHandlers<ReflectionDispatchParityTests>();
         services.AddPipelineBehavior<GreetBehavior>();
+        services.AddPipelineBehavior<FirstOrderedBehavior>();
+        services.AddPipelineBehavior<SecondOrderedBehavior>();
+        services.AddPipelineBehavior<CachedQueryBehavior>();
+        services.AddPipelineBehavior<TrackedCommandBehavior>();
     }
 }

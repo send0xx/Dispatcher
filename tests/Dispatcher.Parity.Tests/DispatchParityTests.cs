@@ -35,6 +35,41 @@ public abstract class DispatchParityTests
     }
 
     [Fact]
+    public async Task Runs_the_first_registered_behavior_outermost()
+    {
+        await using var host = CreateHost();
+
+        await host.Dispatcher.QueryAsync(new OrderedQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["first-before", "second-before", "ordered", "second-after", "first-after"],
+            host.Recorder.Events);
+    }
+
+    [Fact]
+    public async Task Behavior_can_short_circuit_the_handler()
+    {
+        await using var host = CreateHost();
+
+        var response = await host.Dispatcher.QueryAsync(new CachedQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("cached", response);
+        Assert.Empty(host.Recorder.Events);
+    }
+
+    [Fact]
+    public async Task Resultless_command_runs_through_a_unit_behavior()
+    {
+        await using var host = CreateHost();
+
+        await host.Dispatcher.ExecuteAsync(new TrackedCommand("value"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["tracked-before", "tracked-value", "tracked-after-True"],
+            host.Recorder.Events);
+    }
+
+    [Fact]
     public async Task Dispatches_a_command_that_returns_a_response()
     {
         await using var host = CreateHost();
