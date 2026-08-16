@@ -1,4 +1,5 @@
 using Dispatcher.DependencyInjection;
+using Dispatcher.Parity.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.Parity.Tests;

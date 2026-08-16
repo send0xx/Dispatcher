@@ -1,3 +1,4 @@
+using Dispatcher.Parity.Tests.TestSupport;
 using Dispatcher.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 

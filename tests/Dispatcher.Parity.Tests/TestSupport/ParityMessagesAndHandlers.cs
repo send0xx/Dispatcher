@@ -3,7 +3,7 @@ using Dispatcher.SourceGeneration;
 [assembly: GenerateDispatcherHandlers("AddParityHandlers")]
 [assembly: GenerateDispatcher("AddGeneratedDispatcher")]
 
-namespace Dispatcher.Parity.Tests;
+namespace Dispatcher.Parity.Tests.TestSupport;
 
 /// <summary>
 /// Records what each handler did, so a scenario can assert the exact sequence both implementations
