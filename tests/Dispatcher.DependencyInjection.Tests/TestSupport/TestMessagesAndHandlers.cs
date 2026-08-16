@@ -126,7 +126,6 @@ internal sealed class CancellingCommandHandler : ICommandHandler<CancellingComma
         ValueTask.FromException(new OperationCanceledException(cancellationToken));
 }
 
-internal sealed class AlternativeGreetingHandler;
 internal interface ITransactional;
 internal sealed record TransactionalQuery : IQuery<string>, ITransactional;
 

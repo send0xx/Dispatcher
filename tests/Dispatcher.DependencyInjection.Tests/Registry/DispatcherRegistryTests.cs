@@ -36,6 +36,9 @@ public sealed class DispatcherRegistryTests
             exception.CandidateMessageTypes);
     }
 
+    // Registry creation routes by registration metadata alone, so these stand in for handler types
+    // without implementing a handler interface.
+    private sealed class AlternativeGreetingHandler;
     private interface IFirstQuery : IQuery<string>;
     private interface ISecondQuery : IQuery<string>;
     private sealed record AmbiguousQuery : IFirstQuery, ISecondQuery;
