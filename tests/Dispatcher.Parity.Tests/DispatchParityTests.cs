@@ -145,6 +145,18 @@ public abstract class DispatchParityTests
     }
 
     [Fact]
+    public async Task Failing_notification_handler_stops_the_remaining_handlers()
+    {
+        await using var host = CreateHost();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await host.Dispatcher.PublishAsync(new AlertRaised(), TestContext.Current.CancellationToken));
+
+        Assert.Equal("alert failed", exception.Message);
+        Assert.Equal(["alert-a"], host.Recorder.Events);
+    }
+
+    [Fact]
     public async Task Publishing_a_notification_without_handlers_does_nothing()
     {
         await using var host = CreateHost();

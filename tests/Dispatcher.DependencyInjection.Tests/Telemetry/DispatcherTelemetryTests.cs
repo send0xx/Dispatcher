@@ -221,6 +221,36 @@ public sealed class DispatcherTelemetryTests
     }
 
     [Fact]
+    public async Task Failing_notification_handler_sets_error_type_on_the_publish_activity()
+    {
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
+        using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
+        await using var provider = CreateProvider(options =>
+        {
+            options.Telemetry.EnableMetrics = true;
+            options.Telemetry.EnableTracing = true;
+            options.Telemetry.MeterName = instrumentationName;
+            options.Telemetry.ActivitySourceName = instrumentationName;
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+                .PublishAsync(new FaultingNotification(), TestContext.Current.CancellationToken).AsTask());
+
+        var activity = Assert.Single(capture.Activities);
+        Assert.Equal("publish FaultingNotification", activity.DisplayName);
+        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+        Assert.Equal(typeof(InvalidOperationException).FullName, activity.GetTagItem("error.type"));
+        Assert.Equal("exception", Assert.Single(activity.Events).Name);
+
+        var measurement = Assert.Single(capture.Measurements);
+        Assert.Contains(measurement.Tags, tag =>
+            tag.Key == "error.type" &&
+            Equals(tag.Value, typeof(InvalidOperationException).FullName));
+    }
+
+    [Fact]
     public async Task Cancellation_is_recorded_as_an_exception()
     {
         var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();

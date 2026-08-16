@@ -70,6 +70,14 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 }
 
 internal sealed record UnhandledNotification : INotification;
+internal sealed record FaultingNotification : INotification;
+
+internal sealed class FaultingNotificationHandler : INotificationHandler<FaultingNotification>
+{
+    public ValueTask HandleAsync(FaultingNotification notification, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("notification failure");
+}
+
 internal sealed record MissingQuery : IQuery<int>;
 internal sealed record FaultingQuery : IQuery<int>;
 

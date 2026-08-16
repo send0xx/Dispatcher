@@ -211,6 +211,36 @@ internal sealed class SecondHeartbeatHandler(ParityRecorder recorder) : INotific
     }
 }
 
+/// <summary>
+/// A notification whose second handler throws, so the stop-remaining-handlers contract is observable.
+/// It stays outside the <see cref="DomainEvent"/> hierarchy so no open generic handler applies.
+/// </summary>
+public sealed record AlertRaised : INotification;
+
+internal sealed class FirstAlertHandler(ParityRecorder recorder) : INotificationHandler<AlertRaised>
+{
+    public ValueTask HandleAsync(AlertRaised notification, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("alert-a");
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal sealed class SecondAlertHandler : INotificationHandler<AlertRaised>
+{
+    public ValueTask HandleAsync(AlertRaised notification, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("alert failed");
+}
+
+internal sealed class ThirdAlertHandler(ParityRecorder recorder) : INotificationHandler<AlertRaised>
+{
+    public ValueTask HandleAsync(AlertRaised notification, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("alert-c");
+        return ValueTask.CompletedTask;
+    }
+}
+
 internal sealed class FirstDomainEventHandler(ParityRecorder recorder) : INotificationHandler<DomainEvent>
 {
     public ValueTask HandleAsync(DomainEvent notification, CancellationToken cancellationToken)
