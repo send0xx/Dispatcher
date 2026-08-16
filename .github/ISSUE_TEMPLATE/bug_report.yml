@@ -1,0 +1,84 @@
+name: Bug report
+description: Report incorrect dispatch, registration, or generation behavior.
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please confirm the problem still happens on the latest released version before filing.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened
+      description: What the library did, and what you expected it to do instead.
+      placeholder: Dispatching a derived query threw HandlerNotFoundException even though a base handler is registered.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: >-
+        The smallest message, handler, and registration code that shows the problem. A failing test or a
+        link to a small repository is ideal. Include the full exception and stack trace when one is thrown.
+      render: csharp
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Registration mode
+      options:
+        - Reflection scanning (Send0xx.Dispatcher.DependencyInjection)
+        - Source generation (Send0xx.Dispatcher.SourceGeneration)
+        - Both
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: packages
+    attributes:
+      label: Affected packages
+      multiple: true
+      options:
+        - Send0xx.Dispatcher.Abstractions
+        - Send0xx.Dispatcher
+        - Send0xx.Dispatcher.DependencyInjection
+        - Send0xx.Dispatcher.SourceGeneration
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 1.0.0-rc.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Target framework
+      options:
+        - net8.0
+        - net10.0
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        Anything else that could matter: operating system, `dotnet --version`, whether the application is
+        trimmed or published with Native AOT, and whether the problem also occurs in the other
+        registration mode.
+    validations:
+      required: false

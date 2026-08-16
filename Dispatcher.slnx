@@ -35,9 +35,17 @@
     <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
   </Folder>
+  <Folder Name="/github/">
+    <File Path=".github/ISSUE_TEMPLATE/bug_report.yml" />
+    <File Path=".github/ISSUE_TEMPLATE/config.yml" />
+    <File Path=".github/ISSUE_TEMPLATE/feature_request.yml" />
+    <File Path=".github/PULL_REQUEST_TEMPLATE.md" />
+    <File Path=".github/SECURITY.md" />
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
   <Folder Name="/_/">
     <File Path=".editorconfig" />
-    <File Path=".github/workflows/ci.yml" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
     <File Path="CONTRIBUTING.md" />

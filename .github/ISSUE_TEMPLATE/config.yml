@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/send0xx/Dispatcher/security/advisories/new
+    about: Report privately through a security advisory instead of a public issue.
+  - name: Contribution guide
+    url: https://github.com/send0xx/Dispatcher/blob/main/CONTRIBUTING.md
+    about: How to build, test, and benchmark before opening a pull request.

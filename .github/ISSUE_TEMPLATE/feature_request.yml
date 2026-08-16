@@ -1,0 +1,53 @@
+name: Feature request
+description: Propose a new capability or a change to existing behavior.
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dispatcher deliberately keeps its public API and runtime small. A proposal is easiest to accept
+        when it shows a concrete benefit and preserves handler and behavior lifetime semantics. See the
+        [contribution guide](https://github.com/send0xx/Dispatcher/blob/main/CONTRIBUTING.md) for what
+        counts as a breaking API change.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The situation you are in today, and why the current API does not cover it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What you would like to be able to write. Sketch the API shape if the proposal adds one.
+      render: csharp
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Registration modes this applies to
+      description: >-
+        Both modes must stay behaviorally equivalent, so a proposal that only works under reflection
+        needs a source-generated equivalent, and the other way round.
+      multiple: true
+      options:
+        - Reflection scanning (Send0xx.Dispatcher.DependencyInjection)
+        - Source generation (Send0xx.Dispatcher.SourceGeneration)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: >-
+        What you tried instead, including whether a pipeline behavior, a typed registration, or code in
+        your own application already solves this.
+    validations:
+      required: false

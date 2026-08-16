@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  # NuGet versions live in Directory.Packages.props, so every update lands in that one file.
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      xunit:
+        patterns:
+          - xunit*
+          - Microsoft.NET.Test.Sdk
+    ignore:
+      # Pinned to the lowest Roslyn version the generator supports, so it must be raised
+      # deliberately rather than tracked to the newest release.
+      - dependency-name: Microsoft.CodeAnalysis.CSharp
+      # Deliberately multi-targeted: net8.0 stays on 8.0.0 so the package keeps its
+      # lowest supported Microsoft DI dependency.
+      - dependency-name: Microsoft.Extensions.DependencyInjection.Abstractions
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
