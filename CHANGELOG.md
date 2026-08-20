@@ -16,8 +16,3 @@ The first stable Dispatcher release.
 - Optional OpenTelemetry activities and operation-duration metrics.
 - Generator diagnostics DSPG001 through DSPG010 for invalid registrations and unsupported handler or route shapes.
 - Packages targeting .NET 8 and .NET 10.
-
-### Changed since 1.0.0-rc.2
-
-- Split the source generator into `Dispatcher.SourceGeneration.Analyzers.dll`, while keeping it bundled in `Send0xx.Dispatcher.SourceGeneration` for normal package consumers.
-- Made `Send0xx.Dispatcher.SourceGeneration` a .NET 8 and .NET 10 package facade that references `Send0xx.Dispatcher` and ships matching framework assets.
