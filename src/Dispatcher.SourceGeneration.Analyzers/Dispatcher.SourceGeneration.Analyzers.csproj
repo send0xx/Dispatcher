@@ -9,7 +9,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="AnalyzerReleases.Unshipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Remove="AnalyzerReleases.Shipped.md;AnalyzerReleases.Unshipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md;AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 </Project>
