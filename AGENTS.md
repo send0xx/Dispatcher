@@ -29,6 +29,7 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
 - `docs`: repository documentation, including maintenance and release guides.
+- `CHANGELOG.md`: user-facing release history; update it when a release changes observable behavior or package consumption.
 
 Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not automatically determine a type's namespace.
 
