@@ -10,9 +10,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
     <!-- The opt-in attributes are injected as source by the generator, so the analyzer assembly
          itself is not referenced; referencing it would pull Roslyn into this test assembly. -->
-    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>

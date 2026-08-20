@@ -12,7 +12,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
     <ProjectReference Include="../../src/Dispatcher/Dispatcher.csproj" />
-    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="true" />
     <ProjectReference Include="../Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />

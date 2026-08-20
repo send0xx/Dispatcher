@@ -5,8 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
-    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
+    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="true" />
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

@@ -13,7 +13,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
 - `src/Dispatcher`: shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options.
 - `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime, registration, and handler scanning.
-- `src/Dispatcher.SourceGeneration`: generated dispatcher implementation and handler registration.
+- `src/Dispatcher.SourceGeneration`: source-generation package facade and its dependency on shared Dispatcher runtime APIs.
+- `src/Dispatcher.SourceGeneration.Analyzers`: source generator for the dispatcher implementation and handler registration.
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
 - `tests/Dispatcher.DependencyInjection.Tests`: integration tests targeting .NET 8 and .NET 10.

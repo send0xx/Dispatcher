@@ -8,8 +8,9 @@
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
     <ProjectReference Include="../Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
-    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
+    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+    <ProjectReference Include="../../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="true" />
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

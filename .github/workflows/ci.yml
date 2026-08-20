@@ -137,13 +137,14 @@ jobs:
             fi
           }
 
-          assert_entry Send0xx.Dispatcher.SourceGeneration analyzers/dotnet/cs/Dispatcher.SourceGeneration.dll
+          assert_entry Send0xx.Dispatcher.SourceGeneration analyzers/dotnet/cs/Dispatcher.SourceGeneration.Analyzers.dll
 
           for TARGET_FRAMEWORK in net8.0 net10.0
           do
             assert_entry Send0xx.Dispatcher.Abstractions "lib/${TARGET_FRAMEWORK}/Dispatcher.Abstractions.dll"
             assert_entry Send0xx.Dispatcher "lib/${TARGET_FRAMEWORK}/Dispatcher.dll"
             assert_entry Send0xx.Dispatcher.DependencyInjection "lib/${TARGET_FRAMEWORK}/Dispatcher.DependencyInjection.dll"
+            assert_entry Send0xx.Dispatcher.SourceGeneration "lib/${TARGET_FRAMEWORK}/Dispatcher.SourceGeneration.dll"
           done
 
       - name: Upload packages

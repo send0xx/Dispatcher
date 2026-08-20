@@ -23,6 +23,7 @@
   <Folder Name="/src/">
     <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
     <Project Path="src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
+    <Project Path="src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj" />
     <Project Path="src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
     <Project Path="src/Dispatcher/Dispatcher.csproj" />
   </Folder>

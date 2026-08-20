@@ -1,36 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishAot;RuntimeIdentifier;SelfContained">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
-    <IsRoslynComponent>true</IsRoslynComponent>
-    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <IncludeSymbols>false</IncludeSymbols>
-    <IsPackable>true</IsPackable>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <PackageId>Send0xx.Dispatcher.SourceGeneration</PackageId>
     <Title>Dispatcher source generation</Title>
     <Description>Source-generated CQRS dispatcher and handler registration for trimming and Native AOT.</Description>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
-    <PublishAot>false</PublishAot>
-    <SelfContained>false</SelfContained>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <NoWarn>$(NoWarn);RS1041</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <ProjectReference Include="../Dispatcher/Dispatcher.csproj" />
+    <ProjectReference Include="../Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
+                      PrivateAssets="all"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(BaseOutputPath)$(Configuration)/netstandard2.0/$(AssemblyName).dll"
+    <None Include="../Dispatcher.SourceGeneration.Analyzers/bin/$(Configuration)/netstandard2.0/Dispatcher.SourceGeneration.Analyzers.dll"
           Pack="true"
           PackagePath="analyzers/dotnet/cs"
           Visible="false" />
     <None Include="../../README.md" Pack="true" PackagePath="/" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="AnalyzerReleases.Unshipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 </Project>

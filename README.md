@@ -474,7 +474,7 @@ Send0xx.Dispatcher.DependencyInjection ─┘
 - `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
 - `Send0xx.Dispatcher` contains shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options. It references Microsoft DI abstractions because these public APIs use Microsoft DI types.
 - `Send0xx.Dispatcher.DependencyInjection` contains the reflection-based Dispatcher implementation, registry, wrappers, handler scanning, pipelines, and telemetry runtime.
-- `Send0xx.Dispatcher.SourceGeneration` contains generated registration and dispatch for trimming and Native AOT.
+- `Send0xx.Dispatcher.SourceGeneration` contains the source-generation analyzer and references the shared Dispatcher runtime APIs for trimming and Native AOT.
 
 Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. Package IDs use the `Send0xx` prefix. Core APIs remain in the `Dispatcher` namespace, while generator opt-in attributes and generated dispatcher registration extensions use `Dispatcher.SourceGeneration`.
 

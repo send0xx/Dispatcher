@@ -12,8 +12,9 @@
   <ItemGroup>
     <ProjectReference Include="../../samples/DependencyInjection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
     <ProjectReference Include="../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
-    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="true" />
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
