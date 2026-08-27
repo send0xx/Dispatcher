@@ -2,13 +2,19 @@
 
 This file records user-facing changes to Dispatcher releases.
 
-## Unreleased
+## 2.0.0
+
+A breaking release that separates handler registrations from route-target metadata and reworks
+reflection assembly scanning.
 
 ### Changed
 
-- **Breaking:** `HandlerRegistration` no longer derives from `MessageRegistration`.
-- **Breaking:** Registry creation moved from `DispatcherRegistry.Create` to the
-  `IServiceProvider.CreateDispatcherRegistry` extension, which includes route targets discovered by handler scanning.
+- **Breaking:** `HandlerRegistration` no longer derives from `MessageRegistration`. It now declares its
+  own `MessageType` property, so a handler registration is no longer usable where a
+  `MessageRegistration` is expected.
+- **Breaking:** `DispatcherRegistry.Create` was removed and building a registry by hand is no longer
+  supported. `AddDispatcher` registers the registry as a singleton that includes the route targets
+  discovered by handler scanning; resolve it with `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
 - Reflection scanning retains discovered route targets in one internal catalog instead of adding a
   `MessageRegistration` service descriptor for every routable concrete message.
 
