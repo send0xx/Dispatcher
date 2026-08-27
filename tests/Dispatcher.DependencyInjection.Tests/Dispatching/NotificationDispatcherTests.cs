@@ -1,4 +1,3 @@
-using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Dispatcher.TestSupport.AdditionalHandlers;
 using Dispatcher.TestSupport.Contracts;

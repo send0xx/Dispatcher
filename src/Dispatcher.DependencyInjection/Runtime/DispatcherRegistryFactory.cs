@@ -8,26 +8,27 @@ internal static class DispatcherRegistryFactory
     [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
     [RequiresUnreferencedCode("Creating handler wrappers from registration metadata is not trimming safe.")]
     internal static DispatcherRegistry Create(
-        IEnumerable<MessageRegistration> registrations,
+        IEnumerable<HandlerRegistration> handlers,
+        IEnumerable<Type> routeTargets,
         DispatcherTelemetry? telemetry)
     {
-        ArgumentNullException.ThrowIfNull(registrations);
+        ArgumentNullException.ThrowIfNull(handlers);
+        ArgumentNullException.ThrowIfNull(routeTargets);
 
-        var registrationList = registrations.Distinct().ToArray();
-        var handlers = registrationList.OfType<HandlerRegistration>().ToArray();
-        var requestWrappers = CreateRequestWrappers(handlers);
-        var notificationWrappers = CreateNotificationWrappers(handlers);
-        var openNotificationRegistrations = handlers
+        var registrations = handlers.Distinct().ToArray();
+        var requestWrappers = CreateRequestWrappers(registrations);
+        var notificationWrappers = CreateNotificationWrappers(registrations);
+        var openNotificationRegistrations = registrations
             .OfType<NotificationHandlerRegistration>()
             .Where(static registration => registration.IsOpenGeneric)
             .ToArray();
-        var routeTargets = registrationList
-            .Select(static registration => registration.MessageType)
+        var messageTypes = routeTargets
+            .Concat(registrations.Select(static registration => registration.MessageType))
             .Distinct()
             .ToArray();
-        var requests = CreateRequestRoutes(routeTargets, requestWrappers, telemetry);
+        var requests = CreateRequestRoutes(messageTypes, requestWrappers, telemetry);
         var notifications = CreateNotificationRoutes(
-            routeTargets,
+            messageTypes,
             notificationWrappers,
             openNotificationRegistrations,
             telemetry);
@@ -101,7 +102,7 @@ internal static class DispatcherRegistryFactory
     [RequiresUnreferencedCode("Creating telemetry wrappers from registration metadata is not trimming safe.")]
     private static Dictionary<Type, RequestHandlerWrapper> CreateRequestRoutes(
         IEnumerable<Type> messageTypes,
-        IReadOnlyDictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)> wrappers,
+        Dictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)> wrappers,
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, RequestHandlerWrapper>();
@@ -135,7 +136,7 @@ internal static class DispatcherRegistryFactory
 
     private static Dictionary<Type, NotificationHandlerWrapper> CreateNotificationRoutes(
         IEnumerable<Type> messageTypes,
-        IReadOnlyDictionary<Type, NotificationHandlerWrapper> wrappers,
+        Dictionary<Type, NotificationHandlerWrapper> wrappers,
         IReadOnlyList<NotificationHandlerRegistration> openRegistrations,
         DispatcherTelemetry? telemetry)
     {

@@ -492,12 +492,12 @@ public sealed class DispatcherGeneratorOutputTests
 
         Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
                 StringComparison.Ordinal) &&
             tree.ToString().Contains("GenerateDispatcherHandlersAttribute", StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
                 StringComparison.Ordinal) &&
             tree.ToString().Contains("GenerateDispatcherAttribute", StringComparison.Ordinal));
@@ -516,7 +516,7 @@ public sealed class DispatcherGeneratorOutputTests
                 "public static class GeneratedHandlerServiceCollectionExtensions_Company_class",
                 StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\ninternal sealed class Dispatcher",
                 StringComparison.Ordinal));
         Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)

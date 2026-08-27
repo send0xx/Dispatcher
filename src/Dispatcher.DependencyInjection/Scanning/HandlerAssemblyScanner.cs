@@ -18,52 +18,45 @@ internal static class HandlerAssemblyScanner
         IEnumerable<Assembly> assemblies,
         ServiceLifetime lifetime)
     {
-        var scanState = GetOrCreateScanState(services);
+        var scanState = FindScanState(services);
         var scanned = ScanAssemblies(scanState, assemblies);
         if (scanned.Count == 0)
         {
             return services;
         }
 
+        // Route-target assemblies are loaded before registrations or scan markers are committed. A
+        // failure therefore leaves the collection unchanged and allows the caller to retry.
+        var additionalRouteTargetScans = ScanAdditionalRouteTargetAssemblies(scanState, scanned);
         var existing = ExistingRegistrations.Read(
             services,
             scanned.SelectMany(static assembly => assembly.Candidates));
-        var hadOpenNotificationHandlers = scanState.HasOpenNotificationHandlers;
-        scanState.HasOpenNotificationHandlers |= existing.HasOpenNotificationHandler;
+        scanState ??= CreateScanState(services);
 
-        var mark = scanState.RouteTargets.Mark();
+        var mark = scanState.RouteTargets.MarkPending();
         foreach (var (assembly, types, candidates) in scanned)
         {
             scanState.HandlerAssemblies.Add(assembly);
-            scanState.HasOpenNotificationHandlers |= candidates.Any(static candidate =>
-                candidate.IsOpenNotificationHandler);
             RegisterHandlers(services, candidates, lifetime, existing);
             scanState.RouteTargets.Add(assembly, types);
         }
 
-        // A handled message often lives in a shared contracts assembly that declares derived types the
-        // handler assembly never mentions, so those assemblies are scanned for route targets too.
-        foreach (var messageAssembly in MessageAssemblies(scanned).Distinct())
+        if (additionalRouteTargetScans is not null)
         {
-            if (scanState.RouteTargets.NeedsScan(messageAssembly))
+            foreach (var (assembly, types) in additionalRouteTargetScans)
             {
-                scanState.RouteTargets.Add(messageAssembly, GetTypes(messageAssembly));
+                scanState.RouteTargets.Add(assembly, types);
             }
         }
 
-        scanState.RouteTargets.Register(
-            services,
-            mark,
-            existing,
-            scanState.HasOpenNotificationHandlers,
-            scanState.HasOpenNotificationHandlers != hadOpenNotificationHandlers);
+        scanState.RouteTargets.Update(mark, existing);
 
         return services;
     }
 
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     private static List<ScannedAssembly> ScanAssemblies(
-        AssemblyScanState scanState,
+        AssemblyScanState? scanState,
         IEnumerable<Assembly> assemblies)
     {
         var scanned = new List<ScannedAssembly>();
@@ -72,7 +65,7 @@ internal static class HandlerAssemblyScanner
         {
             ArgumentNullException.ThrowIfNull(assembly);
 
-            if (scanState.HandlerAssemblies.Contains(assembly))
+            if (scanState?.HandlerAssemblies.Contains(assembly) == true)
             {
                 continue;
             }
@@ -93,6 +86,78 @@ internal static class HandlerAssemblyScanner
         }
 
         return scanned;
+    }
+
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
+    private static List<RouteTargetScan>? ScanAdditionalRouteTargetAssemblies(
+        AssemblyScanState? scanState,
+        IReadOnlyList<ScannedAssembly> scanned)
+    {
+        List<RouteTargetScan>? routeTargetScans = null;
+        foreach (var scannedAssembly in scanned)
+        {
+            foreach (var candidate in scannedAssembly.Candidates)
+            {
+                if (candidate.IsOpenNotificationHandler)
+                {
+                    foreach (var constraint in candidate.ImplementationType
+                                 .GetGenericArguments()[0]
+                                 .GetGenericParameterConstraints())
+                    {
+                        AddAdditionalRouteTargetAssembly(
+                            constraint.Assembly,
+                            scanState,
+                            scanned,
+                            ref routeTargetScans);
+                    }
+                }
+                else
+                {
+                    AddAdditionalRouteTargetAssembly(
+                        candidate.Registration.MessageType.Assembly,
+                        scanState,
+                        scanned,
+                        ref routeTargetScans);
+                }
+            }
+        }
+
+        return routeTargetScans;
+    }
+
+    [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
+    private static void AddAdditionalRouteTargetAssembly(
+        Assembly assembly,
+        AssemblyScanState? scanState,
+        IReadOnlyList<ScannedAssembly> scanned,
+        ref List<RouteTargetScan>? routeTargetScans)
+    {
+        if (scanState?.RouteTargets.NeedsScan(assembly) == false)
+        {
+            return;
+        }
+
+        foreach (var scannedAssembly in scanned)
+        {
+            if (scannedAssembly.Assembly == assembly)
+            {
+                return;
+            }
+        }
+
+        if (routeTargetScans is not null)
+        {
+            foreach (var planned in routeTargetScans)
+            {
+                if (planned.Assembly == assembly)
+                {
+                    return;
+                }
+            }
+        }
+
+        routeTargetScans ??= [];
+        routeTargetScans.Add(new RouteTargetScan(assembly, GetTypes(assembly)));
     }
 
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
@@ -118,34 +183,11 @@ internal static class HandlerAssemblyScanner
                 services.AddSingleton(candidate.Registration);
             }
 
-            if (!candidate.IsOpenNotificationHandler)
-            {
-                existing.HandledMessageTypes.Add(candidate.Registration.MessageType);
-            }
+            existing.RecordHandler(candidate.Registration);
         }
     }
 
-    /// <summary>
-    /// The assemblies that may declare route targets for the handlers this scan registered: the ones
-    /// declaring each handled message type, and the ones declaring the constraints of each open
-    /// generic notification handler.
-    /// </summary>
-    private static IEnumerable<Assembly> MessageAssemblies(IEnumerable<ScannedAssembly> scanned)
-    {
-        var candidates = scanned.SelectMany(static assembly => assembly.Candidates).ToArray();
-
-        return candidates
-            .Where(static candidate => !candidate.IsOpenNotificationHandler)
-            .Select(static candidate => candidate.Registration.MessageType.Assembly)
-            .Concat(candidates
-                .Where(static candidate => candidate.IsOpenNotificationHandler)
-                .SelectMany(static candidate => candidate.ImplementationType
-                    .GetGenericArguments()[0]
-                    .GetGenericParameterConstraints())
-                .Select(static constraint => constraint.Assembly));
-    }
-
-    private static AssemblyScanState GetOrCreateScanState(IServiceCollection services)
+    private static AssemblyScanState? FindScanState(IServiceCollection services)
     {
         foreach (var descriptor in services)
         {
@@ -156,9 +198,14 @@ internal static class HandlerAssemblyScanner
             }
         }
 
-        var created = new AssemblyScanState();
-        services.AddSingleton(created);
-        return created;
+        return null;
+    }
+
+    private static AssemblyScanState CreateScanState(IServiceCollection services)
+    {
+        var scanState = new AssemblyScanState();
+        services.AddSingleton(scanState);
+        return scanState;
     }
 
     /// <summary>
@@ -187,4 +234,6 @@ internal static class HandlerAssemblyScanner
         Assembly Assembly,
         Type[] Types,
         HandlerCandidate[] Candidates);
+
+    private readonly record struct RouteTargetScan(Assembly Assembly, Type[] Types);
 }

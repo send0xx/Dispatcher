@@ -4,7 +4,7 @@ namespace Dispatcher.TestSupport.AdditionalHandlers;
 
 public sealed class AdditionalHandlerAssemblyMarker;
 
-internal sealed class LaterBaseQueryHandler : IQueryHandler<LaterBaseQuery, string>
+public sealed class LaterBaseQueryHandler : IQueryHandler<LaterBaseQuery, string>
 {
     public ValueTask<string> HandleAsync(
         LaterBaseQuery query,

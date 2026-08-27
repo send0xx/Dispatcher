@@ -3,12 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Dispatcher.DependencyInjection;
 
 /// <summary>
-/// What the service collection already contains that a scan needs to know about, read in one pass.
+/// Tracks which handler services and metadata a scan still needs to register.
 /// </summary>
 /// <remarks>
-/// A scan cannot cache this between calls, because the typed registration methods and direct
-/// Microsoft DI registrations may add handlers and message metadata in between. Reading it once per
-/// scan instead of once per question keeps that cost to a single pass.
+/// The service collection is read once per scan because typed and direct registrations may be added
+/// between calls.
 /// </remarks>
 internal sealed class ExistingRegistrations
 {
@@ -20,14 +19,9 @@ internal sealed class ExistingRegistrations
     }
 
     /// <summary>
-    /// Message types that have a handler, extended as the scan registers its own handlers.
+    /// Message types that have a handler, extended as the scan registers handlers.
     /// </summary>
     internal HashSet<Type> HandledMessageTypes { get; } = [];
-
-    /// <summary>
-    /// Message types that already have routing metadata, extended as the scan registers more.
-    /// </summary>
-    internal HashSet<Type> RegisteredMessageTypes { get; } = [];
 
     internal bool HasOpenNotificationHandler { get; private set; }
 
@@ -69,28 +63,25 @@ internal sealed class ExistingRegistrations
     internal bool TryClaimRegistrationMetadata(HandlerCandidate candidate) =>
         _unregisteredHandlers.Remove(candidate.Registration);
 
+    internal void RecordHandler(HandlerRegistration registration)
+    {
+        if (registration is NotificationHandlerRegistration { IsOpenGeneric: true })
+        {
+            HasOpenNotificationHandler = true;
+        }
+        else
+        {
+            HandledMessageTypes.Add(registration.MessageType);
+        }
+    }
+
     private void Read(ServiceDescriptor descriptor)
     {
         if (descriptor.ServiceType == typeof(HandlerRegistration) &&
             descriptor.ImplementationInstance is HandlerRegistration handlerRegistration)
         {
-            if (handlerRegistration is NotificationHandlerRegistration { IsOpenGeneric: true })
-            {
-                HasOpenNotificationHandler = true;
-            }
-            else
-            {
-                HandledMessageTypes.Add(handlerRegistration.MessageType);
-            }
-
+            RecordHandler(handlerRegistration);
             _unregisteredHandlers.Remove(handlerRegistration);
-            return;
-        }
-
-        if (descriptor.ServiceType == typeof(MessageRegistration) &&
-            descriptor.ImplementationInstance is MessageRegistration messageRegistration)
-        {
-            RegisteredMessageTypes.Add(messageRegistration.MessageType);
             return;
         }
 

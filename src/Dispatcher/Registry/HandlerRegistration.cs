@@ -3,13 +3,19 @@ namespace Dispatcher;
 /// <summary>
 /// Represents common metadata for a handler registration.
 /// </summary>
-public abstract record HandlerRegistration : MessageRegistration
+public abstract record HandlerRegistration
 {
     internal HandlerRegistration(Type messageType, Type handlerType)
-        : base(messageType)
     {
+        MessageType = messageType;
         HandlerType = handlerType;
     }
+
+    /// <summary>
+    /// Gets the handled message type or open notification handler type parameter.
+    /// </summary>
+    /// <value>The handled message type or open notification handler type parameter.</value>
+    public Type MessageType { get; }
 
     /// <summary>
     /// Gets the handler type.

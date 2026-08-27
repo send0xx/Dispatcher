@@ -1,4 +1,3 @@
-using Dispatcher.DependencyInjection;
 using Dispatcher.TestSupport.AdditionalHandlers;
 using Dispatcher.TestSupport.ConflictingHandlers;
 using Dispatcher.TestSupport.Contracts;
@@ -137,5 +136,25 @@ public sealed class CrossAssemblyRegistrationTests
         Assert.Equal(
             ["open-a-OpenOnlyNotification"],
             scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
+    }
+
+    [Fact]
+    public async Task Closed_handler_registered_after_a_scan_routes_messages_discovered_by_that_scan()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<HandlerAssemblyMarker>();
+        services.AddQueryHandler<LaterBaseQuery, string, LaterBaseQueryHandler>();
+        services.AddDispatcher();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new LaterDerivedQuery("typed"), TestContext.Current.CancellationToken);
+
+        Assert.Equal("Handled later typed", result);
     }
 }

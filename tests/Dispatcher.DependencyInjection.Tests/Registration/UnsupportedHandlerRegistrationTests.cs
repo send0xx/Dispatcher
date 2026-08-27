@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using Dispatcher.DependencyInjection;
+using Dispatcher.TestSupport.Contracts;
 using Dispatcher.TestSupport.Handlers;
 using Dispatcher.TestSupport.UnsupportedHandlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,12 +54,13 @@ public sealed class UnsupportedHandlerRegistrationTests
     public void A_failed_scan_leaves_the_service_collection_untouched()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(new object());
+        var before = services.ToArray();
 
         Assert.Throws<UnsupportedHandlerException>(() =>
             services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
 
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(HandlerRegistration));
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(MessageRegistration));
+        Assert.Equal(before, services);
     }
 
     [Fact]
@@ -88,6 +89,31 @@ public sealed class UnsupportedHandlerRegistrationTests
         }
     }
 
+    [Fact]
+    public void Scanning_is_atomic_when_a_route_target_assembly_cannot_load_all_types()
+    {
+        var context = new RouteTargetLoadContext(
+            typeof(SharedBaseQuery).Assembly.Location,
+            "Dispatcher.TestSupport.TypeLoadFailureDependency");
+        try
+        {
+            var assembly = context.LoadFromAssemblyPath(typeof(HandlerAssemblyMarker).Assembly.Location);
+            var services = new ServiceCollection();
+            services.AddSingleton(new object());
+            var before = services.ToArray();
+
+            var exception = Assert.Throws<AssemblyScanException>(() =>
+                services.AddDispatcherHandlers(assembly));
+
+            Assert.Equal(typeof(SharedBaseQuery).Assembly.GetName().Name, exception.Assembly.GetName().Name);
+            Assert.Equal(before, services);
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
     /// <summary>
     /// Loads an assembly while refusing to resolve one of its dependencies, so that the types
     /// needing that dependency fail to load.
@@ -99,5 +125,21 @@ public sealed class UnsupportedHandlerRegistrationTests
             assemblyName.Name == blockedAssemblyName
                 ? throw new FileNotFoundException($"'{assemblyName.Name}' is blocked by this test.")
                 : null;
+    }
+
+    private sealed class RouteTargetLoadContext(string contractsAssemblyPath, string blockedAssemblyName)
+        : AssemblyLoadContext(isCollectible: true)
+    {
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            if (assemblyName.Name == blockedAssemblyName)
+            {
+                throw new FileNotFoundException($"'{assemblyName.Name}' is blocked by this test.");
+            }
+
+            return assemblyName.Name == "Dispatcher.TestSupport.Contracts"
+                ? LoadFromAssemblyPath(contractsAssemblyPath)
+                : null;
+        }
     }
 }

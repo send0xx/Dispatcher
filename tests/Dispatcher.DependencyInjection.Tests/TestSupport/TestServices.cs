@@ -1,4 +1,3 @@
-using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.DependencyInjection.Tests.TestSupport;

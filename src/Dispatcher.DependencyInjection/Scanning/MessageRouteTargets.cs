@@ -1,32 +1,27 @@
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.DependencyInjection;
 
 /// <summary>
-/// Tracks the concrete message types scanning has seen but has not been able to route yet, and
-/// registers each one as <see cref="MessageRegistration"/> metadata once a handler makes it routable.
+/// Tracks concrete route targets discovered by assembly scanning.
 /// </summary>
 /// <remarks>
-/// A message declared by one module often gets its handler from a module registered later, so a type
-/// that is unroutable during one scan can become routable during the next. Types therefore stay
-/// pending until that happens, and are dropped once routed, so no scan reconsiders a message it has
-/// already resolved. Routability depends only on the handled message types and on whether any open
-/// generic notification handler is registered, so when neither of those changed a scan only has to
-/// consider the message types it just added.
+/// Routable targets are retained directly instead of becoming individual service descriptors.
+/// Unroutable targets remain pending because a handler registered later may make them routable.
 /// </remarks>
 internal sealed class MessageRouteTargets
 {
     private readonly HashSet<Assembly> _scannedAssemblies = [];
     private readonly List<Type> _pending = [];
+    private readonly List<Type> _routable = [];
     private HashSet<Type>? _lastHandledMessageTypes;
     private bool _lastHasOpenNotificationHandlers;
 
     internal bool NeedsScan(Assembly assembly) => !_scannedAssemblies.Contains(assembly);
 
     /// <summary>
-    /// The message types still awaiting a route, when the registrations they are measured against
-    /// have moved since the last scan; otherwise none.
+    /// Gets the known routable targets and any pending targets that final registrations may have made
+    /// routable since the last scan.
     /// </summary>
     /// <param name="handlers">Every handler registration the registry is being created from.</param>
     /// <remarks>
@@ -36,11 +31,16 @@ internal sealed class MessageRouteTargets
     /// Reconsidering a message never asserts that it routes: route creation drops it exactly as
     /// before when it still does not.
     /// </remarks>
-    internal IEnumerable<Type> PendingRouteTargets(IEnumerable<HandlerRegistration> handlers)
+    internal IEnumerable<Type> GetRouteTargets(IEnumerable<HandlerRegistration> handlers)
     {
+        foreach (var messageType in _routable)
+        {
+            yield return messageType;
+        }
+
         if (_pending.Count == 0 || _lastHandledMessageTypes is null)
         {
-            return _pending;
+            yield break;
         }
 
         var handledMessageTypes = new HashSet<Type>();
@@ -57,19 +57,23 @@ internal sealed class MessageRouteTargets
             }
         }
 
-        // Routability is a function of these two alone, so when neither moved since the last scan
-        // every pending message is still unroutable and reconsidering it cannot find a new route.
-        return hasOpenNotificationHandlers == _lastHasOpenNotificationHandlers &&
-            handledMessageTypes.SetEquals(_lastHandledMessageTypes)
-            ? []
-            : _pending;
+        if (hasOpenNotificationHandlers == _lastHasOpenNotificationHandlers &&
+            handledMessageTypes.SetEquals(_lastHandledMessageTypes))
+        {
+            yield break;
+        }
+
+        foreach (var messageType in _pending)
+        {
+            yield return messageType;
+        }
     }
 
     /// <summary>
-    /// Marks the current end of the pending list, so that <see cref="Register"/> can tell the message
+    /// Marks the current end of the pending list, so that <see cref="Update"/> can tell the message
     /// types this scan adds from the ones earlier scans left unroutable.
     /// </summary>
-    internal int Mark() => _pending.Count;
+    internal int MarkPending() => _pending.Count;
 
     internal void Add(Assembly assembly, IEnumerable<Type> types)
     {
@@ -83,24 +87,14 @@ internal sealed class MessageRouteTargets
             .OrderBy(static type => type.FullName, StringComparer.Ordinal));
     }
 
-    /// <param name="services">The service collection to add message metadata to.</param>
-    /// <param name="mark">The value <see cref="Mark"/> returned before this scan added its types.</param>
+    /// <param name="mark">The value <see cref="MarkPending"/> returned before this scan added its types.</param>
     /// <param name="existing">The registrations this scan is working against.</param>
-    /// <param name="hasOpenNotificationHandlers">
-    /// Whether any open generic notification handler is registered, which routes every notification.
-    /// </param>
-    /// <param name="openNotificationHandlersChanged">
-    /// Whether <paramref name="hasOpenNotificationHandlers"/> became true during this scan.
-    /// </param>
-    internal void Register(
-        IServiceCollection services,
+    internal void Update(
         int mark,
-        ExistingRegistrations existing,
-        bool hasOpenNotificationHandlers,
-        bool openNotificationHandlersChanged)
+        ExistingRegistrations existing)
     {
         var routingChanged = _lastHandledMessageTypes is null ||
-            openNotificationHandlersChanged ||
+            existing.HasOpenNotificationHandler != _lastHasOpenNotificationHandlers ||
             !existing.HandledMessageTypes.SetEquals(_lastHandledMessageTypes);
         var startIndex = routingChanged ? 0 : mark;
 
@@ -109,30 +103,31 @@ internal sealed class MessageRouteTargets
         for (var index = startIndex; index < _pending.Count; index++)
         {
             var messageType = _pending[index];
-            if (existing.HandledMessageTypes.Contains(messageType) ||
-                existing.RegisteredMessageTypes.Contains(messageType))
+            if (existing.HandledMessageTypes.Contains(messageType))
             {
                 continue;
             }
 
-            if (!IsRoutable(messageType, existing.HandledMessageTypes, hasOpenNotificationHandlers))
+            if (!IsRoutable(
+                    messageType,
+                    existing.HandledMessageTypes,
+                    existing.HasOpenNotificationHandler))
             {
                 _pending[remaining++] = messageType;
                 continue;
             }
 
-            services.AddSingleton(new MessageRegistration(messageType));
-            existing.RegisteredMessageTypes.Add(messageType);
+            _routable.Add(messageType);
         }
 
         _pending.RemoveRange(remaining, _pending.Count - remaining);
         _lastHandledMessageTypes = existing.HandledMessageTypes;
-        _lastHasOpenNotificationHandlers = hasOpenNotificationHandlers;
+        _lastHasOpenNotificationHandlers = existing.HasOpenNotificationHandler;
     }
 
     private static bool IsRoutable(
         Type messageType,
-        IReadOnlySet<Type> handledMessageTypes,
+        HashSet<Type> handledMessageTypes,
         bool hasOpenNotificationHandlers)
     {
         if (hasOpenNotificationHandlers && typeof(INotification).IsAssignableFrom(messageType))

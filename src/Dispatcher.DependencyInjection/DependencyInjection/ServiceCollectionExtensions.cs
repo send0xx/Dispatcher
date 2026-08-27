@@ -66,19 +66,7 @@ public static class ServiceCollectionExtensions
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
         }
 
-        // Pending route targets are included so that a handler registered after the last assembly
-        // scan still routes the messages that scan had to leave unroutable. Without them, ordering
-        // registration calls differently would silently change which notifications are delivered.
-        services.TryAddSingleton(static provider =>
-        {
-            var handlers = provider.GetServices<HandlerRegistration>();
-
-            return DispatcherRegistry.Create(
-                provider.GetServices<MessageRegistration>()
-                    .Concat(handlers)
-                    .Concat(provider.GetService<AssemblyScanState>()?.PendingRouteTargets(handlers) ?? []),
-                provider.GetService<DispatcherTelemetry>());
-        });
+        services.TryAddSingleton(static provider => provider.CreateDispatcherRegistry());
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),
             typeof(Dispatcher),

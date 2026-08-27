@@ -14,9 +14,9 @@ namespace Dispatcher.Benchmarks;
 /// <remarks>
 /// <see cref="ScanUnroutableModules"/> covers modules whose messages no handler routes, so they stay
 /// under consideration for every later scan. <see cref="ScanRoutableModules"/> covers modules whose
-/// messages all route to a handled base type, so the service collection grows with every scan.
-/// <see cref="BuildRegistryForUnroutableModules"/> adds the registry creation that follows, which is
-/// where the messages scanning left pending are reconsidered.
+/// messages all route to a handled base type and enter the scanned route-target catalog.
+/// <see cref="BuildRegistryForUnroutableModules"/> measures the complete startup path when pending
+/// targets remain unchanged at registry creation.
 /// </remarks>
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev")]
@@ -52,8 +52,7 @@ public class AssemblyScanningBenchmarks
     }
 
     /// <summary>
-    /// Measures the whole startup path for the unroutable case: scanning, and then the registry
-    /// creation that reconsiders every message scanning left pending.
+    /// Measures the whole startup path for the unroutable case, including registry creation.
     /// </summary>
     [Benchmark]
     public int BuildRegistryForUnroutableModules()
@@ -67,7 +66,7 @@ public class AssemblyScanningBenchmarks
         return services.Count;
     }
 
-    private int ScanAll(IServiceCollection services)
+    private int ScanAll(ServiceCollection services)
     {
         foreach (var module in _modules)
         {
