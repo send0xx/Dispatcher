@@ -6,7 +6,7 @@ namespace Dispatcher.DependencyInjection;
 /// <summary>
 /// Provides registry creation methods for Microsoft dependency injection service providers.
 /// </summary>
-internal static class DispatcherRegistryServiceProviderExtensions
+public static class DispatcherRegistryServiceProviderExtensions
 {
     /// <summary>
     /// Creates a registry from the handler and route metadata registered in the service provider.
@@ -22,7 +22,7 @@ internal static class DispatcherRegistryServiceProviderExtensions
     /// </exception>
     [RequiresDynamicCode(CompatibilityMessages.DispatcherDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.DispatcherTrimming)]
-    internal static DispatcherRegistry CreateDispatcherRegistry(this IServiceProvider serviceProvider)
+    public static DispatcherRegistry CreateDispatcherRegistry(this IServiceProvider serviceProvider)
     {
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
