@@ -91,46 +91,6 @@ html[data-bs-theme="dark"] {
   color: var(--bs-primary);
 }
 
-/* ---------- Feature cards ---------- */
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0 2.5rem;
-}
-
-.feature-card {
-  padding: 1.25rem 1.35rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.75rem;
-  background-color: var(--bs-body-bg);
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.feature-card:hover {
-  border-color: var(--bs-primary);
-  transform: translateY(-2px);
-}
-
-.feature-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  border-bottom: none;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.feature-card p {
-  margin-bottom: 0.5rem;
-  font-size: 0.925rem;
-  color: var(--bs-secondary-color);
-}
-
-.feature-card p:last-child {
-  margin-bottom: 0;
-}
-
 /* ---------- Readability tweaks ---------- */
 
 article table {

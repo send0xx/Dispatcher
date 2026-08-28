@@ -38,72 +38,16 @@ internal sealed class GetGreetingQueryHandler
 builder.Services
     .AddDispatcher()
     .AddDispatcherHandlers(typeof(Program).Assembly);
+
+app.MapGet("/greetings/{name}", async (
+    string name,
+    IQueryDispatcher queries,
+    CancellationToken cancellationToken) =>
+{
+    var greeting = await queries.QueryAsync(
+        new GetGreetingQuery(name),
+        cancellationToken);
+
+    return Results.Ok(greeting);
+});
 ```
-
-## The three message kinds
-
-| Kind | Purpose | Handlers | Returns |
-| --- | --- | --- | --- |
-| **Query** | Read something | Exactly one | Always a response |
-| **Command** | Change something | Exactly one | Optionally a response |
-| **Notification** | Announce something happened | Zero or more | Never |
-
-## Why Dispatcher?
-
-<div class="feature-grid">
-
-<div class="feature-card">
-
-### Reflection-free dispatch
-
-Routes are stored in frozen dictionaries. Handlers and behaviors are resolved from the current DI
-scope, never discovered per dispatch.
-
-</div>
-
-<div class="feature-card">
-
-### Polymorphic routes
-
-A message uses its exact handler when one exists, otherwise the most-specific compatible base or
-interface handler. [How routing works](guide/routing.md)
-
-</div>
-
-<div class="feature-card">
-
-### Trimming and Native AOT
-
-The source generator emits registrations and dispatch tables at compile time.
-[Source generation](guide/source-generation.md)
-
-</div>
-
-<div class="feature-card">
-
-### Internal handlers
-
-Handlers never have to be public, and an application split across assemblies registers each module
-separately, under either mode.
-
-</div>
-
-<div class="feature-card">
-
-### Built-in OpenTelemetry
-
-Tracing activities and an operation-duration histogram, disabled by default and free while off.
-[Telemetry setup](guide/opentelemetry.md)
-
-</div>
-
-<div class="feature-card">
-
-### Narrow interfaces
-
-Inject `IQueryDispatcher`, `ICommandDispatcher`, or `INotificationDispatcher` instead of one
-god-interface.
-
-</div>
-
-</div>
