@@ -9,7 +9,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Microsoft.CodeAnalysis.Analyzers.targets adds these as AdditionalFiles already.
+         Including them here too makes Roslyn workspace loaders report duplicate documents. -->
     <None Remove="AnalyzerReleases.Shipped.md;AnalyzerReleases.Unshipped.md" />
-    <AdditionalFiles Include="AnalyzerReleases.Shipped.md;AnalyzerReleases.Unshipped.md" />
   </ItemGroup>
 </Project>
