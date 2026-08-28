@@ -7,7 +7,7 @@
 
 Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
 
-**📖 [Read the documentation](https://send0xx.github.io/Dispatcher/)**
+**[Read the documentation](https://send0xx.github.io/Dispatcher/)**
 
 ## Main features
 
@@ -31,7 +31,7 @@ For source-generated registration and Native AOT, install instead:
 dotnet add package Send0xx.Dispatcher.SourceGeneration --version 2.0.0
 ```
 
-Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require. See [Source generation](https://send0xx.github.io/Dispatcher/guide/source-generation.html) for the trade-off.
+Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
 
 ## Quick start
 
@@ -79,16 +79,6 @@ app.MapGet("/greetings/{name}", async (
 ```
 
 The [getting started guide](https://send0xx.github.io/Dispatcher/guide/getting-started.html) walks through this in full.
-
-## Packages
-
-```text
-Send0xx.Dispatcher.SourceGeneration    ─┐
-                                        ├─> Send0xx.Dispatcher ─> Send0xx.Dispatcher.Abstractions
-Send0xx.Dispatcher.DependencyInjection ─┘
-```
-
-Most applications should reference either `Send0xx.Dispatcher.DependencyInjection` or `Send0xx.Dispatcher.SourceGeneration`, not every package individually. See the [reference](https://send0xx.github.io/Dispatcher/reference.html) for what each one contains.
 
 ## Samples
 
