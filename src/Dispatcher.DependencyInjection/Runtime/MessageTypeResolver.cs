@@ -1,14 +1,7 @@
 namespace Dispatcher;
 
-/// <summary>
-/// The message type rules shared by handler scanning, route target tracking, and registry creation.
-/// </summary>
-internal static class MessageTypes
+internal static class MessageTypeResolver
 {
-    /// <summary>
-    /// Determines whether the type is a concrete request or notification, which is what a route may
-    /// be created for.
-    /// </summary>
     internal static bool IsConcreteMessage(Type type) =>
         IsConcrete(type) && (IsRequest(type) || IsNotification(type));
 
@@ -16,10 +9,6 @@ internal static class MessageTypes
 
     internal static bool IsConcreteNotification(Type type) => IsConcrete(type) && IsNotification(type);
 
-    /// <summary>
-    /// Gets the message type itself, its base classes, and its interfaces, which are the types a
-    /// handler can declare to handle the message.
-    /// </summary>
     internal static IEnumerable<Type> GetAssignableTypes(Type messageType)
     {
         for (var current = messageType; current is not null; current = current.BaseType)
@@ -31,6 +20,30 @@ internal static class MessageTypes
         {
             yield return declaredInterface;
         }
+    }
+
+    internal static Type? SelectMostSpecific(
+        Type messageType,
+        IEnumerable<Type> candidateTypes)
+    {
+        var candidates = candidateTypes
+            .Where(candidate => candidate.IsAssignableFrom(messageType))
+            .Distinct()
+            .ToArray();
+        if (candidates.Length == 0)
+        {
+            return null;
+        }
+
+        var mostSpecific = candidates
+            .Where(candidate => !candidates.Any(other =>
+                candidate != other && candidate.IsAssignableFrom(other)))
+            .ToArray();
+        return mostSpecific.Length switch
+        {
+            1 => mostSpecific[0],
+            _ => throw new AmbiguousHandlerException(messageType, mostSpecific)
+        };
     }
 
     private static bool IsConcrete(Type type) =>

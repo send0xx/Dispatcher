@@ -13,7 +13,7 @@ public interface IQueryDispatcher
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>A value task whose result contains the response returned by the query handler.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
-    /// <exception cref="HandlerNotFoundException">
+    /// <exception cref="T:Dispatcher.HandlerNotFoundException">
     /// No handler is registered for the concrete type of <paramref name="query"/>.
     /// </exception>
     ValueTask<TResponse> QueryAsync<TResponse>(

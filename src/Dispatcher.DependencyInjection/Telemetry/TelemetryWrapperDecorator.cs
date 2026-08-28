@@ -7,31 +7,37 @@ internal static class TelemetryWrapperDecorator
 {
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
-    internal static RequestHandlerWrapper Decorate(
+    internal static RequestHandlerWrapper DecorateQuery(
         RequestHandlerWrapper wrapper,
-        RequestHandlerDescriptor registration,
+        Type responseType,
         Type dispatchedMessageType,
-        DispatcherTelemetry telemetry)
-        => registration switch
-        {
-            QueryHandlerDescriptor query => CreateGenericDecorator(
-                typeof(TelemetryQueryHandlerWrapper<>),
-                query.ResponseType,
-                wrapper,
-                telemetry.CreateRoute(dispatchedMessageType, "query", "query")),
-            CommandWithResponseHandlerDescriptor command => CreateGenericDecorator(
-                typeof(TelemetryCommandWithResponseHandlerWrapper<>),
-                command.ResponseType,
-                wrapper,
-                telemetry.CreateRoute(dispatchedMessageType, "execute", "command")),
-            CommandHandlerDescriptor => new TelemetryCommandHandlerWrapper(
-                (CommandHandlerWrapperBase)wrapper,
-                telemetry.CreateRoute(dispatchedMessageType, "execute", "command")),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(registration),
-                registration.GetType(),
-                "Unsupported request handler registration type.")
-        };
+        DispatcherTelemetry telemetry) =>
+        CreateGenericDecorator(
+            typeof(TelemetryQueryHandlerWrapper<>),
+            responseType,
+            wrapper,
+            telemetry.CreateRoute(dispatchedMessageType, "query", "query"));
+
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
+    internal static RequestHandlerWrapper DecorateCommandWithResponse(
+        RequestHandlerWrapper wrapper,
+        Type responseType,
+        Type dispatchedMessageType,
+        DispatcherTelemetry telemetry) =>
+        CreateGenericDecorator(
+            typeof(TelemetryCommandWithResponseHandlerWrapper<>),
+            responseType,
+            wrapper,
+            telemetry.CreateRoute(dispatchedMessageType, "execute", "command"));
+
+    internal static RequestHandlerWrapper DecorateCommand(
+        RequestHandlerWrapper wrapper,
+        Type dispatchedMessageType,
+        DispatcherTelemetry telemetry) =>
+        new TelemetryCommandHandlerWrapper(
+            (CommandHandlerWrapperBase)wrapper,
+            telemetry.CreateRoute(dispatchedMessageType, "execute", "command"));
 
     internal static NotificationHandlerWrapper Decorate(
         NotificationHandlerWrapper wrapper,

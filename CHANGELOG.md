@@ -8,6 +8,8 @@ A breaking release that removes public dispatch metadata and reworks reflection 
 
 ### Changed
 
+- **Breaking:** `HandlerNotFoundException` moved from `Send0xx.Dispatcher.Abstractions` to
+  `Send0xx.Dispatcher`. Its namespace and observable dispatch behavior are unchanged.
 - **Breaking:** `HandlerRegistration`, its query, command, and notification subclasses, and
   `MessageRegistration` were removed. Handler registration methods now add only executable handler
   service descriptors to Microsoft DI.

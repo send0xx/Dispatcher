@@ -64,6 +64,22 @@ public sealed class UnsupportedHandlerRegistrationTests
     }
 
     [Fact]
+    public void A_null_assembly_leaves_a_multi_assembly_scan_untouched()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(new object());
+        var before = services.ToArray();
+
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            services.AddDispatcherHandlers(
+                assemblies: [typeof(HandlerAssemblyMarker).Assembly, null!]);
+        });
+
+        Assert.Equal(before, services);
+    }
+
+    [Fact]
     public void Scanning_fails_when_an_assembly_declares_types_that_cannot_be_loaded()
     {
         // The handler assembly is loaded into a context that cannot resolve the contracts assembly
