@@ -18,8 +18,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
@@ -38,8 +37,7 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TQuery : IQuery<TResponse>
@@ -56,8 +54,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
@@ -76,8 +73,7 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TCommand : ICommand<TResponse>
@@ -93,8 +89,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>
@@ -112,8 +107,7 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TCommand : ICommand
@@ -129,8 +123,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
@@ -148,8 +141,7 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TNotification : INotification
@@ -222,7 +214,7 @@ public static class ServiceCollectionExtensions
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TBehavior>(
+    TBehavior>(
         this IServiceCollection services)
         where TRequest : IRequest
         where TBehavior : class, IPipelineBehavior<TRequest, TResponse> =>
@@ -242,7 +234,7 @@ public static class ServiceCollectionExtensions
     /// </exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        TBehavior>(
+    TBehavior>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TRequest : IRequest
@@ -267,7 +259,7 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddHandler<TService,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        THandler>(
+    THandler>(
         IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TService : class

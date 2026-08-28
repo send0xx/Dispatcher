@@ -24,7 +24,8 @@ public sealed class GeneratedTelemetryTests
             });
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true, ValidateScopes = true
+            ValidateOnBuild = true,
+            ValidateScopes = true
         });
         await using var scope = provider.CreateAsyncScope();
         var state = scope.ServiceProvider.GetRequiredService<GeneratedTestState>();
