@@ -17,11 +17,7 @@ internal static class TestServices
         BuildProvider(CreateServices());
 
     internal static ServiceProvider BuildProvider(IServiceCollection services) =>
-        services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateOnBuild = true,
-            ValidateScopes = true
-        });
+        services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 }
 
 internal sealed class TestAssemblyMarker;
@@ -48,6 +44,8 @@ internal sealed class TestState
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     internal int BehaviorInstances { get; set; }
+
+    internal CancellationToken ReceivedToken { get; set; }
 
     internal void Record(string @event)
     {

@@ -24,6 +24,45 @@ public sealed class PipelineBehaviorTests
     }
 
     [Fact]
+    public async Task Runs_first_registered_behavior_outermost_for_a_command_with_a_response()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<FirstSumBehavior>();
+        services.AddPipelineBehavior<SecondSumBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new SumCommand(10, 20), TestContext.Current.CancellationToken);
+
+        Assert.Equal(30, result);
+        Assert.Equal(
+            ["first-before", "second-before", "sum-handler", "second-after", "first-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    // A resultless command is adapted to Unit inside the pipeline, so it reaches the behaviors
+    // through different code than a command that declares a response.
+    [Fact]
+    public async Task Runs_first_registered_behavior_outermost_for_a_resultless_command()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<RecordCommandBehavior>();
+        services.AddPipelineBehavior<SecondRecordCommandBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new RecordCommand("ordered"), TestContext.Current.CancellationToken);
+
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        Assert.Equal("ordered", state.Recorded);
+        Assert.Equal(
+            ["record-before", "second-record-before", "second-record-after", "record-after"],
+            state.Events);
+    }
+
+    [Fact]
     public async Task Registering_the_same_behavior_twice_runs_it_once()
     {
         var services = TestServices.CreateServices();
@@ -106,20 +145,73 @@ public sealed class PipelineBehaviorTests
         Assert.DoesNotContain("sum-handler", scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
+    // The resultless handler has no response to suppress, so the only evidence that the behavior
+    // short-circuited it is that the handler never recorded the command value.
+    [Fact]
+    public async Task Behavior_can_short_circuit_a_resultless_command_handler()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<ShortCircuitRecordCommandBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new RecordCommand("suppressed"), TestContext.Current.CancellationToken);
+
+        Assert.Null(scope.ServiceProvider.GetRequiredService<TestState>().Recorded);
+    }
+
     [Fact]
     public async Task Behavior_can_replace_the_cancellation_token_passed_to_next()
     {
         using var replacement = new CancellationTokenSource();
         using var dispatch = new CancellationTokenSource();
         var services = TestServices.CreateServices();
-        services.AddScoped<IPipelineBehavior<TokenQuery, CancellationToken>>(
-            _ => new TokenReplacingBehavior(replacement.Token));
+        services.AddScoped<IPipelineBehavior<TokenQuery, CancellationToken>>(_ =>
+            new TokenReplacingBehavior(replacement.Token));
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
 
         var received = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
             .QueryAsync(new TokenQuery(), dispatch.Token);
 
+        Assert.Equal(replacement.Token, received);
+        Assert.NotEqual(dispatch.Token, received);
+    }
+
+    [Fact]
+    public async Task Behavior_can_replace_the_cancellation_token_passed_to_next_for_a_command_with_a_response()
+    {
+        using var replacement = new CancellationTokenSource();
+        using var dispatch = new CancellationTokenSource();
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<TokenCommand, CancellationToken>>(_ =>
+            new TokenReplacingCommandBehavior(replacement.Token));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var received = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new TokenCommand(), dispatch.Token);
+
+        Assert.Equal(replacement.Token, received);
+        Assert.NotEqual(dispatch.Token, received);
+    }
+
+    [Fact]
+    public async Task Behavior_can_replace_the_cancellation_token_passed_to_next_for_a_resultless_command()
+    {
+        using var replacement = new CancellationTokenSource();
+        using var dispatch = new CancellationTokenSource();
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<TokenRecordingCommand, Unit>>(_ =>
+            new TokenReplacingResultlessCommandBehavior(replacement.Token));
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new TokenRecordingCommand(), dispatch.Token);
+
+        var received = scope.ServiceProvider.GetRequiredService<TestState>().ReceivedToken;
         Assert.Equal(replacement.Token, received);
         Assert.NotEqual(dispatch.Token, received);
     }
@@ -239,6 +331,72 @@ public sealed class PipelineBehaviorTests
         Assert.Equal("Base hello, Ada", result);
         Assert.Equal(
             ["base-before", "base-query", "base-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Polymorphic_command_route_uses_behaviors_for_the_handled_message_type()
+    {
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<BaseSumCommand, int>, BaseSumBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new DerivedSumCommand(2, 3), TestContext.Current.CancellationToken);
+
+        Assert.Equal(5, result);
+        Assert.Equal(
+            ["base-response-command-before", "base-response-command", "base-response-command-after"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Polymorphic_resultless_command_route_uses_behaviors_for_the_handled_message_type()
+    {
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<BaseRecordCommand, Unit>, BaseRecordBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new DerivedRecordCommand("derived"), TestContext.Current.CancellationToken);
+
+        var state = scope.ServiceProvider.GetRequiredService<TestState>();
+        Assert.Equal("derived", state.Recorded);
+        Assert.Equal(["base-command-before", "base-command", "base-command-after"], state.Events);
+    }
+
+    [Fact]
+    public async Task Transient_behavior_is_resolved_for_every_command_dispatch()
+    {
+        var services = TestServices.CreateServices();
+        services.AddPipelineBehavior<TransientSumBehavior>(options =>
+            options.ServiceLifetime = ServiceLifetime.Transient);
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
+
+        await dispatcher.ExecuteAsync(new SumCommand(1, 2), TestContext.Current.CancellationToken);
+        await dispatcher.ExecuteAsync(new SumCommand(3, 4), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, scope.ServiceProvider.GetRequiredService<TestState>().BehaviorInstances);
+    }
+
+    [Fact]
+    public async Task Behavior_registered_directly_in_microsoft_di_is_executed_for_a_command()
+    {
+        var services = TestServices.CreateServices();
+        services.AddScoped<IPipelineBehavior<SumCommand, int>, FirstSumBehavior>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        var result = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+            .ExecuteAsync(new SumCommand(10, 20), TestContext.Current.CancellationToken);
+
+        Assert.Equal(30, result);
+        Assert.Equal(
+            ["first-before", "sum-handler", "first-after"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 }
