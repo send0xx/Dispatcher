@@ -186,19 +186,28 @@ dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
 For normal changes, run:
 
 ```bash
-dotnet format Dispatcher.slnx --verify-no-changes
+dotnet format Dispatcher.slnx --verify-no-changes --exclude samples/
 dotnet build Dispatcher.slnx -c Release
-dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net10.0
-dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net10.0
-dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test --project tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test --project tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net10.0
+dotnet test --project tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
 ```
+
+`dotnet test` needs `--project`: `global.json` selects the Microsoft.Testing.Platform runner, which
+rejects a positional project path.
+
+The format run excludes `samples/` because of [dotnet/sdk#51136](https://github.com/dotnet/sdk/issues/51136):
+`dotnet format` does not apply the ASP.NET request delegate generator's interceptors, so the Minimal
+API `Map*` calls in the Native AOT sample report IL2026 and IL3050 that a real build never produces.
+Do not silence those diagnostics in the sample; its AOT configuration is correct, and suppressing them
+would hide genuine trimming problems in the one project meant to catch them.
 
 Run .NET 8 tests as well when a .NET 8 runtime is installed:
 
 ```bash
-dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net8.0
-dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net8.0
-dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test --project tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test --project tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj -c Release --no-build --framework net8.0
+dotnet test --project tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net8.0
 ```
 
 For package-affecting changes, pack all libraries and inspect their dependencies and XML documentation:
@@ -231,14 +240,19 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - The generator injects its internal `GenerateDispatcherHandlersAttribute`; do not add generator-only attributes to runtime or abstractions assemblies.
 - Generated modules opt in with `GenerateDispatcherHandlersAttribute` and must use a unique, valid extension method name.
 - Keep generator diagnostics documented in `AnalyzerReleases.Unshipped.md` and covered by generator tests.
+  Do not add an `AdditionalFiles` item for the two `AnalyzerReleases.*.md` files. `Microsoft.CodeAnalysis.Analyzers.targets`
+  already includes them, and a second include makes Roslyn workspace loaders such as `dotnet format` and DocFX report
+  duplicate documents.
 - Keep generated/AOT support as a separate implementation path and compare it against the reflection path before replacing existing behavior.
 
 ## Repository hygiene
 
 - Preserve unrelated user changes in a dirty worktree.
+- Line endings are LF everywhere, enforced by `.gitattributes` (`* text=auto eol=lf`) to match
+  `end_of_line = lf` in `.editorconfig`. Do not commit CRLF, and do not rely on `core.autocrlf`.
 - Do not add empty lines at the end of files.
 - Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
 - Do not commit generated documentation: `docs/_site/` and the generated API metadata under `docs/api/` are ignored.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.
-- Use `apply_patch` for intentional source edits and keep changes scoped to the requested work.
+- Make targeted edits rather than rewriting whole files, and keep changes scoped to the requested work.
