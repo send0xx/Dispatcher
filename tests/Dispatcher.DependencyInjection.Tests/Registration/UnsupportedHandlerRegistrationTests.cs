@@ -72,8 +72,12 @@ public sealed class UnsupportedHandlerRegistrationTests
 
         Assert.Throws<ArgumentNullException>(() =>
         {
+            // The array and the argument name pick the assemblies overload; passing the elements
+            // directly is ambiguous with the (assembly, configure) overload.
+#pragma warning disable S3878
             services.AddDispatcherHandlers(
                 assemblies: [typeof(HandlerAssemblyMarker).Assembly, null!]);
+#pragma warning restore S3878
         });
 
         Assert.Equal(before, services);

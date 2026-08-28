@@ -199,36 +199,24 @@ public sealed class CrossAssemblyRegistrationTests
 
     private sealed record NonComparableNotification : INotification;
 
-    private sealed class StructNotificationHandler<TNotification> : INotificationHandler<TNotification>
+    private sealed class StructNotificationHandler<TNotification>(ConstraintRecorder recorder)
+        : INotificationHandler<TNotification>
         where TNotification : struct, INotification
     {
-        private readonly ConstraintRecorder _recorder;
-
-        public StructNotificationHandler(ConstraintRecorder recorder)
-        {
-            _recorder = recorder;
-        }
-
         public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
         {
-            _recorder.Notifications.Add(typeof(TNotification));
+            recorder.Notifications.Add(typeof(TNotification));
             return ValueTask.CompletedTask;
         }
     }
 
-    private sealed class ComparableNotificationHandler<TNotification> : INotificationHandler<TNotification>
+    private sealed class ComparableNotificationHandler<TNotification>(ConstraintRecorder recorder)
+        : INotificationHandler<TNotification>
         where TNotification : INotification, IComparable<TNotification>
     {
-        private readonly ConstraintRecorder _recorder;
-
-        public ComparableNotificationHandler(ConstraintRecorder recorder)
-        {
-            _recorder = recorder;
-        }
-
         public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
         {
-            _recorder.Notifications.Add(typeof(TNotification));
+            recorder.Notifications.Add(typeof(TNotification));
             return ValueTask.CompletedTask;
         }
     }

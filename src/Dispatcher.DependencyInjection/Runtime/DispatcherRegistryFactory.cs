@@ -185,6 +185,13 @@ internal static class DispatcherRegistryFactory
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
+    private static RequestHandlerWrapper CreateRequestWrapper(
+        Type wrapperType,
+        params Type[] genericArguments) =>
+        (RequestHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(genericArguments))!;
+
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     private static Dictionary<Type, RequestHandlerWrapper> CreateRequestRoutes(
         IReadOnlyList<Type> messageTypes,
         IReadOnlyDictionary<Type, RequestHandler> handlers,
@@ -377,13 +384,6 @@ internal static class DispatcherRegistryFactory
                 [handledType, messageType],
                 openHandlerTypes);
     }
-
-    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
-    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
-    private static RequestHandlerWrapper CreateRequestWrapper(
-        Type wrapperType,
-        params Type[] genericArguments) =>
-        (RequestHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(genericArguments))!;
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]

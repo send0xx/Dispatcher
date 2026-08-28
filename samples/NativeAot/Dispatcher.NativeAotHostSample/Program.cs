@@ -45,7 +45,7 @@ app.MapGet("/messages", async (IQueryDispatcher queries, CancellationToken cance
 app.MapGet("/audit", async (IQueryDispatcher queries, CancellationToken cancellationToken) =>
     Results.Ok(await queries.QueryAsync(new GetAuditCountQuery(), cancellationToken)));
 
-app.Run();
+await app.RunAsync();
 
 public sealed record AddMessageRequest(string Text);
 public sealed record AddMessageResponse(Guid Id);

@@ -555,20 +555,41 @@ internal static class DispatcherAnalyzer
         INamedTypeSymbol commandHandler,
         INamedTypeSymbol commandWithoutResponseHandler)
     {
-        var definition = handlerInterface.OriginalDefinition;
-        var kind = SymbolEqualityComparer.Default.Equals(definition, queryHandler)
-            ? HandlerModelKind.Query
-            : SymbolEqualityComparer.Default.Equals(definition, commandHandler)
-                ? HandlerModelKind.CommandWithResponse
-                : SymbolEqualityComparer.Default.Equals(definition, commandWithoutResponseHandler)
-                    ? HandlerModelKind.Command
-                    : HandlerModelKind.Notification;
+        var kind = ResolveHandlerModelKind(
+            handlerInterface.OriginalDefinition,
+            queryHandler,
+            commandHandler,
+            commandWithoutResponseHandler);
 
         return new HandlerModel(
             kind,
             handlerInterface.TypeArguments[0],
             handlerInterface.TypeArguments.Length == 2 ? handlerInterface.TypeArguments[1] : null,
             implementation);
+    }
+
+    private static HandlerModelKind ResolveHandlerModelKind(
+        INamedTypeSymbol definition,
+        INamedTypeSymbol queryHandler,
+        INamedTypeSymbol commandHandler,
+        INamedTypeSymbol commandWithoutResponseHandler)
+    {
+        if (SymbolEqualityComparer.Default.Equals(definition, queryHandler))
+        {
+            return HandlerModelKind.Query;
+        }
+
+        if (SymbolEqualityComparer.Default.Equals(definition, commandHandler))
+        {
+            return HandlerModelKind.CommandWithResponse;
+        }
+
+        if (SymbolEqualityComparer.Default.Equals(definition, commandWithoutResponseHandler))
+        {
+            return HandlerModelKind.Command;
+        }
+
+        return HandlerModelKind.Notification;
     }
 
     private static void AddDuplicateDiagnostics(

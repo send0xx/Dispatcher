@@ -279,8 +279,11 @@ public sealed class PipelineBehaviorTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IQueryDispatcher>();
 
+        // Each value task is consumed exactly once, by AsTask; S5034 cannot see that here.
+#pragma warning disable S5034
         var first = dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken).AsTask();
         var second = dispatcher.QueryAsync(new GreetingQuery("Grace"), TestContext.Current.CancellationToken).AsTask();
+#pragma warning restore S5034
 
         Assert.Equal(["Hello, Ada", "Hello, Grace"], await Task.WhenAll(first, second));
     }

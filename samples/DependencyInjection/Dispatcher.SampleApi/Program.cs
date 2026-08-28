@@ -57,7 +57,7 @@ app.MapPut("/stock/{productId}", async (
     return Results.NoContent();
 });
 
-app.Run();
+await app.RunAsync();
 
 public sealed record CreateOrderRequest(string ProductId, int Quantity);
 public sealed record SetStockRequest(int Quantity);
