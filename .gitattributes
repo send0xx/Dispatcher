@@ -1,0 +1,3 @@
+# Normalise line endings. .editorconfig sets end_of_line = lf, so every text file is
+# stored and checked out with LF regardless of core.autocrlf on the local machine.
+* text=auto eol=lf
