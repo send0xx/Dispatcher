@@ -42,6 +42,18 @@ public sealed class UnitTests
     }
 
     [Fact]
+    public void Relational_operators_agree_that_no_value_precedes_or_follows_another()
+    {
+        var left = Unit.Value;
+        var right = new Unit();
+
+        Assert.False(left < right);
+        Assert.False(left > right);
+        Assert.True(left <= right);
+        Assert.True(left >= right);
+    }
+
+    [Fact]
     public void Value_hands_out_one_shared_instance_by_reference()
     {
         // Value is declared ref readonly so that reading it never copies the struct. Comparing the
