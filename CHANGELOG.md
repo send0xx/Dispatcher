@@ -30,6 +30,10 @@ A breaking release that removes public dispatch metadata and reworks reflection 
   internal. Once `DispatcherRegistry.Create` was removed neither type exposed a member a consumer
   could call, and the registry could no longer be constructed by hand. Resolve `IDispatcher`,
   `IQueryDispatcher`, `ICommandDispatcher`, or `INotificationDispatcher` instead.
+- **Breaking:** `DispatcherTelemetry` is now internal, matching the telemetry type the source
+  generator already emits. Its only public members were a constructor and `Dispose`. Configure
+  telemetry through `DispatcherOptions.Telemetry` and `DispatcherTelemetryOptions`, and subscribe to
+  the meter and activity source by name.
 - Reflection scanning retains discovered route targets in one internal catalog instead of adding a
   `MessageRegistration` service descriptor for every routable concrete message.
 - The reflection registry derives handler information from the final handler service descriptors when

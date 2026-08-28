@@ -9,7 +9,7 @@ namespace Dispatcher;
 /// <remarks>
 /// Applications normally configure this service through <see cref="DispatcherOptions.Telemetry"/>.
 /// </remarks>
-public sealed class DispatcherTelemetry : IDisposable
+internal sealed class DispatcherTelemetry : IDisposable
 {
     private static readonly string InstrumentationVersion =
         typeof(IDispatcher).Assembly.GetName().Version?.ToString() ?? string.Empty;
@@ -23,7 +23,7 @@ public sealed class DispatcherTelemetry : IDisposable
     /// </summary>
     /// <param name="options">The telemetry configuration.</param>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
-    public DispatcherTelemetry(DispatcherTelemetryOptions options)
+    internal DispatcherTelemetry(DispatcherTelemetryOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
