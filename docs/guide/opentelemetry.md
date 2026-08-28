@@ -46,7 +46,7 @@ Use `ActivitySourceName` and `MeterName` to choose application-specific names.
 Telemetry surrounds the **complete routed operation**: outside user pipeline behaviors, and around
 all sequential notification handlers.
 
-| | |
+| Signal | Emitted |
 | --- | --- |
 | Histogram | `dispatcher.operation.duration`, in seconds |
 | Attributes | `dispatcher.operation.name`, `dispatcher.message.type`, `dispatcher.message.kind` |
