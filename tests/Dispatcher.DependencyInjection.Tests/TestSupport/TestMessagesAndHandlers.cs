@@ -142,6 +142,14 @@ internal sealed class FaultingQueryHandler : IQueryHandler<FaultingQuery, int>
         throw new InvalidOperationException("telemetry failure");
 }
 
+internal sealed record FaultingCommand : ICommand<int>;
+
+internal sealed class FaultingCommandHandler : ICommandHandler<FaultingCommand, int>
+{
+    public ValueTask<int> HandleAsync(FaultingCommand command, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("telemetry failure");
+}
+
 internal sealed record CancellingCommand : ICommand;
 
 internal sealed class CancellingCommandHandler : ICommandHandler<CancellingCommand>
