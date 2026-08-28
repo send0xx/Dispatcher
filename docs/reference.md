@@ -8,10 +8,11 @@ description: Packages, samples, performance notes, and current limitations.
 
 ## Packages
 
-```text
-Send0xx.Dispatcher.SourceGeneration    ─┐
-                                        ├─> Send0xx.Dispatcher ─> Send0xx.Dispatcher.Abstractions
-Send0xx.Dispatcher.DependencyInjection ─┘
+```mermaid
+flowchart LR
+    SG["Send0xx.Dispatcher.SourceGeneration"] --> C["Send0xx.Dispatcher"]
+    DI["Send0xx.Dispatcher.DependencyInjection"] --> C
+    C --> A["Send0xx.Dispatcher.Abstractions"]
 ```
 
 | Package | Contains |
@@ -81,6 +82,47 @@ be matched against another one. Both survive:
 | Pipeline behavior | Runs twice per request |
 | Query or command handler | `DuplicateHandlerException` when the registry is created |
 
-> [!TIP]
-> Register such handlers and behaviors **by type or as an instance** instead of through a factory
-> delegate.
+Each factory below duplicates a registration made earlier in the same setup:
+
+```csharp
+builder.Services
+    .AddDispatcher()
+    // Registers every query, command, and notification handler in the assembly,
+    // including RecordOrderCreated and GetOrderQueryHandler. Behaviors are not scanned.
+    .AddDispatcherHandlers(typeof(Program).Assembly);
+
+builder.Services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
+
+// Not recommended. Scanning already registered RecordOrderCreated, but this
+// descriptor reports no implementation type, so the duplicate goes undetected
+// and the handler fires twice on every publish.
+builder.Services.AddScoped<INotificationHandler<OrderCreated>>(
+    _ => new RecordOrderCreated());
+
+// Not recommended. The open generic behavior above already applies to
+// GetOrderQuery, so this closes it a second time and it runs twice per request.
+builder.Services.AddScoped<IPipelineBehavior<GetOrderQuery, Order?>>(
+    _ => new LoggingBehavior<GetOrderQuery, Order?>());
+
+// Not recommended. For a query or command handler this is a startup failure:
+// creating the registry throws DuplicateHandlerException.
+builder.Services.AddScoped<IQueryHandler<GetOrderQuery, Order?>>(
+    provider => new GetOrderQueryHandler(provider.GetRequiredService<OrderStore>()));
+```
+
+Register by type instead, or as an instance. Both expose an implementation type, so a repeat of
+something already registered is detected and ignored:
+
+```csharp
+builder.Services
+    .AddDispatcher()
+    // The same scan as above.
+    .AddDispatcherHandlers(typeof(Program).Assembly);
+
+// Repeating a scanned handler by type is detected and ignored.
+builder.Services.AddNotificationHandler<OrderCreated, RecordOrderCreated>();
+builder.Services.AddPipelineBehavior(typeof(LoggingBehavior<,>));
+
+// Constructor dependencies come from the container, so no factory is needed.
+builder.Services.AddScoped<OrderStore>();
+```
