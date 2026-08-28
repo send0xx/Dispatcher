@@ -290,22 +290,22 @@ without scanning every application and framework reference.
 
 The reflection implementation cannot discover a derived message declared in an otherwise unrelated
 assembly. When handlers are registered only through the typed registration methods, or when a derived
-type lives outside the discovered assemblies, add message-only metadata for each concrete type that
-needs a precomputed fallback route:
+type lives outside the discovered assemblies, explicitly register each concrete type that needs a
+precomputed fallback route:
 
 ```csharp
 builder.Services
     .AddQueryHandler<BaseQuery, Result, BaseQueryHandler>()
-    .AddSingleton(new MessageRegistration(typeof(DerivedQuery)));
+    .AddDispatcherMessage<DerivedQuery>();
 ```
 
-Without that metadata the derived type has no fallback route, and the base handler is never reached:
+Without that route target the derived type has no fallback route, and the base handler is never reached:
 dispatching `DerivedQuery` throws `HandlerNotFoundException`, and publishing a derived notification
 finds no handler and does nothing.
 
-`MessageRegistration` is consumed by the reflection-based registry only. Source-generated routes must
-be known at build time from the generated host, a generated handler module, or an assembly that declares
-one of the handled message types.
+`AddDispatcherMessage` applies to the reflection-based implementation only. Source-generated routes
+must be known at build time from the generated host, a generated handler module, or an assembly that
+declares one of the handled message types.
 
 ## Pipeline behaviors
 
@@ -472,7 +472,7 @@ Send0xx.Dispatcher.DependencyInjection ─┘
 ```
 
 - `Send0xx.Dispatcher.Abstractions` contains messages, handlers, pipeline contracts, dispatcher interfaces, and `Unit`.
-- `Send0xx.Dispatcher` contains shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options. It references Microsoft DI abstractions because these public APIs use Microsoft DI types.
+- `Send0xx.Dispatcher` contains typed Microsoft DI registration extensions and Dispatcher and telemetry options. It references Microsoft DI abstractions because these public APIs use Microsoft DI types.
 - `Send0xx.Dispatcher.DependencyInjection` contains the reflection-based Dispatcher implementation, registry, wrappers, handler scanning, pipelines, and telemetry runtime.
 - `Send0xx.Dispatcher.SourceGeneration` contains the source-generation analyzer and references the shared Dispatcher runtime APIs for trimming and Native AOT.
 

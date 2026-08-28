@@ -56,7 +56,7 @@ internal static class HandlerTypeScanner
             }
 
             candidates.AddRange(serviceTypes.Select(serviceType =>
-                new HandlerCandidate(type, serviceType, CreateRegistration(serviceType, type))));
+                new HandlerCandidate(type, serviceType, CreateDescriptor(serviceType, type))));
         }
 
         return candidates.ToArray();
@@ -89,30 +89,33 @@ internal static class HandlerTypeScanner
 
         // An open generic notification handler is registered as itself rather than as
         // INotificationHandler<>, so that closed handler enumeration stays isolated from it.
-        candidates.Add(new HandlerCandidate(type, type, new NotificationHandlerRegistration(typeParameter!, type)));
+        candidates.Add(new HandlerCandidate(
+            type,
+            type,
+            new NotificationHandlerDescriptor(typeParameter!, type, true)));
     }
 
-    private static HandlerRegistration CreateRegistration(Type serviceType, Type handlerType)
+    private static HandlerDescriptor CreateDescriptor(Type serviceType, Type handlerType)
     {
         var definition = serviceType.GetGenericTypeDefinition();
         var arguments = serviceType.GetGenericArguments();
 
         if (definition == typeof(IQueryHandler<,>))
         {
-            return new QueryHandlerRegistration(arguments[0], arguments[1], handlerType);
+            return new QueryHandlerDescriptor(arguments[0], arguments[1], handlerType);
         }
 
         if (definition == typeof(ICommandHandler<,>))
         {
-            return new CommandWithResponseHandlerRegistration(arguments[0], arguments[1], handlerType);
+            return new CommandWithResponseHandlerDescriptor(arguments[0], arguments[1], handlerType);
         }
 
         if (definition == typeof(ICommandHandler<>))
         {
-            return new CommandHandlerRegistration(arguments[0], handlerType);
+            return new CommandHandlerDescriptor(arguments[0], handlerType);
         }
 
-        return new NotificationHandlerRegistration(arguments[0], handlerType);
+        return new NotificationHandlerDescriptor(arguments[0], handlerType, false);
     }
 
     private static bool IsHandlerInterface(Type type) =>

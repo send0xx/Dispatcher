@@ -18,7 +18,7 @@ internal static class HandlerAssemblyScanner
         IEnumerable<Assembly> assemblies,
         ServiceLifetime lifetime)
     {
-        var scanState = FindScanState(services);
+        var scanState = AssemblyScanState.FindScanState(services);
         var scanned = ScanAssemblies(scanState, assemblies);
         if (scanned.Count == 0)
         {
@@ -31,7 +31,7 @@ internal static class HandlerAssemblyScanner
         var existing = ExistingRegistrations.Read(
             services,
             scanned.SelectMany(static assembly => assembly.Candidates));
-        scanState ??= CreateScanState(services);
+        scanState ??= AssemblyScanState.CreateScanState(services);
 
         var mark = scanState.RouteTargets.MarkPending();
         foreach (var (assembly, types, candidates) in scanned)
@@ -114,7 +114,7 @@ internal static class HandlerAssemblyScanner
                 else
                 {
                     AddAdditionalRouteTargetAssembly(
-                        candidate.Registration.MessageType.Assembly,
+                        candidate.Descriptor.MessageType.Assembly,
                         scanState,
                         scanned,
                         ref routeTargetScans);
@@ -178,34 +178,8 @@ internal static class HandlerAssemblyScanner
                     lifetime));
             }
 
-            if (existing.TryClaimRegistrationMetadata(candidate))
-            {
-                services.AddSingleton(candidate.Registration);
-            }
-
-            existing.RecordHandler(candidate.Registration);
+            existing.RecordHandler(candidate.Descriptor);
         }
-    }
-
-    private static AssemblyScanState? FindScanState(IServiceCollection services)
-    {
-        foreach (var descriptor in services)
-        {
-            if (descriptor.ServiceType == typeof(AssemblyScanState) &&
-                descriptor.ImplementationInstance is AssemblyScanState state)
-            {
-                return state;
-            }
-        }
-
-        return null;
-    }
-
-    private static AssemblyScanState CreateScanState(IServiceCollection services)
-    {
-        var scanState = new AssemblyScanState();
-        services.AddSingleton(scanState);
-        return scanState;
     }
 
     /// <summary>

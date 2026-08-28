@@ -80,8 +80,7 @@ public sealed class UnsupportedHandlerRegistrationTests
 
             Assert.Same(assembly, exception.Assembly);
             Assert.NotEmpty(exception.LoaderExceptions);
-            Assert.DoesNotContain(services, descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration));
+            Assert.Empty(services);
         }
         finally
         {

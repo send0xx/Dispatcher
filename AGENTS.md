@@ -11,7 +11,7 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 ## Solution structure
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
-- `src/Dispatcher`: shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options.
+- `src/Dispatcher`: typed Microsoft DI registration extensions and Dispatcher and telemetry options.
 - `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime, registration, and handler scanning.
 - `src/Dispatcher.SourceGeneration`: source-generation package facade and its dependency on shared Dispatcher runtime APIs.
 - `src/Dispatcher.SourceGeneration.Analyzers`: source generator for the dispatcher implementation and handler registration.
@@ -44,7 +44,7 @@ Choose namespaces deliberately based on each type's responsibility and public AP
 - Keep specialized query and command handler interfaces. Do not introduce a shared public `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.
 - Use one `IPipelineBehavior<TRequest,TResponse>` contract for queries and both command shapes.
 - `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as `next(cancellationToken)`.
-- Keep `MessageType` naming in shared handler registration and exception types because registrations also describe notifications.
+- Keep `MessageType` naming in exception types because dispatch failures can also describe notifications.
 - Public abstractions are organized into the current folders. Do not consolidate them into one file.
 - `IQuery<TResponse>` and `ICommand<TResponse>` are invariant. Do not reintroduce `out`. Requests route by
   concrete type to one handler declaring one response type, so an upcast such as `IQuery<object>` can never
@@ -86,8 +86,8 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
 - `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
-- Public handler registrations in `src/Dispatcher` are metadata only. They must not reference reflection-based wrapper construction.
-- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from registration metadata when the singleton registry is created.
+- Typed handler registrations in `src/Dispatcher` add only executable Microsoft DI service descriptors.
+- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from the final handler service descriptors when the singleton registry is created.
 - The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
 - Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
@@ -122,7 +122,7 @@ Treat these numbers as regression indicators, not cross-machine performance guar
   multiple levels of the type hierarchy.
 - Route discovery includes handler assemblies and assemblies declaring handled message types. Generated dispatchers also
   include concrete messages declared by the host. Do not scan every referenced assembly implicitly.
-- Reflection, including closed wrapper construction from registration metadata, is limited to startup. Dispatch must not use reflection.
+- Reflection, including closed wrapper construction from handler service descriptors, is limited to startup. Dispatch must not use reflection.
 
 ## Documentation style
 

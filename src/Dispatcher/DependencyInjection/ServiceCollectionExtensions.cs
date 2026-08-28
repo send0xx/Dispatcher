@@ -42,10 +42,7 @@ public static class ServiceCollectionExtensions
         Action<DispatcherOptions> configure)
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
-        AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(
-            services,
-            new QueryHandlerRegistration(typeof(TQuery), typeof(TResponse), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(services, GetLifetime(configure));
 
     /// <summary>
     /// Registers a handler for a command that returns a response.
@@ -81,10 +78,7 @@ public static class ServiceCollectionExtensions
         Action<DispatcherOptions> configure)
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
-        AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(
-            services,
-            new CommandWithResponseHandlerRegistration(typeof(TCommand), typeof(TResponse), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(services, GetLifetime(configure));
 
     /// <summary>
     /// Registers a handler for a command that does not return a response.
@@ -118,10 +112,7 @@ public static class ServiceCollectionExtensions
         Action<DispatcherOptions> configure)
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>
-        AddHandler<ICommandHandler<TCommand>, THandler>(
-            services,
-            new CommandHandlerRegistration(typeof(TCommand), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<ICommandHandler<TCommand>, THandler>(services, GetLifetime(configure));
 
     /// <summary>
     /// Registers a notification handler.
@@ -155,10 +146,7 @@ public static class ServiceCollectionExtensions
         Action<DispatcherOptions> configure)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
-        AddHandler<INotificationHandler<TNotification>, THandler>(
-            services,
-            new NotificationHandlerRegistration(typeof(TNotification), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<INotificationHandler<TNotification>, THandler>(services, GetLifetime(configure));
 
     /// <summary>
     /// Registers an open generic notification handler.
@@ -203,20 +191,11 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(handlerType);
 
-        var messageType = GetOpenNotificationTypeParameter(handlerType);
+        ValidateOpenNotificationHandler(handlerType);
         var lifetime = GetLifetime(configure);
         if (!IsRegistered(services, handlerType, handlerType))
         {
             services.Add(ServiceDescriptor.Describe(handlerType, handlerType, lifetime));
-        }
-
-        var registration = new NotificationHandlerRegistration(messageType, handlerType);
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration) &&
-                descriptor.ImplementationInstance is HandlerRegistration existing &&
-                existing == registration))
-        {
-            services.AddSingleton<HandlerRegistration>(registration);
         }
 
         return services;
@@ -275,7 +254,6 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddHandler<TService,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         IServiceCollection services,
-        HandlerRegistration registration,
         ServiceLifetime lifetime)
         where TService : class
         where THandler : class, TService
@@ -288,14 +266,6 @@ public static class ServiceCollectionExtensions
                 typeof(TService),
                 typeof(THandler),
                 lifetime));
-        }
-
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration) &&
-                descriptor.ImplementationInstance is HandlerRegistration existing &&
-                existing == registration))
-        {
-            services.AddSingleton(registration);
         }
 
         return services;
@@ -328,7 +298,7 @@ public static class ServiceCollectionExtensions
         return options.ServiceLifetime;
     }
 
-    private static Type GetOpenNotificationTypeParameter(
+    private static void ValidateOpenNotificationHandler(
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
         Type handlerType)
@@ -356,7 +326,5 @@ public static class ServiceCollectionExtensions
                 "and expose a public constructor.",
                 nameof(handlerType));
         }
-
-        return typeParameter;
     }
 }

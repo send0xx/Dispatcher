@@ -46,8 +46,7 @@ public class AssemblyScanningBenchmarks
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
-        services.AddSingleton<HandlerRegistration>(
-            new NotificationHandlerRegistration(typeof(ModuleEvent), typeof(ModuleEventHandler)));
+        services.AddSingleton<INotificationHandler<ModuleEvent>>(_ => null!);
         return ScanAll(services);
     }
 
@@ -100,9 +99,4 @@ public class AssemblyScanningBenchmarks
     /// </summary>
     public abstract class ModuleEvent : INotification;
 
-    /// <summary>
-    /// Stands in for the handler of <see cref="ModuleEvent"/>. Registration metadata is all the
-    /// scanner reads, so this type implements no handler interface and is never activated.
-    /// </summary>
-    private sealed class ModuleEventHandler;
 }

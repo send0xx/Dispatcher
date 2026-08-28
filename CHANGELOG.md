@@ -4,19 +4,25 @@ This file records user-facing changes to Dispatcher releases.
 
 ## 2.0.0
 
-A breaking release that separates handler registrations from route-target metadata and reworks
-reflection assembly scanning.
+A breaking release that removes public dispatch metadata and reworks reflection assembly scanning.
 
 ### Changed
 
-- **Breaking:** `HandlerRegistration` no longer derives from `MessageRegistration`. It now declares its
-  own `MessageType` property, so a handler registration is no longer usable where a
-  `MessageRegistration` is expected.
-- **Breaking:** `DispatcherRegistry.Create` was removed and building a registry by hand is no longer
-  supported. `AddDispatcher` registers the registry as a singleton that includes the route targets
-  discovered by handler scanning; resolve it with `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
+- **Breaking:** `HandlerRegistration`, its query, command, and notification subclasses, and
+  `MessageRegistration` were removed. Handler registration methods now add only executable handler
+  service descriptors to Microsoft DI.
+- **Breaking:** Use `AddDispatcherMessage<TMessage>()` or `AddDispatcherMessage(Type)` instead of
+  registering `MessageRegistration` when the reflection implementation needs an explicit polymorphic
+  route target.
+- **Breaking:** `DispatcherRegistry.Create` and `CreateDispatcherRegistry` were removed, and building a
+  registry by hand is no longer supported. `AddDispatcher` registers the registry as a singleton that
+  includes the route targets discovered by handler scanning; resolve it with
+  `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
 - Reflection scanning retains discovered route targets in one internal catalog instead of adding a
   `MessageRegistration` service descriptor for every routable concrete message.
+- The reflection registry derives handler information from the final handler service descriptors when
+  its singleton is created. The source-generated implementation also uses ordinary service descriptors
+  to select registered open generic notification handlers.
 
 ### Fixed
 

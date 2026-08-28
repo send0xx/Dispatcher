@@ -5,21 +5,21 @@ namespace Dispatcher;
 
 internal static class DispatcherRegistryFactory
 {
-    [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
     internal static DispatcherRegistry Create(
-        IEnumerable<HandlerRegistration> handlers,
+        IEnumerable<HandlerDescriptor> handlers,
         IEnumerable<Type> routeTargets,
         DispatcherTelemetry? telemetry)
     {
         ArgumentNullException.ThrowIfNull(handlers);
         ArgumentNullException.ThrowIfNull(routeTargets);
 
-        var registrations = handlers.Distinct().ToArray();
+        var registrations = handlers.ToArray();
         var requestWrappers = CreateRequestWrappers(registrations);
         var notificationWrappers = CreateNotificationWrappers(registrations);
         var openNotificationRegistrations = registrations
-            .OfType<NotificationHandlerRegistration>()
+            .OfType<NotificationHandlerDescriptor>()
             .Where(static registration => registration.IsOpenGeneric)
             .ToArray();
         var messageTypes = routeTargets
@@ -36,28 +36,28 @@ internal static class DispatcherRegistryFactory
         return new DispatcherRegistry(requests.ToFrozenDictionary(), notifications.ToFrozenDictionary());
     }
 
-    [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from registration metadata is not trimming safe.")]
-    private static Dictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)>
-        CreateRequestWrappers(IEnumerable<HandlerRegistration> registrations)
+    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
+    private static Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)>
+        CreateRequestWrappers(IEnumerable<HandlerDescriptor> registrations)
     {
-        var wrappers = new Dictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)>();
+        var wrappers = new Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)>();
         foreach (var registration in registrations)
         {
             var wrapper = registration switch
             {
-                QueryHandlerRegistration query => (RequestHandlerWrapper)CreateWrapper(
+                QueryHandlerDescriptor query => (RequestHandlerWrapper)CreateWrapper(
                     typeof(QueryHandlerWrapper<,>),
                     query.MessageType,
                     query.ResponseType),
-                CommandWithResponseHandlerRegistration command => (RequestHandlerWrapper)CreateWrapper(
+                CommandWithResponseHandlerDescriptor command => (RequestHandlerWrapper)CreateWrapper(
                     typeof(CommandWithResponseHandlerWrapper<,>),
                     command.MessageType,
                     command.ResponseType),
-                CommandHandlerRegistration command => (RequestHandlerWrapper)CreateWrapper(
+                CommandHandlerDescriptor command => (RequestHandlerWrapper)CreateWrapper(
                     typeof(CommandHandlerWrapper<>),
                     command.MessageType),
-                NotificationHandlerRegistration => null,
+                NotificationHandlerDescriptor => null,
                 _ => throw UnknownRegistration(registration)
             };
             if (wrapper is null)
@@ -78,14 +78,14 @@ internal static class DispatcherRegistryFactory
         return wrappers;
     }
 
-    [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
     private static Dictionary<Type, NotificationHandlerWrapper> CreateNotificationWrappers(
-        IEnumerable<HandlerRegistration> registrations)
+        IEnumerable<HandlerDescriptor> registrations)
     {
         var wrappers = new Dictionary<Type, NotificationHandlerWrapper>();
         foreach (var registration in registrations
-                     .OfType<NotificationHandlerRegistration>()
+                     .OfType<NotificationHandlerDescriptor>()
                      .Where(static registration => !registration.IsOpenGeneric))
         {
             wrappers.TryAdd(
@@ -98,11 +98,11 @@ internal static class DispatcherRegistryFactory
         return wrappers;
     }
 
-    [RequiresDynamicCode("Creating telemetry wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
     private static Dictionary<Type, RequestHandlerWrapper> CreateRequestRoutes(
         IEnumerable<Type> messageTypes,
-        Dictionary<Type, (HandlerRegistration Registration, RequestHandlerWrapper Wrapper)> wrappers,
+        Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)> wrappers,
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, RequestHandlerWrapper>();
@@ -137,7 +137,7 @@ internal static class DispatcherRegistryFactory
     private static Dictionary<Type, NotificationHandlerWrapper> CreateNotificationRoutes(
         IEnumerable<Type> messageTypes,
         Dictionary<Type, NotificationHandlerWrapper> wrappers,
-        IReadOnlyList<NotificationHandlerRegistration> openRegistrations,
+        IReadOnlyList<NotificationHandlerDescriptor> openRegistrations,
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, NotificationHandlerWrapper>();
@@ -175,7 +175,7 @@ internal static class DispatcherRegistryFactory
 
     private static Type[] CloseCompatibleHandlers(
         Type messageType,
-        IEnumerable<NotificationHandlerRegistration> registrations)
+        IEnumerable<NotificationHandlerDescriptor> registrations)
     {
         var handlerTypes = new List<Type>();
         foreach (var registration in registrations)
@@ -193,8 +193,8 @@ internal static class DispatcherRegistryFactory
         return handlerTypes.ToArray();
     }
 
-    [RequiresDynamicCode("Creating notification wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating notification wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating notification wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating notification wrappers from service descriptors is not trimming safe.")]
     private static NotificationHandlerWrapper CreateNotificationWrapper(
         Type wrapperType,
         Type[] handlerTypes,
@@ -227,22 +227,22 @@ internal static class DispatcherRegistryFactory
 
     private static bool IsCompatibleRequestRoute(
         Type messageType,
-        HandlerRegistration registration) => registration switch
+        HandlerDescriptor registration) => registration switch
         {
-            QueryHandlerRegistration query =>
+            QueryHandlerDescriptor query =>
                 typeof(IQuery<>).MakeGenericType(query.ResponseType).IsAssignableFrom(messageType),
-            CommandWithResponseHandlerRegistration command =>
+            CommandWithResponseHandlerDescriptor command =>
                 !typeof(ICommand).IsAssignableFrom(messageType) &&
                 typeof(ICommand<>).MakeGenericType(command.ResponseType).IsAssignableFrom(messageType),
-            CommandHandlerRegistration => typeof(ICommand).IsAssignableFrom(messageType),
+            CommandHandlerDescriptor => typeof(ICommand).IsAssignableFrom(messageType),
             _ => false
         };
 
-    [RequiresDynamicCode("Creating handler wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
     private static object CreateWrapper(Type wrapperType, params Type[] genericArguments) =>
         Activator.CreateInstance(wrapperType.MakeGenericType(genericArguments))!;
 
-    private static ArgumentOutOfRangeException UnknownRegistration(HandlerRegistration registration) =>
+    private static ArgumentOutOfRangeException UnknownRegistration(HandlerDescriptor registration) =>
         new(nameof(registration), registration.GetType(), "Unknown handler registration type.");
 }

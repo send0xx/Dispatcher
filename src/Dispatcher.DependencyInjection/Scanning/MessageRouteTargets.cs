@@ -23,7 +23,7 @@ internal sealed class MessageRouteTargets
     /// Gets the known routable targets and any pending targets that final registrations may have made
     /// routable since the last scan.
     /// </summary>
-    /// <param name="handlers">Every handler registration the registry is being created from.</param>
+    /// <param name="handlers">Every handler descriptor the registry is being created from.</param>
     /// <remarks>
     /// Registration methods called after the last scan can make a pending message routable, and no
     /// scan runs afterwards to notice. Registry creation therefore reconsiders these against the
@@ -31,7 +31,7 @@ internal sealed class MessageRouteTargets
     /// Reconsidering a message never asserts that it routes: route creation drops it exactly as
     /// before when it still does not.
     /// </remarks>
-    internal IEnumerable<Type> GetRouteTargets(IEnumerable<HandlerRegistration> handlers)
+    internal IEnumerable<Type> GetRouteTargets(IEnumerable<HandlerDescriptor> handlers)
     {
         foreach (var messageType in _routable)
         {
@@ -47,7 +47,7 @@ internal sealed class MessageRouteTargets
         var hasOpenNotificationHandlers = false;
         foreach (var handler in handlers)
         {
-            if (handler is NotificationHandlerRegistration { IsOpenGeneric: true })
+            if (handler is NotificationHandlerDescriptor { IsOpenGeneric: true })
             {
                 hasOpenNotificationHandlers = true;
             }
@@ -74,6 +74,14 @@ internal sealed class MessageRouteTargets
     /// types this scan adds from the ones earlier scans left unroutable.
     /// </summary>
     internal int MarkPending() => _pending.Count;
+
+    internal void Add(Type messageType)
+    {
+        if (!_routable.Contains(messageType))
+        {
+            _routable.Add(messageType);
+        }
+    }
 
     internal void Add(Assembly assembly, IEnumerable<Type> types)
     {

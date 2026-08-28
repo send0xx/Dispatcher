@@ -11,7 +11,7 @@ namespace Dispatcher.Parity.Tests;
 /// Every scenario dispatches the same CLR types through both the reflection-based and the
 /// source-generated dispatcher, so a behavior that changes in one implementation and not the other
 /// fails here instead of drifting unnoticed. Registration mechanics deliberately stay out of scope:
-/// assembly scanning, runtime <see cref="MessageRegistration"/> metadata, and registration order have
+/// assembly scanning, explicit reflection route targets, and registration order have
 /// no source-generated equivalent, and each implementation covers those on its own. A request with no
 /// handler is out of scope for the same reason: the generator rejects it at compile time, so it cannot
 /// be declared in this assembly.

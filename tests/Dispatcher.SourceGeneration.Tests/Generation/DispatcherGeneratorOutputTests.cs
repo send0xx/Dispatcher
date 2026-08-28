@@ -267,7 +267,8 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("AddNotificationHandler(services, typeof(global::AuditHandler<>)", registration, StringComparison.Ordinal);
         Assert.Contains("IsOpenNotificationHandler_", registration, StringComparison.Ordinal);
         Assert.Contains("InvokeOpenNotificationHandler_", registration, StringComparison.Ordinal);
-        Assert.DoesNotContain("Keyed", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("AddKeyed", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetKeyed", registration, StringComparison.Ordinal);
 
         var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Dispatcher.DependencyInjection;
 
 /// <summary>
-/// Tracks which handler services and metadata a scan still needs to register.
+/// Tracks which handler services a scan still needs to register.
 /// </summary>
 /// <remarks>
 /// The service collection is read once per scan because typed and direct registrations may be added
@@ -12,7 +12,6 @@ namespace Dispatcher.DependencyInjection;
 internal sealed class ExistingRegistrations
 {
     private readonly HashSet<(Type ServiceType, Type ImplementationType)> _unregisteredServices = [];
-    private readonly HashSet<HandlerRegistration> _unregisteredHandlers = [];
 
     private ExistingRegistrations()
     {
@@ -38,7 +37,6 @@ internal sealed class ExistingRegistrations
         foreach (var candidate in candidates)
         {
             existing._unregisteredServices.Add((candidate.ServiceType, candidate.ImplementationType));
-            existing._unregisteredHandlers.Add(candidate.Registration);
         }
 
         foreach (var descriptor in services)
@@ -57,38 +55,30 @@ internal sealed class ExistingRegistrations
     internal bool TryClaimServiceDescriptor(HandlerCandidate candidate) =>
         _unregisteredServices.Remove((candidate.ServiceType, candidate.ImplementationType));
 
-    /// <summary>
-    /// Claims the registration metadata for a candidate, returning whether this scan should add it.
-    /// </summary>
-    internal bool TryClaimRegistrationMetadata(HandlerCandidate candidate) =>
-        _unregisteredHandlers.Remove(candidate.Registration);
-
-    internal void RecordHandler(HandlerRegistration registration)
+    internal void RecordHandler(HandlerDescriptor descriptor)
     {
-        if (registration is NotificationHandlerRegistration { IsOpenGeneric: true })
+        if (descriptor is NotificationHandlerDescriptor { IsOpenGeneric: true })
         {
             HasOpenNotificationHandler = true;
         }
         else
         {
-            HandledMessageTypes.Add(registration.MessageType);
+            HandledMessageTypes.Add(descriptor.MessageType);
         }
     }
 
     private void Read(ServiceDescriptor descriptor)
     {
-        if (descriptor.ServiceType == typeof(HandlerRegistration) &&
-            descriptor.ImplementationInstance is HandlerRegistration handlerRegistration)
+        if (HandlerDescriptorReader.TryCreate(descriptor) is { } handlerDescriptor)
         {
-            RecordHandler(handlerRegistration);
-            _unregisteredHandlers.Remove(handlerRegistration);
-            return;
+            RecordHandler(handlerDescriptor);
         }
 
         // A service registered as an instance carries no implementation type, but its runtime type
         // identifies it just as well. A factory descriptor cannot be matched at all, because
         // Microsoft DI does not expose what a factory will return.
-        if ((descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) is
+        if (!descriptor.IsKeyedService &&
+            (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) is
             { } implementationType)
         {
             _unregisteredServices.Remove((descriptor.ServiceType, implementationType));

@@ -9,18 +9,11 @@ namespace Dispatcher.DependencyInjection.Tests.Registry;
 public sealed class DispatcherRegistryTests
 {
     [Fact]
-    public void Provider_registry_creation_rejects_a_null_service_provider()
-    {
-        IServiceProvider serviceProvider = null!;
-
-        Assert.Throws<ArgumentNullException>(serviceProvider.CreateDispatcherRegistry);
-    }
-
-    [Fact]
-    public async Task Provider_registry_creation_includes_routes_discovered_by_handler_scanning()
+    public async Task Registered_registry_includes_routes_discovered_by_handler_scanning()
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers<HandlerAssemblyMarker>();
+        services.AddDispatcher();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateOnBuild = true,
@@ -28,9 +21,7 @@ public sealed class DispatcherRegistryTests
         });
         await using var scope = provider.CreateAsyncScope();
 
-        var registry = scope.ServiceProvider.CreateDispatcherRegistry();
-        var dispatcher = new Dispatcher(scope.ServiceProvider, registry);
-        var result = await dispatcher.QueryAsync(
+        var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>().QueryAsync(
             new SharedDerivedQuery("public factory"),
             TestContext.Current.CancellationToken);
 
@@ -40,49 +31,28 @@ public sealed class DispatcherRegistryTests
     [Fact]
     public void Duplicate_request_handlers_are_rejected_when_registry_is_built()
     {
-        var registrations = new[]
-        {
-            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(GreetingQueryHandler)),
-            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(AlternativeGreetingHandler))
-        };
-
         var services = new ServiceCollection();
-        foreach (var registration in registrations)
-        {
-            services.AddSingleton<HandlerRegistration>(registration);
-        }
+        services.AddSingleton<IQueryHandler<GreetingQuery, string>>(_ => null!);
+        services.AddSingleton<IQueryHandler<GreetingQuery, string>>(_ => null!);
+        services.AddDispatcher();
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Throws<DuplicateHandlerException>(provider.CreateDispatcherRegistry);
+        Assert.Throws<DuplicateHandlerException>(provider.GetRequiredService<DispatcherRegistry>);
     }
 
     [Fact]
     public void Ambiguous_polymorphic_routes_are_rejected_when_registry_is_built()
     {
-        MessageRegistration[] routeTargets =
-        [
-            new(typeof(AmbiguousQuery))
-        ];
-        HandlerRegistration[] handlers =
-        [
-            new QueryHandlerRegistration(typeof(IFirstQuery), typeof(string), typeof(FirstHandler)),
-            new QueryHandlerRegistration(typeof(ISecondQuery), typeof(string), typeof(SecondHandler))
-        ];
-
         var services = new ServiceCollection();
-        foreach (var handler in handlers)
-        {
-            services.AddSingleton<HandlerRegistration>(handler);
-        }
-
-        foreach (var routeTarget in routeTargets)
-        {
-            services.AddSingleton(routeTarget);
-        }
+        services.AddSingleton<IQueryHandler<IFirstQuery, string>>(_ => null!);
+        services.AddSingleton<IQueryHandler<ISecondQuery, string>>(_ => null!);
+        services.AddDispatcherMessage<AmbiguousQuery>();
+        services.AddDispatcher();
 
         using var provider = services.BuildServiceProvider();
-        var exception = Assert.Throws<AmbiguousHandlerException>(provider.CreateDispatcherRegistry);
+        var exception = Assert.Throws<AmbiguousHandlerException>(
+            provider.GetRequiredService<DispatcherRegistry>);
 
         Assert.Equal(typeof(AmbiguousQuery), exception.MessageType);
         Assert.Equal(
@@ -90,12 +60,7 @@ public sealed class DispatcherRegistryTests
             exception.CandidateMessageTypes);
     }
 
-    // Registry creation routes by registration metadata alone, so these stand in for handler types
-    // without implementing a handler interface.
-    private sealed class AlternativeGreetingHandler;
     private interface IFirstQuery : IQuery<string>;
     private interface ISecondQuery : IQuery<string>;
     private sealed record AmbiguousQuery : IFirstQuery, ISecondQuery;
-    private sealed class FirstHandler;
-    private sealed class SecondHandler;
 }

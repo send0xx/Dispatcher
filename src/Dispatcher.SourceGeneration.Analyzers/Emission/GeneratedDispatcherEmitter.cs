@@ -142,7 +142,7 @@ internal static class GeneratedDispatcherEmitter
         {
             registration.AppendLine("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
             registration.AppendLine("            typeof(global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry),");
-            registration.AppendLine("            typeof(global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry)));");
+            registration.AppendLine("            _ => new global::Dispatcher.SourceGeneration.OpenNotificationHandlerRegistry(services)));");
         }
         registration.Append("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(typeof(")
             .Append(generatedTypeName).Append("), typeof(").Append(generatedTypeName)
@@ -545,7 +545,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("        global::Dispatcher.SourceGeneration.OpenNotificationHandlerInvoker[]> handlers;");
         source.AppendLine();
         source.AppendLine("    public OpenNotificationHandlerRegistry(");
-        source.AppendLine("        global::System.Collections.Generic.IEnumerable<global::Dispatcher.HandlerRegistration> registrations)");
+        source.AppendLine("        global::System.Collections.Generic.IEnumerable<global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor> registrations)");
         source.AppendLine("    {");
         for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
         {
@@ -555,15 +555,11 @@ internal static class GeneratedDispatcherEmitter
 
         source.AppendLine("        foreach (var registration in registrations)");
         source.AppendLine("        {");
-        source.AppendLine("            if (registration is not global::Dispatcher.NotificationHandlerRegistration { IsOpenGeneric: true } notificationRegistration)");
-        source.AppendLine("            {");
-        source.AppendLine("                continue;");
-        source.AppendLine("            }");
         foreach (var handler in openHandlers)
         {
             source.Append("            if (").Append(handler.RegistrationClassName)
                 .Append(".IsOpenNotificationHandler_").Append(handler.MethodSuffix)
-                .AppendLine("(notificationRegistration))");
+                .AppendLine("(registration))");
             source.AppendLine("            {");
             for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
             {

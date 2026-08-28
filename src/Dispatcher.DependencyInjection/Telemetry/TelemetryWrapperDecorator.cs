@@ -4,26 +4,26 @@ namespace Dispatcher;
 
 internal static class TelemetryWrapperDecorator
 {
-    [RequiresDynamicCode("Creating telemetry wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
     internal static RequestHandlerWrapper Decorate(
         RequestHandlerWrapper wrapper,
-        HandlerRegistration registration,
+        HandlerDescriptor registration,
         Type dispatchedMessageType,
         DispatcherTelemetry telemetry)
         => registration switch
         {
-            QueryHandlerRegistration query => CreateGenericDecorator(
+            QueryHandlerDescriptor query => CreateGenericDecorator(
                 typeof(TelemetryQueryHandlerWrapper<>),
                 query.ResponseType,
                 wrapper,
                 telemetry.CreateRoute(dispatchedMessageType, "query", "query")),
-            CommandWithResponseHandlerRegistration command => CreateGenericDecorator(
+            CommandWithResponseHandlerDescriptor command => CreateGenericDecorator(
                 typeof(TelemetryCommandWithResponseHandlerWrapper<>),
                 command.ResponseType,
                 wrapper,
                 telemetry.CreateRoute(dispatchedMessageType, "execute", "command")),
-            CommandHandlerRegistration => new TelemetryCommandHandlerWrapper(
+            CommandHandlerDescriptor => new TelemetryCommandHandlerWrapper(
                 (CommandHandlerWrapperBase)wrapper,
                 telemetry.CreateRoute(dispatchedMessageType, "execute", "command")),
             _ => throw new ArgumentOutOfRangeException(
@@ -40,8 +40,8 @@ internal static class TelemetryWrapperDecorator
             wrapper,
             telemetry.CreateRoute(dispatchedMessageType, "publish", "notification"));
 
-    [RequiresDynamicCode("Creating telemetry wrappers from registration metadata requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from registration metadata is not trimming safe.")]
+    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
+    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
     private static RequestHandlerWrapper CreateGenericDecorator(
         Type decoratorType,
         Type responseType,

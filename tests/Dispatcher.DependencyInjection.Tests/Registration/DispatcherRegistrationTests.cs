@@ -40,8 +40,8 @@ public sealed class DispatcherRegistrationTests
         var services = new ServiceCollection();
         services
             .AddDispatcher()
-            .AddQueryHandler<BaseGreetingQuery, string, BaseGreetingQueryHandler>();
-        services.AddSingleton(new MessageRegistration(typeof(DerivedGreetingQuery)));
+            .AddQueryHandler<BaseGreetingQuery, string, BaseGreetingQueryHandler>()
+            .AddDispatcherMessage<DerivedGreetingQuery>();
         services.AddScoped<TestState>();
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
@@ -227,9 +227,7 @@ public sealed class DispatcherRegistrationTests
         Assert.Single(
             services,
             descriptor => descriptor.ServiceType == typeof(INotificationHandler<SomethingHappened>));
-        Assert.Equal(
-            2,
-            services.Count(descriptor => descriptor.ServiceType == typeof(HandlerRegistration)));
+        Assert.Equal(2, services.Count);
     }
 
     [Fact]
@@ -249,11 +247,10 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
-    public async Task Typed_registration_adds_metadata_for_an_existing_handler_service()
+    public async Task Existing_handler_service_is_discovered_without_metadata()
     {
         var services = new ServiceCollection();
         services.AddScoped<IQueryHandler<GreetingQuery, string>, GreetingQueryHandler>();
-        services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>();
         services.AddDispatcher();
         services.AddScoped<TestState>();
         await using var provider = TestServices.BuildProvider(services);
@@ -263,8 +260,9 @@ public sealed class DispatcherRegistrationTests
             .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", result);
-        Assert.Single(provider.GetServices<HandlerRegistration>());
-        Assert.Empty(provider.GetServices<MessageRegistration>());
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>));
     }
 
     [Fact]
@@ -298,12 +296,7 @@ public sealed class DispatcherRegistrationTests
             descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>));
         Assert.Equal(typeof(FirstOpenNotificationHandler<>), service.ImplementationType);
         Assert.False(service.IsKeyedService);
-        var registration = Assert.IsType<NotificationHandlerRegistration>(Assert.Single(
-            services,
-            descriptor => descriptor.ServiceType == typeof(HandlerRegistration)).ImplementationInstance);
-        Assert.True(registration.IsOpenGeneric);
-        Assert.True(registration.MessageType.IsGenericParameter);
-        Assert.Equal(typeof(FirstOpenNotificationHandler<>), registration.HandlerType);
+        Assert.Single(services);
     }
 
     [Fact]

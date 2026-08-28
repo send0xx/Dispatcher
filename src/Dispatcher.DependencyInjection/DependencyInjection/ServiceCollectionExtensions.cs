@@ -66,7 +66,16 @@ public static class ServiceCollectionExtensions
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
         }
 
-        services.TryAddSingleton(static provider => provider.CreateDispatcherRegistry());
+        services.TryAddSingleton(provider =>
+        {
+            var handlers = HandlerDescriptorReader.Read(services);
+            var routeTargets = AssemblyScanState.FindScanState(services)?.RouteTargets
+                .GetRouteTargets(handlers) ?? [];
+            return DispatcherRegistryFactory.Create(
+                handlers,
+                routeTargets,
+                provider.GetService<DispatcherTelemetry>());
+        });
         services.TryAdd(ServiceDescriptor.Describe(
             typeof(Dispatcher),
             typeof(Dispatcher),
@@ -88,6 +97,54 @@ public static class ServiceCollectionExtensions
             static provider => provider.GetRequiredService<Dispatcher>(),
             options.ServiceLifetime));
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a concrete message type as a reflection-based polymorphic route target.
+    /// </summary>
+    /// <typeparam name="TMessage">The concrete request or notification type to route.</typeparam>
+    /// <param name="services">The service collection to add the route target to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <typeparamref name="TMessage"/> is not a concrete request or notification type.
+    /// </exception>
+    public static IServiceCollection AddDispatcherMessage<TMessage>(this IServiceCollection services) =>
+        services.AddDispatcherMessage(typeof(TMessage));
+
+    /// <summary>
+    /// Registers a concrete message type as a reflection-based polymorphic route target.
+    /// </summary>
+    /// <param name="services">The service collection to add the route target to.</param>
+    /// <param name="messageType">The concrete request or notification type to route.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="messageType"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="messageType"/> is not a concrete request or notification type.
+    /// </exception>
+    public static IServiceCollection AddDispatcherMessage(
+        this IServiceCollection services,
+        Type messageType)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(messageType);
+
+        if (messageType is { IsAbstract: true } or { IsInterface: true } ||
+            messageType.ContainsGenericParameters ||
+            (!typeof(IRequest).IsAssignableFrom(messageType) &&
+             !typeof(INotification).IsAssignableFrom(messageType)))
+        {
+            throw new ArgumentException(
+                "The route target must be a concrete request or notification type.",
+                nameof(messageType));
+        }
+
+        var scanState = AssemblyScanState.FindScanState(services) ??
+            AssemblyScanState.CreateScanState(services);
+        scanState.RouteTargets.Add(messageType);
         return services;
     }
 
