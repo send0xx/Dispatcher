@@ -1,4 +1,5 @@
 using Dispatcher.DependencyInjection.Tests.TestSupport;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Dispatcher.DependencyInjection.Tests.Registry;
@@ -8,27 +9,28 @@ public sealed class DispatcherRegistryTests
     [Fact]
     public void Duplicate_request_handlers_are_rejected_when_registry_is_built()
     {
-        var registrations = new[]
-        {
-            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(GreetingQueryHandler)),
-            new QueryHandlerRegistration(typeof(GreetingQuery), typeof(string), typeof(AlternativeGreetingHandler))
-        };
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<GreetingQuery, string>>(_ => null!);
+        services.AddSingleton<IQueryHandler<GreetingQuery, string>>(_ => null!);
+        services.AddDispatcher();
 
-        Assert.Throws<DuplicateHandlerException>(() => DispatcherRegistry.Create(registrations, telemetry: null));
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Throws<DuplicateHandlerException>(provider.GetRequiredService<DispatcherRegistry>);
     }
 
     [Fact]
     public void Ambiguous_polymorphic_routes_are_rejected_when_registry_is_built()
     {
-        MessageRegistration[] registrations =
-        [
-            new(typeof(AmbiguousQuery)),
-            new QueryHandlerRegistration(typeof(IFirstQuery), typeof(string), typeof(FirstHandler)),
-            new QueryHandlerRegistration(typeof(ISecondQuery), typeof(string), typeof(SecondHandler))
-        ];
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<IFirstQuery, string>>(_ => null!);
+        services.AddSingleton<IQueryHandler<ISecondQuery, string>>(_ => null!);
+        services.AddDispatcherMessage<AmbiguousQuery>();
+        services.AddDispatcher();
 
-        var exception = Assert.Throws<AmbiguousHandlerException>(() =>
-            DispatcherRegistry.Create(registrations, telemetry: null));
+        using var provider = services.BuildServiceProvider();
+        var exception = Assert.Throws<AmbiguousHandlerException>(
+            provider.GetRequiredService<DispatcherRegistry>);
 
         Assert.Equal(typeof(AmbiguousQuery), exception.MessageType);
         Assert.Equal(
@@ -36,12 +38,9 @@ public sealed class DispatcherRegistryTests
             exception.CandidateMessageTypes);
     }
 
-    // Registry creation routes by registration metadata alone, so these stand in for handler types
-    // without implementing a handler interface.
-    private sealed class AlternativeGreetingHandler;
     private interface IFirstQuery : IQuery<string>;
+
     private interface ISecondQuery : IQuery<string>;
+
     private sealed record AmbiguousQuery : IFirstQuery, ISecondQuery;
-    private sealed class FirstHandler;
-    private sealed class SecondHandler;
 }

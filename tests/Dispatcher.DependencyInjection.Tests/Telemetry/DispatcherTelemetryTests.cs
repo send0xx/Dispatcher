@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -214,6 +213,40 @@ public sealed class DispatcherTelemetryTests
             tag.Key == "exception.message" &&
             Equals(tag.Value, "telemetry failure"));
         Assert.Contains(exceptionEvent.Tags, tag => tag.Key == "exception.stacktrace");
+
+        var measurement = Assert.Single(capture.Measurements);
+        Assert.Contains(measurement.Tags, tag =>
+            tag.Key == "error.type" &&
+            Equals(tag.Value, typeof(InvalidOperationException).FullName));
+    }
+
+    [Fact]
+    public async Task Failing_command_with_a_response_sets_error_type_on_the_execute_activity()
+    {
+        var instrumentationName = "Dispatcher.DependencyInjection.Tests." + Guid.NewGuid();
+        using var capture = new TelemetryCapture(instrumentationName, instrumentationName);
+        await using var provider = CreateProvider(options =>
+        {
+            options.Telemetry.EnableMetrics = true;
+            options.Telemetry.EnableTracing = true;
+            options.Telemetry.MeterName = instrumentationName;
+            options.Telemetry.ActivitySourceName = instrumentationName;
+        });
+        await using var scope = provider.CreateAsyncScope();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
+                .ExecuteAsync(new FaultingCommand(), TestContext.Current.CancellationToken).AsTask());
+
+        var activity = Assert.Single(capture.Activities);
+        Assert.Equal("execute FaultingCommand", activity.DisplayName);
+        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+        Assert.Equal(typeof(InvalidOperationException).FullName, activity.GetTagItem("error.type"));
+        var exceptionEvent = Assert.Single(activity.Events);
+        Assert.Equal("exception", exceptionEvent.Name);
+        Assert.Contains(exceptionEvent.Tags, tag =>
+            tag.Key == "exception.message" &&
+            Equals(tag.Value, "telemetry failure"));
 
         var measurement = Assert.Single(capture.Measurements);
         Assert.Contains(measurement.Tags, tag =>

@@ -66,17 +66,12 @@ public static class ServiceCollectionExtensions
             services.TryAddSingleton(_ => new DispatcherTelemetry(telemetryConfiguration));
         }
 
-        // Pending route targets are included so that a handler registered after the last assembly
-        // scan still routes the messages that scan had to leave unroutable. Without them, ordering
-        // registration calls differently would silently change which notifications are delivered.
-        services.TryAddSingleton(static provider =>
+        services.TryAddSingleton(provider =>
         {
-            var handlers = provider.GetServices<HandlerRegistration>();
-
-            return DispatcherRegistry.Create(
-                provider.GetServices<MessageRegistration>()
-                    .Concat(handlers)
-                    .Concat(provider.GetService<AssemblyScanState>()?.PendingRouteTargets(handlers) ?? []),
+            var routeTargets = DispatcherRegistrationState.Find(services)?.MessageTypes ?? [];
+            return DispatcherRegistryFactory.Create(
+                services,
+                routeTargets,
                 provider.GetService<DispatcherTelemetry>());
         });
         services.TryAdd(ServiceDescriptor.Describe(
@@ -100,6 +95,49 @@ public static class ServiceCollectionExtensions
             static provider => provider.GetRequiredService<Dispatcher>(),
             options.ServiceLifetime));
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a concrete message type as a reflection-based polymorphic route target.
+    /// </summary>
+    /// <typeparam name="TMessage">The concrete request or notification type to route.</typeparam>
+    /// <param name="services">The service collection to add the route target to.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <typeparamref name="TMessage"/> is not a concrete request or notification type.
+    /// </exception>
+    public static IServiceCollection AddDispatcherMessage<TMessage>(this IServiceCollection services) =>
+        services.AddDispatcherMessage(typeof(TMessage));
+
+    /// <summary>
+    /// Registers a concrete message type as a reflection-based polymorphic route target.
+    /// </summary>
+    /// <param name="services">The service collection to add the route target to.</param>
+    /// <param name="messageType">The concrete request or notification type to route.</param>
+    /// <returns>The same service collection so that additional calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="services"/> or <paramref name="messageType"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="messageType"/> is not a concrete request or notification type.
+    /// </exception>
+    public static IServiceCollection AddDispatcherMessage(
+        this IServiceCollection services,
+        Type messageType)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(messageType);
+
+        if (!MessageTypeResolver.IsConcreteMessage(messageType))
+        {
+            throw new ArgumentException(
+                "The route target must be a concrete request or notification type.",
+                nameof(messageType));
+        }
+
+        DispatcherRegistrationState.GetOrCreate(services).MessageTypes.Add(messageType);
         return services;
     }
 
@@ -213,7 +251,7 @@ public static class ServiceCollectionExtensions
         var options = new DispatcherOptions();
         configure(options);
 
-        return HandlerAssemblyScanner.Register(services, assemblies, options.ServiceLifetime);
+        return HandlerScanner.Register(services, assemblies, options.ServiceLifetime);
     }
 
     /// <summary>

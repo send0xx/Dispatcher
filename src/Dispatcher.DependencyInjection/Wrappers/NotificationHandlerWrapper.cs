@@ -53,7 +53,8 @@ internal sealed class OpenNotificationHandlerWrapper<TNotification>(Type[] handl
         for (var index = 0; index < handlerTypes.Length; index++)
         {
             var handler = (INotificationHandler<TNotification>?)serviceProvider.GetService(handlerTypes[index]) ??
-                throw new InvalidOperationException($"Service '{handlerTypes[index].FullName}' is not registered.");
+                          throw new InvalidOperationException(
+                              $"Service '{handlerTypes[index].FullName}' is not registered.");
             await handler.HandleAsync((TNotification)notification, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -91,7 +92,8 @@ internal sealed class CompositeNotificationHandlerWrapper<THandledNotification, 
         for (var index = 0; index < handlerTypes.Length; index++)
         {
             var handler = (INotificationHandler<TNotification>?)serviceProvider.GetService(handlerTypes[index]) ??
-                throw new InvalidOperationException($"Service '{handlerTypes[index].FullName}' is not registered.");
+                          throw new InvalidOperationException(
+                              $"Service '{handlerTypes[index].FullName}' is not registered.");
             await handler.HandleAsync((TNotification)notification, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -114,8 +116,7 @@ internal sealed class TelemetryNotificationHandlerWrapper(
         var telemetryScope = route.Start();
         try
         {
-            await inner.HandleAsync(notification, serviceProvider, cancellationToken)
-                .ConfigureAwait(false);
+            await inner.HandleAsync(notification, serviceProvider, cancellationToken).ConfigureAwait(false);
             telemetryScope.Complete();
         }
         catch (Exception exception)

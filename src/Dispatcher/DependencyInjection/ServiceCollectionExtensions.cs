@@ -18,7 +18,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services)
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
@@ -37,15 +38,13 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddQueryHandler<TQuery, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TQuery : IQuery<TResponse>
         where THandler : class, IQueryHandler<TQuery, TResponse> =>
-        AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(
-            services,
-            new QueryHandlerRegistration(typeof(TQuery), typeof(TResponse), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<IQueryHandler<TQuery, TResponse>, THandler>(services, configure);
 
     /// <summary>
     /// Registers a handler for a command that returns a response.
@@ -57,7 +56,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services)
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
@@ -76,15 +76,13 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TCommand : ICommand<TResponse>
         where THandler : class, ICommandHandler<TCommand, TResponse> =>
-        AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(
-            services,
-            new CommandWithResponseHandlerRegistration(typeof(TCommand), typeof(TResponse), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<ICommandHandler<TCommand, TResponse>, THandler>(services, configure);
 
     /// <summary>
     /// Registers a handler for a command that does not return a response.
@@ -95,7 +93,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddCommandHandler<TCommand,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services)
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>
@@ -113,15 +112,13 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddCommandHandler<TCommand,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TCommand : ICommand
         where THandler : class, ICommandHandler<TCommand> =>
-        AddHandler<ICommandHandler<TCommand>, THandler>(
-            services,
-            new CommandHandlerRegistration(typeof(TCommand), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<ICommandHandler<TCommand>, THandler>(services, configure);
 
     /// <summary>
     /// Registers a notification handler.
@@ -132,7 +129,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
@@ -150,15 +148,13 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddNotificationHandler<TNotification,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TNotification : INotification
         where THandler : class, INotificationHandler<TNotification> =>
-        AddHandler<INotificationHandler<TNotification>, THandler>(
-            services,
-            new NotificationHandlerRegistration(typeof(TNotification), typeof(THandler)),
-            GetLifetime(configure));
+        AddHandler<INotificationHandler<TNotification>, THandler>(services, configure);
 
     /// <summary>
     /// Registers an open generic notification handler.
@@ -203,21 +199,14 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(handlerType);
 
-        var messageType = GetOpenNotificationTypeParameter(handlerType);
-        var lifetime = GetLifetime(configure);
-        if (!IsRegistered(services, handlerType, handlerType))
+        ValidateOpenNotificationHandler(handlerType);
+        if (IsRegistered(services, handlerType, handlerType))
         {
-            services.Add(ServiceDescriptor.Describe(handlerType, handlerType, lifetime));
+            return services;
         }
 
-        var registration = new NotificationHandlerRegistration(messageType, handlerType);
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration) &&
-                descriptor.ImplementationInstance is HandlerRegistration existing &&
-                existing == registration))
-        {
-            services.AddSingleton<HandlerRegistration>(registration);
-        }
+        var lifetime = GetLifetime(configure);
+        services.Add(ServiceDescriptor.Describe(handlerType, handlerType, lifetime));
 
         return services;
     }
@@ -232,7 +221,8 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TBehavior>(
         this IServiceCollection services)
         where TRequest : IRequest
         where TBehavior : class, IPipelineBehavior<TRequest, TResponse> =>
@@ -251,7 +241,8 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TBehavior>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TRequest : IRequest
@@ -261,42 +252,39 @@ public static class ServiceCollectionExtensions
 
         // Registering the same behavior twice would run it twice in every pipeline it applies to.
         // The first registration wins, so the outermost-first behavior order is preserved.
-        if (!IsRegistered(services, typeof(IPipelineBehavior<TRequest, TResponse>), typeof(TBehavior)))
+        if (IsRegistered(services, typeof(IPipelineBehavior<TRequest, TResponse>), typeof(TBehavior)))
         {
-            services.Add(ServiceDescriptor.Describe(
-                typeof(IPipelineBehavior<TRequest, TResponse>),
-                typeof(TBehavior),
-                GetLifetime(configure)));
+            return services;
         }
+
+        services.Add(ServiceDescriptor.Describe(
+            typeof(IPipelineBehavior<TRequest, TResponse>),
+            typeof(TBehavior),
+            GetLifetime(configure)));
 
         return services;
     }
 
     private static IServiceCollection AddHandler<TService,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        THandler>(
         IServiceCollection services,
-        HandlerRegistration registration,
-        ServiceLifetime lifetime)
+        Action<DispatcherOptions> configure)
         where TService : class
         where THandler : class, TService
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        if (!IsRegistered(services, typeof(TService), typeof(THandler)))
+        if (IsRegistered(services, typeof(TService), typeof(THandler)))
         {
-            services.Add(ServiceDescriptor.Describe(
-                typeof(TService),
-                typeof(THandler),
-                lifetime));
+            return services;
         }
 
-        if (!services.Any(descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration) &&
-                descriptor.ImplementationInstance is HandlerRegistration existing &&
-                existing == registration))
-        {
-            services.AddSingleton(registration);
-        }
+        var lifetime = GetLifetime(configure);
+        services.Add(ServiceDescriptor.Describe(
+            typeof(TService),
+            typeof(THandler),
+            lifetime));
 
         return services;
     }
@@ -328,18 +316,18 @@ public static class ServiceCollectionExtensions
         return options.ServiceLifetime;
     }
 
-    private static Type GetOpenNotificationTypeParameter(
+    private static void ValidateOpenNotificationHandler(
         [DynamicallyAccessedMembers(
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
         Type handlerType)
     {
         var handlerInterfaces = handlerType.GetInterfaces()
             .Where(@interface => @interface.IsGenericType &&
-                @interface.GetGenericTypeDefinition() is var definition &&
-                (definition == typeof(IQueryHandler<,>) ||
-                 definition == typeof(ICommandHandler<,>) ||
-                 definition == typeof(ICommandHandler<>) ||
-                 definition == typeof(INotificationHandler<>)))
+                                 @interface.GetGenericTypeDefinition() is var definition &&
+                                 (definition == typeof(IQueryHandler<,>) ||
+                                  definition == typeof(ICommandHandler<,>) ||
+                                  definition == typeof(ICommandHandler<>) ||
+                                  definition == typeof(INotificationHandler<>)))
             .ToArray();
         if (!handlerType.IsGenericTypeDefinition ||
             !handlerType.IsClass ||
@@ -356,7 +344,5 @@ public static class ServiceCollectionExtensions
                 "and expose a public constructor.",
                 nameof(handlerType));
         }
-
-        return typeParameter;
     }
 }

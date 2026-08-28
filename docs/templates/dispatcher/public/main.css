@@ -1,0 +1,153 @@
+/* Dispatcher documentation theme.
+   Builds on the docfx "modern" template, which is Bootstrap 5 based.
+   All colors come from Bootstrap CSS variables so light and dark themes
+   are handled by the template's own theme switcher. */
+
+:root {
+  --dispatcher-hero-gradient: linear-gradient(
+    135deg,
+    rgba(13, 110, 253, 0.10) 0%,
+    rgba(13, 110, 253, 0.02) 60%,
+    transparent 100%
+  );
+}
+
+html[data-bs-theme="dark"] {
+  --dispatcher-hero-gradient: linear-gradient(
+    135deg,
+    rgba(90, 160, 255, 0.16) 0%,
+    rgba(90, 160, 255, 0.04) 60%,
+    transparent 100%
+  );
+}
+
+/* ---------- Landing hero ---------- */
+
+.hero {
+  margin: 0 0 3rem;
+  padding: 3rem 2rem 2.5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  background-image: var(--dispatcher-hero-gradient);
+}
+
+.hero h1 {
+  margin-top: 0;
+  border-bottom: none;
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero > p:first-of-type {
+  font-size: 1.25rem;
+  color: var(--bs-body-color);
+}
+
+.hero > p {
+  max-width: 62ch;
+  color: var(--bs-secondary-color);
+}
+
+.hero-actions {
+  margin-top: 1.75rem;
+}
+
+.hero-actions p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: none;
+  margin-bottom: 0;
+}
+
+.hero-actions a {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  border: 1px solid var(--bs-primary);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.hero-actions a:first-child {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+
+.hero-actions a:first-child:hover {
+  filter: brightness(1.1);
+  color: #fff;
+}
+
+.hero-actions a:not(:first-child) {
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+
+.hero-actions a:not(:first-child):hover {
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+/* ---------- Feature cards ---------- */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.feature-card {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  background-color: var(--bs-body-bg);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--bs-primary);
+  transform: translateY(-2px);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.feature-card p {
+  margin-bottom: 0.5rem;
+  font-size: 0.925rem;
+  color: var(--bs-secondary-color);
+}
+
+.feature-card p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Readability tweaks ---------- */
+
+article table {
+  display: table;
+  width: 100%;
+}
+
+article .table > :not(caption) > * > * {
+  padding: 0.5rem 0.75rem;
+}
+
+article h2 {
+  margin-top: 2.5rem;
+}
+
+/* Keep wide tables and diagrams from pushing the page sideways. */
+article .table-responsive,
+article pre {
+  overflow-x: auto;
+}

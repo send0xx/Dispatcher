@@ -49,6 +49,27 @@ internal sealed class RecordCommandHandler(TestState state) : ICommandHandler<Re
     }
 }
 
+internal sealed record TokenCommand : ICommand<CancellationToken>;
+
+internal sealed class TokenCommandHandler : ICommandHandler<TokenCommand, CancellationToken>
+{
+    public ValueTask<CancellationToken> HandleAsync(
+        TokenCommand command,
+        CancellationToken cancellationToken) =>
+        ValueTask.FromResult(cancellationToken);
+}
+
+internal sealed record TokenRecordingCommand : ICommand;
+
+internal sealed class TokenRecordingCommandHandler(TestState state) : ICommandHandler<TokenRecordingCommand>
+{
+    public ValueTask HandleAsync(TokenRecordingCommand command, CancellationToken cancellationToken)
+    {
+        state.ReceivedToken = cancellationToken;
+        return ValueTask.CompletedTask;
+    }
+}
+
 internal sealed record SomethingHappened : INotification;
 
 internal sealed class ANotificationHandler(TestState state) : INotificationHandler<SomethingHappened>
@@ -70,7 +91,9 @@ internal sealed class BNotificationHandler(TestState state) : INotificationHandl
 }
 
 internal sealed record UnhandledNotification : INotification;
+
 internal sealed record MissingCommand : ICommand;
+
 internal sealed record MissingResponseCommand : ICommand<int>;
 
 // Messages that satisfy two dispatch shapes but are handled as one of them, so dispatching them
@@ -110,11 +133,20 @@ internal sealed class FaultingNotificationHandler : INotificationHandler<Faultin
 }
 
 internal sealed record MissingQuery : IQuery<int>;
+
 internal sealed record FaultingQuery : IQuery<int>;
 
 internal sealed class FaultingQueryHandler : IQueryHandler<FaultingQuery, int>
 {
     public ValueTask<int> HandleAsync(FaultingQuery query, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("telemetry failure");
+}
+
+internal sealed record FaultingCommand : ICommand<int>;
+
+internal sealed class FaultingCommandHandler : ICommandHandler<FaultingCommand, int>
+{
+    public ValueTask<int> HandleAsync(FaultingCommand command, CancellationToken cancellationToken) =>
         throw new InvalidOperationException("telemetry failure");
 }
 
@@ -127,10 +159,13 @@ internal sealed class CancellingCommandHandler : ICommandHandler<CancellingComma
 }
 
 internal interface ITransactional;
+
 internal sealed record TransactionalQuery : IQuery<string>, ITransactional;
 
 internal abstract record BaseGreetingQuery(string Name) : IQuery<string>;
+
 internal sealed record DerivedGreetingQuery(string Name) : BaseGreetingQuery(Name);
+
 internal sealed record SpecificGreetingQuery(string Name) : BaseGreetingQuery(Name);
 
 internal sealed class BaseGreetingQueryHandler(TestState state)
@@ -158,7 +193,9 @@ internal sealed class SpecificGreetingQueryHandler(TestState state)
 }
 
 internal interface IVehicleQuery : IQuery<string>;
+
 internal interface ICarQuery : IVehicleQuery;
+
 internal sealed record CarQuery : ICarQuery;
 
 internal sealed class VehicleQueryHandler(TestState state) : IQueryHandler<IVehicleQuery, string>
@@ -180,6 +217,7 @@ internal sealed class CarQueryHandler(TestState state) : IQueryHandler<ICarQuery
 }
 
 internal abstract record BaseSumCommand(int Left, int Right) : ICommand<int>;
+
 internal sealed record DerivedSumCommand(int Left, int Right) : BaseSumCommand(Left, Right);
 
 internal sealed class BaseSumCommandHandler(TestState state)
@@ -195,6 +233,7 @@ internal sealed class BaseSumCommandHandler(TestState state)
 }
 
 internal abstract record BaseRecordCommand(string Value) : ICommand;
+
 internal sealed record DerivedRecordCommand(string Value) : BaseRecordCommand(Value);
 
 internal sealed class BaseRecordCommandHandler(TestState state)
@@ -211,7 +250,9 @@ internal sealed class BaseRecordCommandHandler(TestState state)
 }
 
 internal abstract record DomainEvent : INotification;
+
 internal sealed record UserUpdatedEvent : DomainEvent;
+
 internal sealed record UserCreatedEvent : DomainEvent;
 
 internal sealed class FirstDomainEventHandler(TestState state) : INotificationHandler<DomainEvent>

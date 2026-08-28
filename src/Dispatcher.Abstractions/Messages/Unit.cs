@@ -50,6 +50,38 @@ public readonly struct Unit : IEquatable<Unit>, IComparable<Unit>, IComparable
     /// <returns>Always <see langword="false"/>.</returns>
     public static bool operator !=(Unit left, Unit right) => false;
 
+    /// <summary>
+    /// Determines whether one <see cref="Unit"/> value precedes another.
+    /// </summary>
+    /// <param name="left">The left value.</param>
+    /// <param name="right">The right value.</param>
+    /// <returns>Always <see langword="false"/>, because all values are equal.</returns>
+    public static bool operator <(Unit left, Unit right) => false;
+
+    /// <summary>
+    /// Determines whether one <see cref="Unit"/> value precedes or equals another.
+    /// </summary>
+    /// <param name="left">The left value.</param>
+    /// <param name="right">The right value.</param>
+    /// <returns>Always <see langword="true"/>, because all values are equal.</returns>
+    public static bool operator <=(Unit left, Unit right) => true;
+
+    /// <summary>
+    /// Determines whether one <see cref="Unit"/> value follows another.
+    /// </summary>
+    /// <param name="left">The left value.</param>
+    /// <param name="right">The right value.</param>
+    /// <returns>Always <see langword="false"/>, because all values are equal.</returns>
+    public static bool operator >(Unit left, Unit right) => false;
+
+    /// <summary>
+    /// Determines whether one <see cref="Unit"/> value follows or equals another.
+    /// </summary>
+    /// <param name="left">The left value.</param>
+    /// <param name="right">The right value.</param>
+    /// <returns>Always <see langword="true"/>, because all values are equal.</returns>
+    public static bool operator >=(Unit left, Unit right) => true;
+
     /// <inheritdoc />
     public override string ToString() => "()";
 }

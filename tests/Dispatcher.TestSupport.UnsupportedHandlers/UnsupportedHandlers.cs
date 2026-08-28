@@ -4,6 +4,8 @@ namespace Dispatcher.TestSupport.UnsupportedHandlers;
 /// Handlers in this assembly are deliberately unregistrable. They live in their own assembly so
 /// that scanning them cannot affect the tests that scan the supported handler assemblies.
 /// </summary>
+public sealed class UnsupportedHandlerAssemblyMarker;
+
 public sealed record UnsupportedPing : INotification;
 
 public sealed record UnsupportedLookup(int Id) : IQuery<string>;

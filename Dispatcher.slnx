@@ -3,7 +3,26 @@
     <Project Path="benchmarks/Dispatcher.Benchmarks/Dispatcher.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/RELEASING.md" />
+    <File Path="docs/docfx.json" />
+    <File Path="docs/index.md" />
+    <File Path="docs/reference.md" />
+    <File Path="docs/toc.yml" />
+  </Folder>
+  <Folder Name="/docs/api/">
+    <File Path="docs/api/index.md" />
+  </Folder>
+  <Folder Name="/docs/guide/">
+    <File Path="docs/guide/getting-started.md" />
+    <File Path="docs/guide/messages.md" />
+    <File Path="docs/guide/opentelemetry.md" />
+    <File Path="docs/guide/pipeline-behaviors.md" />
+    <File Path="docs/guide/registration.md" />
+    <File Path="docs/guide/routing.md" />
+    <File Path="docs/guide/source-generation.md" />
+    <File Path="docs/guide/toc.yml" />
+  </Folder>
+  <Folder Name="/docs/templates/">
+    <File Path="docs/templates/dispatcher/public/main.css" />
   </Folder>
   <Folder Name="/samples/NativeAot/">
     <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
@@ -35,6 +54,7 @@
     <Project Path="tests/Dispatcher.TestSupport.ConflictingHandlers/Dispatcher.TestSupport.ConflictingHandlers.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
+    <Project Path="tests/Dispatcher.TestSupport.TypeLoadFailureDependency/Dispatcher.TestSupport.TypeLoadFailureDependency.csproj" />
     <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
   </Folder>
   <Folder Name="/github/">
@@ -45,8 +65,10 @@
     <File Path=".github/SECURITY.md" />
     <File Path=".github/dependabot.yml" />
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/docs.yml" />
   </Folder>
   <Folder Name="/_/">
+    <File Path=".config/dotnet-tools.json" />
     <File Path=".editorconfig" />
     <File Path=".gitignore" />
     <File Path="AGENTS.md" />
@@ -57,5 +79,6 @@
     <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="RELEASING.md" />
   </Folder>
 </Solution>

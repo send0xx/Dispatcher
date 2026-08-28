@@ -1,5 +1,3 @@
-using Dispatcher;
-using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Dispatcher.TestSupport.AdditionalHandlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +24,8 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
+        Assert.Equal("Hello, Ada",
+            await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
         Assert.Equal(5, await dispatcher.ExecuteAsync(new SumCommand(2, 3), TestContext.Current.CancellationToken));
         await dispatcher.ExecuteAsync(new RecordCommand("typed"), TestContext.Current.CancellationToken);
         await dispatcher.PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
@@ -42,8 +41,8 @@ public sealed class DispatcherRegistrationTests
         var services = new ServiceCollection();
         services
             .AddDispatcher()
-            .AddQueryHandler<BaseGreetingQuery, string, BaseGreetingQueryHandler>();
-        services.AddSingleton(new MessageRegistration(typeof(DerivedGreetingQuery)));
+            .AddQueryHandler<BaseGreetingQuery, string, BaseGreetingQueryHandler>()
+            .AddDispatcherMessage<DerivedGreetingQuery>();
         services.AddScoped<TestState>();
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
@@ -89,14 +88,15 @@ public sealed class DispatcherRegistrationTests
         await using var scope = provider.CreateAsyncScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        Assert.Equal("Hello, Ada", await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
+        Assert.Equal("Hello, Ada",
+            await dispatcher.QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken));
         await dispatcher.PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
 
         Assert.Equal(["handler", "notification-a"], scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
     [Fact]
-    public async Task Typed_registration_and_assembly_scanning_may_overlap_for_one_handler()
+    public async Task Query_handler_registered_typed_before_a_scan_is_registered_once()
     {
         var services = new ServiceCollection();
         services
@@ -110,11 +110,36 @@ public sealed class DispatcherRegistrationTests
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
             .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
+        // A second descriptor would fail the registry with DuplicateHandlerException rather than
+        // run the handler twice, so the route resolving at all is half the assertion.
         Assert.Equal("Hello, Ada", result);
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>));
     }
 
     [Fact]
-    public async Task Overlapping_notification_registration_invokes_each_handler_once()
+    public async Task Notification_handler_registered_typed_after_a_scan_runs_once()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers<TestAssemblyMarker>();
+        services
+            .AddNotificationHandler<SomethingHappened, ANotificationHandler>()
+            .AddDispatcher();
+        services.AddScoped<TestState>();
+        await using var provider = TestServices.BuildProvider(services);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new SomethingHappened(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            ["notification-a", "notification-b"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Notification_handler_registered_typed_before_a_scan_runs_once()
     {
         var services = new ServiceCollection();
         services
@@ -139,14 +164,7 @@ public sealed class DispatcherRegistrationTests
 
         services.AddDispatcher();
 
-        Assert.All(
-            services.Where(descriptor =>
-                descriptor.ServiceType == typeof(Dispatcher) ||
-                descriptor.ServiceType == typeof(IDispatcher) ||
-                descriptor.ServiceType == typeof(IQueryDispatcher) ||
-                descriptor.ServiceType == typeof(ICommandDispatcher) ||
-                descriptor.ServiceType == typeof(INotificationDispatcher)),
-            descriptor => Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime));
+        AssertDispatcherLifetime(services, ServiceLifetime.Scoped);
     }
 
     [Fact]
@@ -161,14 +179,7 @@ public sealed class DispatcherRegistrationTests
         var second = provider.GetRequiredService<IDispatcher>();
 
         Assert.NotSame(first, second);
-        Assert.All(
-            services.Where(descriptor =>
-                descriptor.ServiceType == typeof(Dispatcher) ||
-                descriptor.ServiceType == typeof(IDispatcher) ||
-                descriptor.ServiceType == typeof(IQueryDispatcher) ||
-                descriptor.ServiceType == typeof(ICommandDispatcher) ||
-                descriptor.ServiceType == typeof(INotificationDispatcher)),
-            descriptor => Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime));
+        AssertDispatcherLifetime(services, ServiceLifetime.Transient);
     }
 
     [Fact]
@@ -192,14 +203,14 @@ public sealed class DispatcherRegistrationTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             Assert.Single(
-                services,
-                descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
+                    services,
+                    descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
                 .Lifetime);
         Assert.Equal(
             ServiceLifetime.Singleton,
             Assert.Single(
-                services,
-                descriptor => descriptor.ServiceType == typeof(ICommandHandler<SumCommand, int>))
+                    services,
+                    descriptor => descriptor.ServiceType == typeof(ICommandHandler<SumCommand, int>))
                 .Lifetime);
     }
 
@@ -229,9 +240,7 @@ public sealed class DispatcherRegistrationTests
         Assert.Single(
             services,
             descriptor => descriptor.ServiceType == typeof(INotificationHandler<SomethingHappened>));
-        Assert.Equal(
-            2,
-            services.Count(descriptor => descriptor.ServiceType == typeof(HandlerRegistration)));
+        Assert.Equal(2, services.Count);
     }
 
     [Fact]
@@ -245,17 +254,16 @@ public sealed class DispatcherRegistrationTests
         Assert.Equal(
             ServiceLifetime.Singleton,
             Assert.Single(
-                services,
-                descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
+                    services,
+                    descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>))
                 .Lifetime);
     }
 
     [Fact]
-    public async Task Typed_registration_adds_metadata_for_an_existing_handler_service()
+    public async Task Existing_handler_service_is_discovered_without_metadata()
     {
         var services = new ServiceCollection();
         services.AddScoped<IQueryHandler<GreetingQuery, string>, GreetingQueryHandler>();
-        services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>();
         services.AddDispatcher();
         services.AddScoped<TestState>();
         await using var provider = TestServices.BuildProvider(services);
@@ -265,8 +273,9 @@ public sealed class DispatcherRegistrationTests
             .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Hello, Ada", result);
-        Assert.Single(provider.GetServices<HandlerRegistration>());
-        Assert.Empty(provider.GetServices<MessageRegistration>());
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>));
     }
 
     [Fact]
@@ -300,12 +309,7 @@ public sealed class DispatcherRegistrationTests
             descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>));
         Assert.Equal(typeof(FirstOpenNotificationHandler<>), service.ImplementationType);
         Assert.False(service.IsKeyedService);
-        var registration = Assert.IsType<NotificationHandlerRegistration>(Assert.Single(
-            services,
-            descriptor => descriptor.ServiceType == typeof(HandlerRegistration)).ImplementationInstance);
-        Assert.True(registration.IsOpenGeneric);
-        Assert.True(registration.MessageType.IsGenericParameter);
-        Assert.Equal(typeof(FirstOpenNotificationHandler<>), registration.HandlerType);
+        Assert.Single(services);
     }
 
     [Fact]
@@ -374,4 +378,16 @@ public sealed class DispatcherRegistrationTests
         Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers(assembly: null!));
         Assert.Throws<ArgumentNullException>(() => services.AddNotificationHandler(handlerType: null!));
     }
+
+    private static void AssertDispatcherLifetime(
+        IServiceCollection services,
+        ServiceLifetime lifetime) =>
+        Assert.All(
+            services.Where(descriptor =>
+                descriptor.ServiceType == typeof(Dispatcher) ||
+                descriptor.ServiceType == typeof(IDispatcher) ||
+                descriptor.ServiceType == typeof(IQueryDispatcher) ||
+                descriptor.ServiceType == typeof(ICommandDispatcher) ||
+                descriptor.ServiceType == typeof(INotificationDispatcher)),
+            descriptor => Assert.Equal(lifetime, descriptor.Lifetime));
 }

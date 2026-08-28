@@ -12,9 +12,21 @@ trim_trailing_whitespace = true
 [*.{xml,props,csproj}]
 indent_size = 2
 
-# C# files
+# C# files analyzer suppression
 [*.cs]
 dotnet_diagnostic.S3267.severity = suggestion # Loops should be simplified using the "Where" LINQ method
+
+# Handlers are always invoked through their handler interface by the dispatcher, so repeating the
+# interface's default cancellation token on every implementation would be noise.
+dotnet_diagnostic.S1006.severity = none
+
+# Empty types are a load-bearing pattern here: AddDispatcherHandlers<TMarker>() resolves an assembly
+# from a marker type, and the wrapper base classes are extension points with no shared members.
+dotnet_diagnostic.S2094.severity = none
+
+# A pipeline behavior names its parameter after the message kind its constraint narrows it to, which
+# reads better than the interface's generic "request".
+dotnet_diagnostic.S927.severity = none
 
 #### Core EditorConfig Options ####
 
@@ -373,7 +385,31 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
+# Specific files analyzer suppression
+
 # Dispatcher libraries intentionally use a flat public namespace.
 [src/{Dispatcher.Abstractions,Dispatcher,Dispatcher.DependencyInjection,Dispatcher.SourceGeneration.Analyzers}/**/*.cs]
 dotnet_diagnostic.IDE0130.severity = none
 resharper_check_namespace_highlighting = none
+
+# The response type parameter is a marker the dispatcher and the source generator read to resolve a
+# handler; it is deliberately absent from the interface members.
+[src/Dispatcher.Abstractions/Messages/{ICommand,IQuery}.cs]
+dotnet_diagnostic.S2326.severity = none
+
+# The wrapper base types are deliberately abstract classes rather than interfaces: dispatch goes
+# through them on the hot path, where a class call is cheaper than an interface call.
+[src/Dispatcher.DependencyInjection/Wrappers/{RequestHandlerWrapper,NotificationHandlerWrapper}.cs]
+dotnet_diagnostic.S1694.severity = none
+
+# Every handler in this assembly is deliberately malformed - unused type parameters, non-public
+# constructors - so that the tests can assert the runtime reports it instead of skipping it.
+[tests/Dispatcher.TestSupport.UnsupportedHandlers/UnsupportedHandlers.cs]
+dotnet_diagnostic.S2326.severity = none
+dotnet_diagnostic.S3453.severity = none
+
+# Top-level statements put the sample's contracts and its test-visible Program class in the global
+# namespace; that is the shape ASP.NET Core minimal APIs expect.
+[samples/{NativeAot/Dispatcher.NativeAotHostSample,DependencyInjection/Dispatcher.SampleApi}/Program.cs]
+dotnet_diagnostic.S1118.severity = none
+dotnet_diagnostic.S3903.severity = none

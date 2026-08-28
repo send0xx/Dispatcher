@@ -9,3 +9,8 @@ BenchmarkDotNet.Artifacts/
 *.DotSettings.user
 .DS_Store
 .mcp.json
+
+# docfx
+docs/_site/
+docs/api/*.yml
+docs/api/.manifest

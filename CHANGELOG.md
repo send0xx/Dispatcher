@@ -2,6 +2,51 @@
 
 This file records user-facing changes to Dispatcher releases.
 
+## 2.0.0
+
+A breaking release that removes public dispatch metadata and reworks reflection assembly scanning.
+
+### Added
+
+- `AddDispatcherMessage<TMessage>()` and `AddDispatcherMessage(Type)` register a concrete request or
+  notification type as an explicit polymorphic route target for the reflection implementation.
+
+### Changed
+
+- **Breaking:** `HandlerNotFoundException` moved from `Send0xx.Dispatcher.Abstractions` to
+  `Send0xx.Dispatcher`. Its namespace and observable dispatch behavior are unchanged.
+- **Breaking:** `HandlerRegistration`, its query, command, and notification subclasses, and
+  `MessageRegistration` were removed. Handler registration methods now add only executable handler
+  service descriptors to Microsoft DI.
+- **Breaking:** Use `AddDispatcherMessage<TMessage>()` or `AddDispatcherMessage(Type)` instead of
+  registering `MessageRegistration` when the reflection implementation needs an explicit polymorphic
+  route target.
+- **Breaking:** `DispatcherRegistry.Create` and `CreateDispatcherRegistry` were removed, and building a
+  registry by hand is no longer supported. `AddDispatcher` registers the registry as a singleton that
+  includes the route targets discovered by handler scanning; resolve it with
+  `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
+- Reflection scanning retains discovered route targets in one internal catalog instead of adding a
+  `MessageRegistration` service descriptor for every routable concrete message.
+- The reflection registry derives handler information from the final handler service descriptors when
+  its singleton is created. The source-generated implementation also uses ordinary service descriptors
+  to select registered open generic notification handlers.
+- Because the reflection registry reads handler service descriptors, a handler registered directly
+  with Microsoft dependency injection now routes. Previously only the typed registration methods and
+  assembly scanning produced a route, so dispatching a message whose handler was added through
+  `IServiceCollection` alone threw `HandlerNotFoundException`. Registering through the Dispatcher
+  methods remains the supported path, because they also validate the handler shape.
+- A query or command with more than one registered handler now throws `DuplicateHandlerException`
+  when the registry singleton is created, including when one of the registrations is a factory
+  delegate. Previously a factory registration carried no metadata, so it silently replaced the
+  handler that the typed registration method had routed.
+- `AssemblyScanException.LoaderExceptions` returns the same collection instance on every call. It
+  previously allocated a new array on each property read.
+
+### Fixed
+
+- Assembly scanning now validates handler and route-target assemblies before changing the service
+  collection, so a type-load failure cannot leave partially registered handlers or stale scan state.
+
 ## 1.0.0
 
 The first stable Dispatcher release.

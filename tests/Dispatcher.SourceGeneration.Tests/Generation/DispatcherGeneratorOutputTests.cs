@@ -267,7 +267,8 @@ public sealed class DispatcherGeneratorOutputTests
         Assert.Contains("AddNotificationHandler(services, typeof(global::AuditHandler<>)", registration, StringComparison.Ordinal);
         Assert.Contains("IsOpenNotificationHandler_", registration, StringComparison.Ordinal);
         Assert.Contains("InvokeOpenNotificationHandler_", registration, StringComparison.Ordinal);
-        Assert.DoesNotContain("Keyed", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("AddKeyed", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetKeyed", registration, StringComparison.Ordinal);
 
         var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();
@@ -492,12 +493,12 @@ public sealed class DispatcherGeneratorOutputTests
 
         Assert.Empty(result.Diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
                 StringComparison.Ordinal) &&
             tree.ToString().Contains("GenerateDispatcherHandlersAttribute", StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\n[global::System.AttributeUsage",
                 StringComparison.Ordinal) &&
             tree.ToString().Contains("GenerateDispatcherAttribute", StringComparison.Ordinal));
@@ -516,7 +517,7 @@ public sealed class DispatcherGeneratorOutputTests
                 "public static class GeneratedHandlerServiceCollectionExtensions_Company_class",
                 StringComparison.Ordinal));
         Assert.Contains(result.GeneratedTrees, tree =>
-            tree.ToString().Contains(
+            tree.ToString().ReplaceLineEndings("\n").Contains(
                 "namespace Dispatcher.SourceGeneration;\n\ninternal sealed class Dispatcher",
                 StringComparison.Ordinal));
         Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)

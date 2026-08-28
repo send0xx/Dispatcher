@@ -103,13 +103,18 @@ internal static class HandlerRegistrationEmitter
         var implementation = handler.ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
         source.AppendLine();
         source.AppendLine("    /// <summary>");
-        source.AppendLine("    /// Identifies registration metadata for a generated open notification handler.");
+        source.AppendLine("    /// Identifies the service descriptor for a generated open notification handler.");
         source.AppendLine("    /// </summary>");
-        source.AppendLine("    /// <param name=\"registration\">The notification handler registration to inspect.</param>");
-        source.AppendLine("    /// <returns><see langword=\"true\"/> when the registration describes this handler.</returns>");
+        source.AppendLine("    /// <param name=\"descriptor\">The service descriptor to inspect.</param>");
+        source.AppendLine("    /// <returns><see langword=\"true\"/> when the descriptor registers this handler.</returns>");
         source.Append("    public static bool IsOpenNotificationHandler_").Append(handler.MethodSuffix)
-            .AppendLine("(global::Dispatcher.NotificationHandlerRegistration registration) =>");
-        source.Append("        registration.HandlerType == typeof(")
+            .AppendLine("(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor descriptor) =>");
+        source.AppendLine("        !descriptor.IsKeyedService &&");
+        source.Append("        descriptor.ServiceType == typeof(")
+            .Append(handler.ImplementationType.ConstructUnboundGenericType()
+                .ToDisplayString(SymbolDisplayFormats.FullyQualified))
+            .AppendLine(") &&");
+        source.Append("        (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) == typeof(")
             .Append(handler.ImplementationType.ConstructUnboundGenericType()
                 .ToDisplayString(SymbolDisplayFormats.FullyQualified))
             .AppendLine(");");

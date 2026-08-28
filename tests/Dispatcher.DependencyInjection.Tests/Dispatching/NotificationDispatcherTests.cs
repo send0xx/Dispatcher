@@ -1,4 +1,3 @@
-using Dispatcher.DependencyInjection;
 using Dispatcher.DependencyInjection.Tests.TestSupport;
 using Dispatcher.TestSupport.AdditionalHandlers;
 using Dispatcher.TestSupport.Contracts;
@@ -31,6 +30,8 @@ public sealed class NotificationDispatcherTests
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
             .PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
+
+        Assert.Empty(scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
     [Fact]

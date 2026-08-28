@@ -14,9 +14,11 @@ namespace Dispatcher.Benchmarks;
 /// <remarks>
 /// <see cref="ScanUnroutableModules"/> covers modules whose messages no handler routes, so they stay
 /// under consideration for every later scan. <see cref="ScanRoutableModules"/> covers modules whose
-/// messages all route to a handled base type, so the service collection grows with every scan.
-/// <see cref="BuildRegistryForUnroutableModules"/> adds the registry creation that follows, which is
-/// where the messages scanning left pending are reconsidered.
+/// messages all route to a handled base type and enter the scanned route-target catalog.
+/// <see cref="BuildRegistryForUnroutableModules"/> measures the complete startup path when pending
+/// targets remain unchanged at registry creation.
+/// <see cref="BuildRegistryWithUnmatchedOpenHandler"/> measures registry creation when an open
+/// notification handler cannot be closed over any discovered notification.
 /// </remarks>
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev")]
@@ -46,14 +48,12 @@ public class AssemblyScanningBenchmarks
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
-        services.AddSingleton<HandlerRegistration>(
-            new NotificationHandlerRegistration(typeof(ModuleEvent), typeof(ModuleEventHandler)));
+        services.AddSingleton<INotificationHandler<ModuleEvent>>(_ => null!);
         return ScanAll(services);
     }
 
     /// <summary>
-    /// Measures the whole startup path for the unroutable case: scanning, and then the registry
-    /// creation that reconsiders every message scanning left pending.
+    /// Measures the whole startup path for the unroutable case, including registry creation.
     /// </summary>
     [Benchmark]
     public int BuildRegistryForUnroutableModules()
@@ -67,7 +67,24 @@ public class AssemblyScanningBenchmarks
         return services.Count;
     }
 
-    private int ScanAll(IServiceCollection services)
+    /// <summary>
+    /// Measures registry creation when every attempt to close an open notification handler fails
+    /// its generic constraints.
+    /// </summary>
+    [Benchmark]
+    public int BuildRegistryWithUnmatchedOpenHandler()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
+        ScanAll(services);
+        services.AddNotificationHandler(typeof(UnmatchedOpenNotificationHandler<>));
+        services.AddDispatcher();
+        using var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<DispatcherRegistry>();
+        return services.Count;
+    }
+
+    private int ScanAll(ServiceCollection services)
     {
         foreach (var module in _modules)
         {
@@ -94,16 +111,4 @@ public class AssemblyScanningBenchmarks
 
         return assembly;
     }
-
-    /// <summary>
-    /// A handled base notification for the emitted module messages. It is abstract, so scanning the
-    /// benchmark assembly itself never treats it as a concrete route target.
-    /// </summary>
-    public abstract class ModuleEvent : INotification;
-
-    /// <summary>
-    /// Stands in for the handler of <see cref="ModuleEvent"/>. Registration metadata is all the
-    /// scanner reads, so this type implements no handler interface and is never activated.
-    /// </summary>
-    private sealed class ModuleEventHandler;
 }

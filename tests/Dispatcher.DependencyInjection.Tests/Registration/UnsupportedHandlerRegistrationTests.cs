@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using Dispatcher.DependencyInjection;
+using Dispatcher.TestSupport.Contracts;
 using Dispatcher.TestSupport.Handlers;
 using Dispatcher.TestSupport.UnsupportedHandlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +16,7 @@ public sealed class UnsupportedHandlerRegistrationTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
         Assert.Equal(
             [
@@ -34,7 +34,7 @@ public sealed class UnsupportedHandlerRegistrationTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
         Assert.Contains(
             "public constructor",
@@ -54,12 +54,33 @@ public sealed class UnsupportedHandlerRegistrationTests
     public void A_failed_scan_leaves_the_service_collection_untouched()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(new object());
+        var before = services.ToArray();
 
         Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(HandlerRegistration));
-        Assert.DoesNotContain(services, descriptor => descriptor.ServiceType == typeof(MessageRegistration));
+        Assert.Equal(before, services);
+    }
+
+    [Fact]
+    public void A_null_assembly_leaves_a_multi_assembly_scan_untouched()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(new object());
+        var before = services.ToArray();
+
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            // The array and the argument name pick the assemblies overload; passing the elements
+            // directly is ambiguous with the (assembly, configure) overload.
+#pragma warning disable S3878
+            services.AddDispatcherHandlers(
+                assemblies: [typeof(HandlerAssemblyMarker).Assembly, null!]);
+#pragma warning restore S3878
+        });
+
+        Assert.Equal(before, services);
     }
 
     [Fact]
@@ -79,8 +100,33 @@ public sealed class UnsupportedHandlerRegistrationTests
 
             Assert.Same(assembly, exception.Assembly);
             Assert.NotEmpty(exception.LoaderExceptions);
-            Assert.DoesNotContain(services, descriptor =>
-                descriptor.ServiceType == typeof(HandlerRegistration));
+            Assert.Same(exception.LoaderExceptions, exception.LoaderExceptions);
+            Assert.Empty(services);
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    [Fact]
+    public void Scanning_is_atomic_when_a_route_target_assembly_cannot_load_all_types()
+    {
+        var context = new RouteTargetLoadContext(
+            typeof(SharedBaseQuery).Assembly.Location,
+            "Dispatcher.TestSupport.TypeLoadFailureDependency");
+        try
+        {
+            var assembly = context.LoadFromAssemblyPath(typeof(HandlerAssemblyMarker).Assembly.Location);
+            var services = new ServiceCollection();
+            services.AddSingleton(new object());
+            var before = services.ToArray();
+
+            var exception = Assert.Throws<AssemblyScanException>(() =>
+                services.AddDispatcherHandlers(assembly));
+
+            Assert.Equal(typeof(SharedBaseQuery).Assembly.GetName().Name, exception.Assembly.GetName().Name);
+            Assert.Equal(before, services);
         }
         finally
         {
@@ -99,5 +145,21 @@ public sealed class UnsupportedHandlerRegistrationTests
             assemblyName.Name == blockedAssemblyName
                 ? throw new FileNotFoundException($"'{assemblyName.Name}' is blocked by this test.")
                 : null;
+    }
+
+    private sealed class RouteTargetLoadContext(string contractsAssemblyPath, string blockedAssemblyName)
+        : AssemblyLoadContext(isCollectible: true)
+    {
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            if (assemblyName.Name == blockedAssemblyName)
+            {
+                throw new FileNotFoundException($"'{assemblyName.Name}' is blocked by this test.");
+            }
+
+            return assemblyName.Name == "Dispatcher.TestSupport.Contracts"
+                ? LoadFromAssemblyPath(contractsAssemblyPath)
+                : null;
+        }
     }
 }

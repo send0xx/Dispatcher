@@ -13,7 +13,7 @@ public interface ICommandDispatcher
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>A value task whose result contains the response returned by the command handler.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="command"/> is <see langword="null"/>.</exception>
-    /// <exception cref="HandlerNotFoundException">
+    /// <exception cref="T:Dispatcher.HandlerNotFoundException">
     /// No handler is registered for the concrete type of <paramref name="command"/>.
     /// </exception>
     ValueTask<TResponse> ExecuteAsync<TResponse>(
@@ -27,7 +27,7 @@ public interface ICommandDispatcher
     /// <param name="cancellationToken">The cancellation token for the operation.</param>
     /// <returns>A value task that represents the asynchronous command execution.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="command"/> is <see langword="null"/>.</exception>
-    /// <exception cref="HandlerNotFoundException">
+    /// <exception cref="T:Dispatcher.HandlerNotFoundException">
     /// No handler is registered for the concrete type of <paramref name="command"/>.
     /// </exception>
     ValueTask ExecuteAsync(

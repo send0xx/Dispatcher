@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using Dispatcher;
 using Dispatcher.DependencyInjection;
 using Dispatcher.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;

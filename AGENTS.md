@@ -11,7 +11,7 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
 ## Solution structure
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
-- `src/Dispatcher`: shared handler-registration metadata, typed Microsoft DI registration extensions, and Dispatcher and telemetry options.
+- `src/Dispatcher`: typed Microsoft DI registration extensions and Dispatcher and telemetry options.
 - `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime, registration, and handler scanning.
 - `src/Dispatcher.SourceGeneration`: source-generation package facade and its dependency on shared Dispatcher runtime APIs.
 - `src/Dispatcher.SourceGeneration.Analyzers`: source generator for the dispatcher implementation and handler registration.
@@ -28,7 +28,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
   compiles and runs there.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
-- `docs`: repository documentation, including maintenance and release guides.
+- `docs`: the DocFX documentation site published to <https://send0xx.github.io/Dispatcher/>. `docs/index.md`, `docs/guide`, and `docs/reference.md` are hand-written; `docs/api` holds only a hand-written `index.md`, and its API pages are generated at build time.
+- `RELEASING.md`: CI, documentation, and NuGet publishing instructions for maintainers.
 - `CHANGELOG.md`: user-facing release history; update it when a release changes observable behavior or package consumption.
 
 Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not automatically determine a type's namespace.
@@ -44,7 +45,7 @@ Choose namespaces deliberately based on each type's responsibility and public AP
 - Keep specialized query and command handler interfaces. Do not introduce a shared public `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.
 - Use one `IPipelineBehavior<TRequest,TResponse>` contract for queries and both command shapes.
 - `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as `next(cancellationToken)`.
-- Keep `MessageType` naming in shared handler registration and exception types because registrations also describe notifications.
+- Keep `MessageType` naming in exception types because dispatch failures can also describe notifications.
 - Public abstractions are organized into the current folders. Do not consolidate them into one file.
 - `IQuery<TResponse>` and `ICommand<TResponse>` are invariant. Do not reintroduce `out`. Requests route by
   concrete type to one handler declaring one response type, so an upcast such as `IQuery<object>` can never
@@ -86,8 +87,9 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
 - Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
 - `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
-- Public handler registrations in `src/Dispatcher` are metadata only. They must not reference reflection-based wrapper construction.
-- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from registration metadata when the singleton registry is created.
+- Typed handler registrations in `src/Dispatcher` add only executable Microsoft DI service descriptors.
+- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from the final handler service descriptors when the singleton registry is created.
+- The registry factory registered by `AddDispatcher` closes over the `IServiceCollection` on purpose, so the delegate cannot be `static`. Reading the descriptors when the registry singleton is created, rather than when `AddDispatcher` runs, is what makes registration order irrelevant. The cost is that the closure keeps every `ServiceDescriptor` alive for the provider's lifetime. Generated registration code closes over the collection for the same reason. Accept the retention; do not trade it back for order-dependent registration.
 - The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
 - Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
@@ -116,13 +118,14 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Use `FrozenDictionary` for request and notification wrapper lookup.
 - Queries and commands require exactly one handler for the selected message type.
 - Duplicate query or command handlers for the same handled message type fail when the singleton registry is created.
+- The registry treats any non-keyed descriptor whose service type is a handler interface as a handler, so registering one directly with Microsoft DI routes exactly like a typed registration method does. The typed methods and assembly scanning stay the documented path because they also validate the handler shape, but the registry must not start rejecting descriptors it did not add itself: reading the final descriptors is what keeps registration order irrelevant.
 - Notifications allow zero or more handlers and execute sequentially in registration order.
 - Dispatch lookup uses exact concrete message types and startup-precomputed polymorphic routes. An exact handler wins;
   otherwise, select the most-specific compatible handled base class or interface. Do not broadcast notifications across
   multiple levels of the type hierarchy.
 - Route discovery includes handler assemblies and assemblies declaring handled message types. Generated dispatchers also
   include concrete messages declared by the host. Do not scan every referenced assembly implicitly.
-- Reflection, including closed wrapper construction from registration metadata, is limited to startup. Dispatch must not use reflection.
+- Reflection, including closed wrapper construction from handler service descriptors, is limited to startup. Dispatch must not use reflection.
 
 ## Documentation style
 
@@ -139,6 +142,26 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Do not use a single-line `<summary>...</summary>` block.
 - Do not leave an empty line at the end of a file.
 - Keep explanations concise and describe observable behavior, lifetimes, parameters, returns, and relevant exceptions.
+
+### User-facing documentation
+
+User-facing prose lives in the DocFX site under `docs/`, not in `README.md`.
+
+- `README.md` is a short entry point: badges, features, install, a quick start, and links to the site.
+  It is also the NuGet package readme (`PackageReadmeFile` in `Directory.Build.props`), so **every link
+  in it must be an absolute URL**. NuGet does not resolve relative links.
+- Keep the site small. It has seven guide pages and one reference page; prefer adding a section to an
+  existing page over creating a new one. New conceptual content belongs in `docs/guide` and must be
+  added to `docs/guide/toc.yml`, or it will not appear in the navigation. Lookup material belongs in
+  `docs/reference.md`.
+- Do not write per-page introductions, "read on" footers, or restate a neighbouring page. The site is
+  deliberately terse; a table or a code block usually replaces a paragraph.
+- Do not hand-write API documentation. The `docs/api` pages are generated from XML documentation
+  comments; only `docs/api/index.md` is authored by hand.
+- Cross-link between pages with relative Markdown links. The site is built with `--warningsAsErrors`,
+  so a broken link fails the build.
+- Behavior documented in the site must match the source. When a change alters observable behavior,
+  update the affected guide page in the same change, and `CHANGELOG.md` when it affects a release.
 
 ## Performance work
 
@@ -187,6 +210,15 @@ dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.cs
 dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj -c Release -o artifacts/packages
 ```
 
+For documentation changes, build the site with warnings treated as errors, exactly as CI does:
+
+```bash
+dotnet tool restore
+dotnet docfx docs/docfx.json --warningsAsErrors
+```
+
+Add `--serve` to preview the result on <http://localhost:8080>.
+
 The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, and registration idempotence.
 
 ## AOT and source generation
@@ -207,5 +239,6 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - Do not add empty lines at the end of files.
 - Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
+- Do not commit generated documentation: `docs/_site/` and the generated API metadata under `docs/api/` are ignored.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.
 - Use `apply_patch` for intentional source edits and keep changes scoped to the requested work.
