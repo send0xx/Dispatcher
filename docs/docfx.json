@@ -1,0 +1,80 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../src",
+          "files": [
+            "Dispatcher.Abstractions/Dispatcher.Abstractions.csproj",
+            "Dispatcher/Dispatcher.csproj",
+            "Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj"
+          ]
+        }
+      ],
+      "dest": "api",
+      "properties": {
+        "TargetFramework": "net10.0"
+      },
+      "memberLayout": "samePage",
+      "namespaceLayout": "nested",
+      "enumSortOrder": "declaringOrder",
+      "disableGitFeatures": false
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "index.md",
+          "toc.yml",
+          "guide/**.md",
+          "guide/**/toc.yml",
+          "reference.md"
+        ]
+      },
+      {
+        "files": [
+          "api/**.yml",
+          "api/index.md",
+          "api/**/toc.yml"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern",
+      "templates/dispatcher"
+    ],
+    "postProcessors": [
+      "ExtractSearchIndex"
+    ],
+    "xref": [
+      "https://learn.microsoft.com/en-us/dotnet/.xrefmap.json"
+    ],
+    "globalMetadata": {
+      "_appName": "Dispatcher",
+      "_appTitle": "Dispatcher",
+      "_appFooter": "Dispatcher is licensed under the MIT License.",
+      "_enableSearch": true,
+      "_disableContribution": false,
+      "_gitContribute": {
+        "repo": "https://github.com/send0xx/Dispatcher",
+        "branch": "main"
+      },
+      "pdf": false
+    },
+    "sitemap": {
+      "baseUrl": "https://send0xx.github.io/Dispatcher/",
+      "changefreq": "monthly"
+    }
+  }
+}

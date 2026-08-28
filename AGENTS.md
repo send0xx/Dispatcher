@@ -28,7 +28,8 @@ The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net1
   compiles and runs there.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
 - `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
-- `docs`: repository documentation, including maintenance and release guides.
+- `docs`: the DocFX documentation site published to <https://send0xx.github.io/Dispatcher/>. `docs/index.md`, `docs/guide`, and `docs/reference.md` are hand-written; `docs/api` holds only a hand-written `index.md`, and its API pages are generated at build time.
+- `RELEASING.md`: CI, documentation, and NuGet publishing instructions for maintainers.
 - `CHANGELOG.md`: user-facing release history; update it when a release changes observable behavior or package consumption.
 
 Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not automatically determine a type's namespace.
@@ -142,6 +143,26 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Do not leave an empty line at the end of a file.
 - Keep explanations concise and describe observable behavior, lifetimes, parameters, returns, and relevant exceptions.
 
+### User-facing documentation
+
+User-facing prose lives in the DocFX site under `docs/`, not in `README.md`.
+
+- `README.md` is a short entry point: badges, features, install, a quick start, and links to the site.
+  It is also the NuGet package readme (`PackageReadmeFile` in `Directory.Build.props`), so **every link
+  in it must be an absolute URL**. NuGet does not resolve relative links.
+- Keep the site small. It has seven guide pages and one reference page; prefer adding a section to an
+  existing page over creating a new one. New conceptual content belongs in `docs/guide` and must be
+  added to `docs/guide/toc.yml`, or it will not appear in the navigation. Lookup material belongs in
+  `docs/reference.md`.
+- Do not write per-page introductions, "read on" footers, or restate a neighbouring page. The site is
+  deliberately terse; a table or a code block usually replaces a paragraph.
+- Do not hand-write API documentation. The `docs/api` pages are generated from XML documentation
+  comments; only `docs/api/index.md` is authored by hand.
+- Cross-link between pages with relative Markdown links. The site is built with `--warningsAsErrors`,
+  so a broken link fails the build.
+- Behavior documented in the site must match the source. When a change alters observable behavior,
+  update the affected guide page in the same change, and `CHANGELOG.md` when it affects a release.
+
 ## Performance work
 
 - Measure before and after any optimization with BenchmarkDotNet.
@@ -189,6 +210,15 @@ dotnet pack src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.cs
 dotnet pack src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj -c Release -o artifacts/packages
 ```
 
+For documentation changes, build the site with warnings treated as errors, exactly as CI does:
+
+```bash
+dotnet tool restore
+dotnet docfx docs/docfx.json --warningsAsErrors
+```
+
+Add `--serve` to preview the result on <http://localhost:8080>.
+
 The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, and registration idempotence.
 
 ## AOT and source generation
@@ -209,5 +239,6 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - Do not add empty lines at the end of files.
 - Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
+- Do not commit generated documentation: `docs/_site/` and the generated API metadata under `docs/api/` are ignored.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.
 - Use `apply_patch` for intentional source edits and keep changes scoped to the requested work.

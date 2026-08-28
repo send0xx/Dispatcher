@@ -49,4 +49,4 @@ Do not use dry benchmark jobs as performance evidence. Preserve handler and beha
 
 Include tests for observable behavior changes and update documentation when public behavior changes. The test suite should continue to cover dispatch, cancellation, pipeline behavior, handler registration, notification order, lifetimes, and source-generated registration as applicable.
 
-Package and release automation is documented separately in the [release guide](docs/RELEASING.md).
+Package and release automation is documented separately in the [release guide](RELEASING.md).
