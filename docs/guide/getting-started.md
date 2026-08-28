@@ -11,13 +11,13 @@ description: Install Dispatcher, write a query handler, and dispatch your first 
 For the simplest Microsoft dependency-injection setup:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.DependencyInjection --version 2.0.0
+dotnet add package Send0xx.Dispatcher.DependencyInjection
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.SourceGeneration --version 2.0.0
+dotnet add package Send0xx.Dispatcher.SourceGeneration
 ```
 
 > [!IMPORTANT]

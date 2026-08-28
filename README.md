@@ -22,13 +22,13 @@ Dispatcher is a small CQRS library for .NET applications that use dependency inj
 For the simplest Microsoft dependency-injection setup, install:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.DependencyInjection --version 2.0.0
+dotnet add package Send0xx.Dispatcher.DependencyInjection
 ```
 
 For source-generated registration and Native AOT, install instead:
 
 ```bash
-dotnet add package Send0xx.Dispatcher.SourceGeneration --version 2.0.0
+dotnet add package Send0xx.Dispatcher.SourceGeneration
 ```
 
 Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
