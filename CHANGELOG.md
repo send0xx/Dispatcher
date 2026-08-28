@@ -10,6 +10,8 @@ A breaking release that removes public dispatch metadata and reworks reflection 
 
 - `AddDispatcherMessage<TMessage>()` and `AddDispatcherMessage(Type)` register a concrete request or
   notification type as an explicit polymorphic route target for the reflection implementation.
+- `Unit` declares the `<`, `<=`, `>`, and `>=` operators. It already implemented `IComparable<Unit>`,
+  and every `Unit` value compares equal to every other.
 
 ### Changed
 
@@ -21,9 +23,9 @@ A breaking release that removes public dispatch metadata and reworks reflection 
 - **Breaking:** Use `AddDispatcherMessage<TMessage>()` or `AddDispatcherMessage(Type)` instead of
   registering `MessageRegistration` when the reflection implementation needs an explicit polymorphic
   route target.
-- **Breaking:** `DispatcherRegistry.Create` and `CreateDispatcherRegistry` were removed, and building a
-  registry by hand is no longer supported. `AddDispatcher` registers the registry as a singleton that
-  includes the route targets discovered by handler scanning; resolve it with
+- **Breaking:** `DispatcherRegistry.Create` was removed, and building a registry by hand is no longer
+  supported. `AddDispatcher` registers the registry as a singleton that includes the route targets
+  discovered by handler scanning; resolve it with
   `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
 - Reflection scanning retains discovered route targets in one internal catalog instead of adding a
   `MessageRegistration` service descriptor for every routable concrete message.
