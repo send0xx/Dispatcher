@@ -2,12 +2,12 @@
   href: getting-started.md
 - name: Messages and handlers
   href: messages.md
-- name: Routing
-  href: routing.md
 - name: Registration and lifetimes
   href: registration.md
 - name: Pipeline behaviors
   href: pipeline-behaviors.md
+- name: Routing
+  href: routing.md
 - name: OpenTelemetry
   href: opentelemetry.md
 - name: Source generation
