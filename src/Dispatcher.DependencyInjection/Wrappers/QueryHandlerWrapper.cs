@@ -74,8 +74,7 @@ internal sealed class TelemetryQueryHandlerWrapper<TResponse>(
         var telemetryScope = route.Start();
         try
         {
-            var result = await inner.HandleAsync(query, serviceProvider, cancellationToken)
-                .ConfigureAwait(false);
+            var result = await inner.HandleAsync(query, serviceProvider, cancellationToken).ConfigureAwait(false);
             telemetryScope.Complete();
             return result;
         }

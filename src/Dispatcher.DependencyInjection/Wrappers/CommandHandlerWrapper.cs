@@ -18,7 +18,8 @@ internal abstract class CommandWithResponseHandlerWrapper<TResponse> : RequestHa
 /// </summary>
 /// <typeparam name="TCommand">The selected handled command type.</typeparam>
 /// <typeparam name="TResponse">The command response type.</typeparam>
-internal sealed class CommandWithResponseHandlerWrapper<TCommand, TResponse> : CommandWithResponseHandlerWrapper<TResponse>
+internal sealed class
+    CommandWithResponseHandlerWrapper<TCommand, TResponse> : CommandWithResponseHandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
 {
     public override ValueTask<TResponse> HandleAsync(
@@ -134,8 +135,7 @@ internal sealed class TelemetryCommandWithResponseHandlerWrapper<TResponse>(
         var telemetryScope = route.Start();
         try
         {
-            var result = await inner.HandleAsync(command, serviceProvider, cancellationToken)
-                .ConfigureAwait(false);
+            var result = await inner.HandleAsync(command, serviceProvider, cancellationToken).ConfigureAwait(false);
             telemetryScope.Complete();
             return result;
         }
@@ -164,8 +164,7 @@ internal sealed class TelemetryCommandHandlerWrapper(
         var telemetryScope = route.Start();
         try
         {
-            await inner.HandleAsync(command, serviceProvider, cancellationToken)
-                .ConfigureAwait(false);
+            await inner.HandleAsync(command, serviceProvider, cancellationToken).ConfigureAwait(false);
             telemetryScope.Complete();
         }
         catch (Exception exception)
