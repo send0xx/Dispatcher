@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Dispatcher.DependencyInjection;
 
 /// <summary>
@@ -15,5 +17,26 @@ internal readonly record struct HandlerCandidate(
     Type ServiceType,
     HandlerDescriptor Descriptor)
 {
-    internal bool IsOpenNotificationHandler => Descriptor is NotificationHandlerDescriptor { IsOpenGeneric: true };
+    /// <summary>
+    /// Gets the assemblies declaring the messages this handler can handle. They are scanned for route
+    /// targets as well, because a message that the handler routes may be declared by an assembly that
+    /// contains no handler of its own.
+    /// </summary>
+    internal IEnumerable<Assembly> GetMessageAssemblies()
+    {
+        if (Descriptor is not NotificationHandlerDescriptor { IsOpenGeneric: true })
+        {
+            yield return Descriptor.MessageType.Assembly;
+            yield break;
+        }
+
+        // An open generic handler names no message type, so its type parameter constraints describe
+        // the notifications it can handle.
+        foreach (var constraint in ImplementationType
+                     .GetGenericArguments()[0]
+                     .GetGenericParameterConstraints())
+        {
+            yield return constraint.Assembly;
+        }
+    }
 }

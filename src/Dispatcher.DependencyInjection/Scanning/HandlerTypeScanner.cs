@@ -12,14 +12,6 @@ internal static class HandlerTypeScanner
         "INotificationHandler<TNotification> using that parameter directly.";
     private const string MissingPublicConstructor = "must expose a public constructor.";
 
-    private static readonly HashSet<Type> HandlerInterfaces =
-    [
-        typeof(IQueryHandler<,>),
-        typeof(ICommandHandler<,>),
-        typeof(ICommandHandler<>),
-        typeof(INotificationHandler<>)
-    ];
-
     /// <param name="types">The types of the assembly being scanned.</param>
     /// <param name="unsupportedHandlers">
     /// Collects each handler that cannot be registered, mapped to the reason. The caller reports them
@@ -35,7 +27,7 @@ internal static class HandlerTypeScanner
                      .OrderBy(static type => type.FullName, StringComparer.Ordinal))
         {
             var serviceTypes = type.GetInterfaces()
-                .Where(IsHandlerInterface)
+                .Where(HandlerDescriptorFactory.IsHandlerInterface)
                 .OrderBy(static serviceType => serviceType.FullName, StringComparer.Ordinal)
                 .ToArray();
             if (serviceTypes.Length == 0)
@@ -49,14 +41,15 @@ internal static class HandlerTypeScanner
                 continue;
             }
 
-            if (type.GetConstructors().Length == 0)
+            if (!HasPublicConstructor(type, unsupportedHandlers))
             {
-                unsupportedHandlers[type] = MissingPublicConstructor;
                 continue;
             }
 
-            candidates.AddRange(serviceTypes.Select(serviceType =>
-                new HandlerCandidate(type, serviceType, CreateDescriptor(serviceType, type))));
+            candidates.AddRange(serviceTypes.Select(serviceType => new HandlerCandidate(
+                type,
+                serviceType,
+                HandlerDescriptorFactory.Create(serviceType, type))));
         }
 
         return candidates.ToArray();
@@ -68,56 +61,33 @@ internal static class HandlerTypeScanner
         List<HandlerCandidate> candidates,
         Dictionary<Type, string> unsupportedHandlers)
     {
-        var typeParameter = type.IsGenericTypeDefinition && type.GetGenericArguments() is [var parameter]
-            ? parameter
-            : null;
-        var handlesItsOwnTypeParameter = typeParameter is not null && serviceTypes.Any(serviceType =>
-            serviceType.IsGenericType &&
-            serviceType.GetGenericTypeDefinition() == typeof(INotificationHandler<>) &&
-            serviceType.GetGenericArguments()[0] == typeParameter);
-        if (!handlesItsOwnTypeParameter || serviceTypes.Length != 1)
+        // Handling one other notification alongside its own type parameter would leave the handler
+        // registered twice for that notification, so only the single-interface shape is supported.
+        if (serviceTypes.Length != 1 ||
+            HandlerDescriptorFactory.CreateOpenNotification(type) is not { } descriptor)
         {
             unsupportedHandlers[type] = UnsupportedOpenGenericShape;
             return;
         }
 
-        if (type.GetConstructors().Length == 0)
+        if (!HasPublicConstructor(type, unsupportedHandlers))
         {
-            unsupportedHandlers[type] = MissingPublicConstructor;
             return;
         }
 
         // An open generic notification handler is registered as itself rather than as
         // INotificationHandler<>, so that closed handler enumeration stays isolated from it.
-        candidates.Add(new HandlerCandidate(
-            type,
-            type,
-            new NotificationHandlerDescriptor(typeParameter!, type, true)));
+        candidates.Add(new HandlerCandidate(type, type, descriptor));
     }
 
-    private static HandlerDescriptor CreateDescriptor(Type serviceType, Type handlerType)
+    private static bool HasPublicConstructor(Type type, Dictionary<Type, string> unsupportedHandlers)
     {
-        var definition = serviceType.GetGenericTypeDefinition();
-        var arguments = serviceType.GetGenericArguments();
-
-        if (definition == typeof(IQueryHandler<,>))
+        if (type.GetConstructors().Length > 0)
         {
-            return new QueryHandlerDescriptor(arguments[0], arguments[1], handlerType);
+            return true;
         }
 
-        if (definition == typeof(ICommandHandler<,>))
-        {
-            return new CommandWithResponseHandlerDescriptor(arguments[0], arguments[1], handlerType);
-        }
-
-        if (definition == typeof(ICommandHandler<>))
-        {
-            return new CommandHandlerDescriptor(arguments[0], handlerType);
-        }
-
-        return new NotificationHandlerDescriptor(arguments[0], handlerType, false);
+        unsupportedHandlers[type] = MissingPublicConstructor;
+        return false;
     }
-
-    private static bool IsHandlerInterface(Type type) =>
-        type.IsGenericType && HandlerInterfaces.Contains(type.GetGenericTypeDefinition());
 }

@@ -69,7 +69,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton(provider =>
         {
             var handlers = HandlerDescriptorReader.Read(services);
-            var routeTargets = AssemblyScanState.FindScanState(services)?.RouteTargets
+            var routeTargets = AssemblyScanState.Find(services)?.RouteTargets
                 .GetRouteTargets(handlers) ?? [];
             return DispatcherRegistryFactory.Create(
                 handlers,
@@ -132,19 +132,14 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(messageType);
 
-        if (messageType is { IsAbstract: true } or { IsInterface: true } ||
-            messageType.ContainsGenericParameters ||
-            (!typeof(IRequest).IsAssignableFrom(messageType) &&
-             !typeof(INotification).IsAssignableFrom(messageType)))
+        if (!MessageTypes.IsConcreteMessage(messageType))
         {
             throw new ArgumentException(
                 "The route target must be a concrete request or notification type.",
                 nameof(messageType));
         }
 
-        var scanState = AssemblyScanState.FindScanState(services) ??
-            AssemblyScanState.CreateScanState(services);
-        scanState.RouteTargets.Add(messageType);
+        AssemblyScanState.GetOrCreate(services).RouteTargets.Add(messageType);
         return services;
     }
 

@@ -1,12 +1,17 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using Dispatcher.DependencyInjection;
 
 namespace Dispatcher;
 
+/// <summary>
+/// Creates the immutable registry the reflection-based Dispatcher routes through, from the handlers
+/// a service collection registers and the concrete messages that may route to them.
+/// </summary>
 internal static class DispatcherRegistryFactory
 {
-    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     internal static DispatcherRegistry Create(
         IEnumerable<HandlerDescriptor> handlers,
         IEnumerable<Type> routeTargets,
@@ -16,70 +21,63 @@ internal static class DispatcherRegistryFactory
         ArgumentNullException.ThrowIfNull(routeTargets);
 
         var registrations = handlers.ToArray();
-        var requestWrappers = CreateRequestWrappers(registrations);
-        var notificationWrappers = CreateNotificationWrappers(registrations);
         var openNotificationRegistrations = registrations
             .OfType<NotificationHandlerDescriptor>()
             .Where(static registration => registration.IsOpenGeneric)
             .ToArray();
+
+        // A handler always routes its own message type, whether or not scanning discovered it.
         var messageTypes = routeTargets
             .Concat(registrations.Select(static registration => registration.MessageType))
             .Distinct()
             .ToArray();
-        var requests = CreateRequestRoutes(messageTypes, requestWrappers, telemetry);
+        var requests = CreateRequestRoutes(
+            messageTypes,
+            CreateRequestWrappers(registrations),
+            telemetry);
         var notifications = CreateNotificationRoutes(
             messageTypes,
-            notificationWrappers,
+            CreateNotificationWrappers(registrations),
             openNotificationRegistrations,
             telemetry);
 
         return new DispatcherRegistry(requests.ToFrozenDictionary(), notifications.ToFrozenDictionary());
     }
 
-    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
-    private static Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)>
-        CreateRequestWrappers(IEnumerable<HandlerDescriptor> registrations)
+    /// <summary>
+    /// Creates one wrapper per handled query or command type, failing when two handlers claim the
+    /// same message type.
+    /// </summary>
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
+    private static Dictionary<Type, RequestHandler> CreateRequestWrappers(
+        IEnumerable<HandlerDescriptor> registrations)
     {
-        var wrappers = new Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)>();
-        foreach (var registration in registrations)
+        var wrappers = new Dictionary<Type, RequestHandler>();
+        foreach (var registration in registrations.OfType<RequestHandlerDescriptor>())
         {
-            var wrapper = registration switch
+            if (wrappers.TryGetValue(registration.MessageType, out var existing))
             {
-                QueryHandlerDescriptor query => (RequestHandlerWrapper)CreateWrapper(
-                    typeof(QueryHandlerWrapper<,>),
-                    query.MessageType,
-                    query.ResponseType),
-                CommandWithResponseHandlerDescriptor command => (RequestHandlerWrapper)CreateWrapper(
-                    typeof(CommandWithResponseHandlerWrapper<,>),
-                    command.MessageType,
-                    command.ResponseType),
-                CommandHandlerDescriptor command => (RequestHandlerWrapper)CreateWrapper(
-                    typeof(CommandHandlerWrapper<>),
-                    command.MessageType),
-                NotificationHandlerDescriptor => null,
-                _ => throw UnknownRegistration(registration)
-            };
-            if (wrapper is null)
-            {
-                continue;
-            }
-
-            if (!wrappers.TryAdd(registration.MessageType, (registration, wrapper)))
-            {
-                var existing = wrappers[registration.MessageType].Registration;
                 throw new DuplicateHandlerException(
                     registration.MessageType,
-                    existing.HandlerType,
+                    existing.Registration.HandlerType,
                     registration.HandlerType);
             }
+
+            wrappers.Add(
+                registration.MessageType,
+                new RequestHandler(registration, registration.CreateWrapper()));
         }
 
         return wrappers;
     }
 
-    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
+    /// <summary>
+    /// Creates one wrapper per handled notification type. The wrapper resolves every handler of that
+    /// type, so repeated registrations of the same notification share it.
+    /// </summary>
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     private static Dictionary<Type, NotificationHandlerWrapper> CreateNotificationWrappers(
         IEnumerable<HandlerDescriptor> registrations)
     {
@@ -90,43 +88,38 @@ internal static class DispatcherRegistryFactory
         {
             wrappers.TryAdd(
                 registration.MessageType,
-                (NotificationHandlerWrapper)CreateWrapper(
-                    typeof(NotificationHandlerWrapper<>),
-                    registration.MessageType));
+                HandlerWrapperFactory.CreateNotificationWrapper(registration.MessageType));
         }
 
         return wrappers;
     }
 
-    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     private static Dictionary<Type, RequestHandlerWrapper> CreateRequestRoutes(
         IEnumerable<Type> messageTypes,
-        Dictionary<Type, (HandlerDescriptor Registration, RequestHandlerWrapper Wrapper)> wrappers,
+        Dictionary<Type, RequestHandler> wrappers,
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, RequestHandlerWrapper>();
-        foreach (var messageType in messageTypes.Where(IsConcreteRequest))
+        foreach (var messageType in messageTypes.Where(MessageTypes.IsConcreteRequest))
         {
-            var candidates = GetAssignableTypes(messageType)
+            var handledTypes = MessageTypes.GetAssignableTypes(messageType)
                 .Where(wrappers.ContainsKey)
-                .Where(candidate => IsCompatibleRequestRoute(
-                    messageType,
-                    wrappers[candidate].Registration));
-            var handledType = MostSpecificTypeSelector.Select(messageType, candidates);
-            if (handledType is null)
+                .Where(handledType => wrappers[handledType].Registration.CanRoute(messageType));
+            if (MostSpecificTypeSelector.Select(messageType, handledTypes) is not { } selected)
             {
                 continue;
             }
 
-            var prepared = wrappers[handledType];
+            var handler = wrappers[selected];
             routes.Add(
                 messageType,
                 telemetry is null
-                    ? prepared.Wrapper
+                    ? handler.Wrapper
                     : TelemetryWrapperDecorator.Decorate(
-                        prepared.Wrapper,
-                        prepared.Registration,
+                        handler.Wrapper,
+                        handler.Registration,
                         messageType,
                         telemetry));
         }
@@ -134,6 +127,8 @@ internal static class DispatcherRegistryFactory
         return routes;
     }
 
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     private static Dictionary<Type, NotificationHandlerWrapper> CreateNotificationRoutes(
         IEnumerable<Type> messageTypes,
         Dictionary<Type, NotificationHandlerWrapper> wrappers,
@@ -141,28 +136,20 @@ internal static class DispatcherRegistryFactory
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, NotificationHandlerWrapper>();
-        foreach (var messageType in messageTypes.Where(IsConcreteNotification))
+        foreach (var messageType in messageTypes.Where(MessageTypes.IsConcreteNotification))
         {
-            var candidates = GetAssignableTypes(messageType).Where(wrappers.ContainsKey);
-            var handledType = MostSpecificTypeSelector.Select(messageType, candidates);
-            var openHandlerTypes = CloseCompatibleHandlers(messageType, openRegistrations);
+            var handledType = MostSpecificTypeSelector.Select(
+                messageType,
+                MessageTypes.GetAssignableTypes(messageType).Where(wrappers.ContainsKey));
+            var openHandlerTypes = HandlerWrapperFactory.CloseNotificationHandlers(
+                messageType,
+                openRegistrations);
             if (handledType is null && openHandlerTypes.Length == 0)
             {
                 continue;
             }
 
-            var wrapper = handledType is null
-                ? CreateNotificationWrapper(
-                    typeof(OpenNotificationHandlerWrapper<>),
-                    openHandlerTypes,
-                    messageType)
-                : openHandlerTypes.Length == 0
-                    ? wrappers[handledType]
-                    : CreateNotificationWrapper(
-                        typeof(CompositeNotificationHandlerWrapper<,>),
-                        openHandlerTypes,
-                        handledType,
-                        messageType);
+            var wrapper = CreateNotificationRoute(messageType, handledType, openHandlerTypes, wrappers);
             routes.Add(
                 messageType,
                 telemetry is null
@@ -173,76 +160,32 @@ internal static class DispatcherRegistryFactory
         return routes;
     }
 
-    private static Type[] CloseCompatibleHandlers(
+    /// <summary>
+    /// Selects the wrapper that publishes a notification to its closed handlers, to its open generic
+    /// handlers, or to both.
+    /// </summary>
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
+    private static NotificationHandlerWrapper CreateNotificationRoute(
         Type messageType,
-        IEnumerable<NotificationHandlerDescriptor> registrations)
+        Type? handledType,
+        Type[] openHandlerTypes,
+        Dictionary<Type, NotificationHandlerWrapper> wrappers)
     {
-        var handlerTypes = new List<Type>();
-        foreach (var registration in registrations)
+        if (handledType is null)
         {
-            try
-            {
-                handlerTypes.Add(registration.HandlerType.MakeGenericType(messageType));
-            }
-            catch (ArgumentException)
-            {
-                // The concrete notification does not satisfy the handler's generic constraints.
-            }
+            return HandlerWrapperFactory.CreateOpenNotificationWrapper(messageType, openHandlerTypes);
         }
 
-        return handlerTypes.ToArray();
+        return openHandlerTypes.Length == 0
+            ? wrappers[handledType]
+            : HandlerWrapperFactory.CreateCompositeNotificationWrapper(
+                handledType,
+                messageType,
+                openHandlerTypes);
     }
 
-    [RequiresDynamicCode("Creating notification wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating notification wrappers from service descriptors is not trimming safe.")]
-    private static NotificationHandlerWrapper CreateNotificationWrapper(
-        Type wrapperType,
-        Type[] handlerTypes,
-        params Type[] genericArguments) =>
-        (NotificationHandlerWrapper)Activator.CreateInstance(
-            wrapperType.MakeGenericType(genericArguments),
-            [handlerTypes])!;
-
-    private static bool IsConcreteRequest(Type type) =>
-        IsConcreteMessage(type) && typeof(IRequest).IsAssignableFrom(type);
-
-    private static bool IsConcreteNotification(Type type) =>
-        IsConcreteMessage(type) && typeof(INotification).IsAssignableFrom(type);
-
-    private static bool IsConcreteMessage(Type type) =>
-        type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false };
-
-    private static IEnumerable<Type> GetAssignableTypes(Type messageType)
-    {
-        for (var current = messageType; current is not null; current = current.BaseType)
-        {
-            yield return current;
-        }
-
-        foreach (var @interface in messageType.GetInterfaces())
-        {
-            yield return @interface;
-        }
-    }
-
-    private static bool IsCompatibleRequestRoute(
-        Type messageType,
-        HandlerDescriptor registration) => registration switch
-        {
-            QueryHandlerDescriptor query =>
-                typeof(IQuery<>).MakeGenericType(query.ResponseType).IsAssignableFrom(messageType),
-            CommandWithResponseHandlerDescriptor command =>
-                !typeof(ICommand).IsAssignableFrom(messageType) &&
-                typeof(ICommand<>).MakeGenericType(command.ResponseType).IsAssignableFrom(messageType),
-            CommandHandlerDescriptor => typeof(ICommand).IsAssignableFrom(messageType),
-            _ => false
-        };
-
-    [RequiresDynamicCode("Creating handler wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating handler wrappers from service descriptors is not trimming safe.")]
-    private static object CreateWrapper(Type wrapperType, params Type[] genericArguments) =>
-        Activator.CreateInstance(wrapperType.MakeGenericType(genericArguments))!;
-
-    private static ArgumentOutOfRangeException UnknownRegistration(HandlerDescriptor registration) =>
-        new(nameof(registration), registration.GetType(), "Unknown handler registration type.");
+    private readonly record struct RequestHandler(
+        RequestHandlerDescriptor Registration,
+        RequestHandlerWrapper Wrapper);
 }

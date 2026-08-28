@@ -18,11 +18,9 @@ internal sealed class ExistingRegistrations
     }
 
     /// <summary>
-    /// Message types that have a handler, extended as the scan registers handlers.
+    /// The messages handled by the service collection, extended as the scan registers handlers.
     /// </summary>
-    internal HashSet<Type> HandledMessageTypes { get; } = [];
-
-    internal bool HasOpenNotificationHandler { get; private set; }
+    internal HandledMessages Handled { get; } = new();
 
     /// <param name="services">The service collection being registered into.</param>
     /// <param name="candidates">
@@ -55,23 +53,11 @@ internal sealed class ExistingRegistrations
     internal bool TryClaimServiceDescriptor(HandlerCandidate candidate) =>
         _unregisteredServices.Remove((candidate.ServiceType, candidate.ImplementationType));
 
-    internal void RecordHandler(HandlerDescriptor descriptor)
-    {
-        if (descriptor is NotificationHandlerDescriptor { IsOpenGeneric: true })
-        {
-            HasOpenNotificationHandler = true;
-        }
-        else
-        {
-            HandledMessageTypes.Add(descriptor.MessageType);
-        }
-    }
-
     private void Read(ServiceDescriptor descriptor)
     {
         if (HandlerDescriptorReader.TryCreate(descriptor) is { } handlerDescriptor)
         {
-            RecordHandler(handlerDescriptor);
+            Handled.Add(handlerDescriptor);
         }
 
         // A service registered as an instance carries no implementation type, but its runtime type

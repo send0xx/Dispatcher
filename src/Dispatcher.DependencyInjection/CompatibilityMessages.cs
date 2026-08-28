@@ -18,6 +18,12 @@ internal static class CompatibilityMessages
         "Reflection-based handler discovery is not trimming safe. " +
         "Use Dispatcher.SourceGeneration for trimmed applications.";
 
+    internal const string WrapperDynamicCode =
+        "Creating handler wrappers from service descriptors requires runtime generic construction.";
+
+    internal const string WrapperTrimming =
+        "Creating handler wrappers from service descriptors is not trimming safe.";
+
     internal const string BehaviorDynamicCode =
         "Reflection-based behavior registration is not Native AOT safe. " +
         "Register closed behavior service types directly for Native AOT applications.";

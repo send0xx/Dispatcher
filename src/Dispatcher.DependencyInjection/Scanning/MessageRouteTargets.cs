@@ -14,8 +14,7 @@ internal sealed class MessageRouteTargets
     private readonly HashSet<Assembly> _scannedAssemblies = [];
     private readonly List<Type> _pending = [];
     private readonly List<Type> _routable = [];
-    private HashSet<Type>? _lastHandledMessageTypes;
-    private bool _lastHasOpenNotificationHandlers;
+    private HandledMessages? _lastHandled;
 
     internal bool NeedsScan(Assembly assembly) => !_scannedAssemblies.Contains(assembly);
 
@@ -38,27 +37,7 @@ internal sealed class MessageRouteTargets
             yield return messageType;
         }
 
-        if (_pending.Count == 0 || _lastHandledMessageTypes is null)
-        {
-            yield break;
-        }
-
-        var handledMessageTypes = new HashSet<Type>();
-        var hasOpenNotificationHandlers = false;
-        foreach (var handler in handlers)
-        {
-            if (handler is NotificationHandlerDescriptor { IsOpenGeneric: true })
-            {
-                hasOpenNotificationHandlers = true;
-            }
-            else
-            {
-                handledMessageTypes.Add(handler.MessageType);
-            }
-        }
-
-        if (hasOpenNotificationHandlers == _lastHasOpenNotificationHandlers &&
-            handledMessageTypes.SetEquals(_lastHandledMessageTypes))
+        if (_pending.Count == 0 || _lastHandled is null || HandledMessages.Read(handlers).Matches(_lastHandled))
         {
             yield break;
         }
@@ -91,71 +70,45 @@ internal sealed class MessageRouteTargets
         }
 
         _pending.AddRange(types
-            .Where(IsConcreteMessage)
+            .Where(MessageTypes.IsConcreteMessage)
             .OrderBy(static type => type.FullName, StringComparer.Ordinal));
     }
 
+    /// <summary>
+    /// Promotes the message types this scan made routable, and remembers the registrations they were
+    /// resolved against.
+    /// </summary>
     /// <param name="mark">The value <see cref="MarkPending"/> returned before this scan added its types.</param>
-    /// <param name="existing">The registrations this scan is working against.</param>
-    internal void Update(
-        int mark,
-        ExistingRegistrations existing)
+    /// <param name="handled">
+    /// The messages handled once this scan registered its handlers. The scan owns this instance and
+    /// stops extending it once it returns, so it is retained as the comparison for the next scan.
+    /// </param>
+    internal void Update(int mark, HandledMessages handled)
     {
-        var routingChanged = _lastHandledMessageTypes is null ||
-            existing.HasOpenNotificationHandler != _lastHasOpenNotificationHandlers ||
-            !existing.HandledMessageTypes.SetEquals(_lastHandledMessageTypes);
-        var startIndex = routingChanged ? 0 : mark;
+        // Earlier scans left types pending against fewer registrations, so they are reconsidered only
+        // when the handled messages changed.
+        var startIndex = handled.Matches(_lastHandled) ? mark : 0;
 
         // Resolved types are compacted out of the pending list rather than removed one by one.
         var remaining = startIndex;
         for (var index = startIndex; index < _pending.Count; index++)
         {
             var messageType = _pending[index];
-            if (existing.HandledMessageTypes.Contains(messageType))
+            if (handled.Contains(messageType))
             {
                 continue;
             }
 
-            if (!IsRoutable(
-                    messageType,
-                    existing.HandledMessageTypes,
-                    existing.HasOpenNotificationHandler))
+            if (handled.CanRouteBase(messageType))
             {
-                _pending[remaining++] = messageType;
+                _routable.Add(messageType);
                 continue;
             }
 
-            _routable.Add(messageType);
+            _pending[remaining++] = messageType;
         }
 
         _pending.RemoveRange(remaining, _pending.Count - remaining);
-        _lastHandledMessageTypes = existing.HandledMessageTypes;
-        _lastHasOpenNotificationHandlers = existing.HasOpenNotificationHandler;
+        _lastHandled = handled;
     }
-
-    private static bool IsRoutable(
-        Type messageType,
-        HashSet<Type> handledMessageTypes,
-        bool hasOpenNotificationHandlers)
-    {
-        if (hasOpenNotificationHandlers && typeof(INotification).IsAssignableFrom(messageType))
-        {
-            return true;
-        }
-
-        for (var current = messageType.BaseType; current is not null; current = current.BaseType)
-        {
-            if (handledMessageTypes.Contains(current))
-            {
-                return true;
-            }
-        }
-
-        return messageType.GetInterfaces().Any(handledMessageTypes.Contains);
-    }
-
-    private static bool IsConcreteMessage(Type type) =>
-        type is { IsAbstract: false, IsInterface: false, ContainsGenericParameters: false } &&
-        (typeof(IRequest).IsAssignableFrom(type) ||
-         typeof(INotification).IsAssignableFrom(type));
 }

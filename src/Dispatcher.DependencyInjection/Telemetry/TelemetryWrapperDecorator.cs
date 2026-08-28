@@ -1,14 +1,15 @@
 using System.Diagnostics.CodeAnalysis;
+using Dispatcher.DependencyInjection;
 
 namespace Dispatcher;
 
 internal static class TelemetryWrapperDecorator
 {
-    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     internal static RequestHandlerWrapper Decorate(
         RequestHandlerWrapper wrapper,
-        HandlerDescriptor registration,
+        RequestHandlerDescriptor registration,
         Type dispatchedMessageType,
         DispatcherTelemetry telemetry)
         => registration switch
@@ -40,8 +41,8 @@ internal static class TelemetryWrapperDecorator
             wrapper,
             telemetry.CreateRoute(dispatchedMessageType, "publish", "notification"));
 
-    [RequiresDynamicCode("Creating telemetry wrappers from service descriptors requires runtime generic construction.")]
-    [RequiresUnreferencedCode("Creating telemetry wrappers from service descriptors is not trimming safe.")]
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    [RequiresUnreferencedCode(CompatibilityMessages.WrapperTrimming)]
     private static RequestHandlerWrapper CreateGenericDecorator(
         Type decoratorType,
         Type responseType,

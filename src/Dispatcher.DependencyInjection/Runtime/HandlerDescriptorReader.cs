@@ -2,16 +2,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher;
 
+/// <summary>
+/// Reads the handlers a service collection registers, whichever path registered them.
+/// </summary>
 internal static class HandlerDescriptorReader
 {
-    private static readonly HashSet<Type> HandlerInterfaces =
-    [
-        typeof(IQueryHandler<,>),
-        typeof(ICommandHandler<,>),
-        typeof(ICommandHandler<>),
-        typeof(INotificationHandler<>)
-    ];
-
     internal static HandlerDescriptor[] Read(IEnumerable<ServiceDescriptor> services) =>
         services
             .Select(TryCreate)
@@ -26,56 +21,21 @@ internal static class HandlerDescriptorReader
             return null;
         }
 
+        // A service registered as an instance carries no implementation type, but its runtime type
+        // identifies the handler just as well.
         var serviceType = descriptor.ServiceType;
         var handlerType = descriptor.ImplementationType ??
             descriptor.ImplementationInstance?.GetType() ??
             serviceType;
-        if (serviceType.IsGenericType &&
-            HandlerInterfaces.Contains(serviceType.GetGenericTypeDefinition()))
+        if (HandlerDescriptorFactory.IsHandlerInterface(serviceType))
         {
-            return CreateClosed(serviceType, handlerType);
+            return HandlerDescriptorFactory.Create(serviceType, handlerType);
         }
 
-        return serviceType.IsGenericTypeDefinition && serviceType == handlerType
-            ? CreateOpenNotification(serviceType)
-            : null;
-    }
-
-    private static HandlerDescriptor CreateClosed(Type serviceType, Type handlerType)
-    {
-        var definition = serviceType.GetGenericTypeDefinition();
-        var arguments = serviceType.GetGenericArguments();
-        if (definition == typeof(IQueryHandler<,>))
-        {
-            return new QueryHandlerDescriptor(arguments[0], arguments[1], handlerType);
-        }
-
-        if (definition == typeof(ICommandHandler<,>))
-        {
-            return new CommandWithResponseHandlerDescriptor(arguments[0], arguments[1], handlerType);
-        }
-
-        if (definition == typeof(ICommandHandler<>))
-        {
-            return new CommandHandlerDescriptor(arguments[0], handlerType);
-        }
-
-        return new NotificationHandlerDescriptor(arguments[0], handlerType, false);
-    }
-
-    private static HandlerDescriptor? CreateOpenNotification(Type handlerType)
-    {
-        if (handlerType.GetGenericArguments() is not [var parameter])
-        {
-            return null;
-        }
-
-        var handlesParameter = handlerType.GetInterfaces().Any(serviceType =>
-            serviceType.IsGenericType &&
-            serviceType.GetGenericTypeDefinition() == typeof(INotificationHandler<>) &&
-            serviceType.GetGenericArguments()[0] == parameter);
-        return handlesParameter
-            ? new NotificationHandlerDescriptor(parameter, handlerType, true)
+        // An open generic notification handler is registered as itself rather than as
+        // INotificationHandler<>, so it is the service type that identifies it.
+        return serviceType == handlerType
+            ? HandlerDescriptorFactory.CreateOpenNotification(handlerType)
             : null;
     }
 }

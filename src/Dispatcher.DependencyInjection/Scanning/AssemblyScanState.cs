@@ -6,13 +6,17 @@ namespace Dispatcher.DependencyInjection;
 /// <summary>
 /// Tracks the handler assemblies and route targets scanned into one service collection.
 /// </summary>
+/// <remarks>
+/// The state travels with the service collection as a singleton descriptor, so scans and route
+/// target registrations spread over several calls share it.
+/// </remarks>
 internal sealed class AssemblyScanState
 {
     internal HashSet<Assembly> HandlerAssemblies { get; } = [];
 
     internal MessageRouteTargets RouteTargets { get; } = new();
 
-    internal static AssemblyScanState? FindScanState(IServiceCollection services)
+    internal static AssemblyScanState? Find(IServiceCollection services)
     {
         foreach (var descriptor in services)
         {
@@ -26,8 +30,13 @@ internal sealed class AssemblyScanState
         return null;
     }
 
-    internal static AssemblyScanState CreateScanState(IServiceCollection services)
+    internal static AssemblyScanState GetOrCreate(IServiceCollection services)
     {
+        if (Find(services) is { } state)
+        {
+            return state;
+        }
+
         var scanState = new AssemblyScanState();
         services.AddSingleton(scanState);
         return scanState;
