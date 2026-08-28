@@ -16,7 +16,7 @@ public sealed class UnsupportedHandlerRegistrationTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
         Assert.Equal(
             [
@@ -34,7 +34,7 @@ public sealed class UnsupportedHandlerRegistrationTests
         var services = new ServiceCollection();
 
         var exception = Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
         Assert.Contains(
             "public constructor",
@@ -58,7 +58,7 @@ public sealed class UnsupportedHandlerRegistrationTests
         var before = services.ToArray();
 
         Assert.Throws<UnsupportedHandlerException>(() =>
-            services.AddDispatcherHandlers(typeof(UnsupportedPing).Assembly));
+            services.AddDispatcherHandlers(typeof(UnsupportedHandlerAssemblyMarker).Assembly));
 
         Assert.Equal(before, services);
     }

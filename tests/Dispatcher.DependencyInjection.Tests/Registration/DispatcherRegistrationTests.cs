@@ -96,7 +96,7 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
-    public async Task Typed_registration_and_assembly_scanning_may_overlap_for_one_handler()
+    public async Task Query_handler_registered_typed_before_a_scan_is_registered_once()
     {
         var services = new ServiceCollection();
         services
@@ -110,11 +110,16 @@ public sealed class DispatcherRegistrationTests
         var result = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
             .QueryAsync(new GreetingQuery("Ada"), TestContext.Current.CancellationToken);
 
+        // A second descriptor would fail the registry with DuplicateHandlerException rather than
+        // run the handler twice, so the route resolving at all is half the assertion.
         Assert.Equal("Hello, Ada", result);
+        Assert.Single(
+            services,
+            descriptor => descriptor.ServiceType == typeof(IQueryHandler<GreetingQuery, string>));
     }
 
     [Fact]
-    public async Task Assembly_scanning_and_typed_registration_may_overlap_for_one_handler()
+    public async Task Notification_handler_registered_typed_after_a_scan_runs_once()
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers<TestAssemblyMarker>();
@@ -134,7 +139,7 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
-    public async Task Overlapping_notification_registration_invokes_each_handler_once()
+    public async Task Notification_handler_registered_typed_before_a_scan_runs_once()
     {
         var services = new ServiceCollection();
         services
@@ -159,14 +164,7 @@ public sealed class DispatcherRegistrationTests
 
         services.AddDispatcher();
 
-        Assert.All(
-            services.Where(descriptor =>
-                descriptor.ServiceType == typeof(Dispatcher) ||
-                descriptor.ServiceType == typeof(IDispatcher) ||
-                descriptor.ServiceType == typeof(IQueryDispatcher) ||
-                descriptor.ServiceType == typeof(ICommandDispatcher) ||
-                descriptor.ServiceType == typeof(INotificationDispatcher)),
-            descriptor => Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime));
+        AssertDispatcherLifetime(services, ServiceLifetime.Scoped);
     }
 
     [Fact]
@@ -181,14 +179,7 @@ public sealed class DispatcherRegistrationTests
         var second = provider.GetRequiredService<IDispatcher>();
 
         Assert.NotSame(first, second);
-        Assert.All(
-            services.Where(descriptor =>
-                descriptor.ServiceType == typeof(Dispatcher) ||
-                descriptor.ServiceType == typeof(IDispatcher) ||
-                descriptor.ServiceType == typeof(IQueryDispatcher) ||
-                descriptor.ServiceType == typeof(ICommandDispatcher) ||
-                descriptor.ServiceType == typeof(INotificationDispatcher)),
-            descriptor => Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime));
+        AssertDispatcherLifetime(services, ServiceLifetime.Transient);
     }
 
     [Fact]
@@ -387,4 +378,16 @@ public sealed class DispatcherRegistrationTests
         Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers(assembly: null!));
         Assert.Throws<ArgumentNullException>(() => services.AddNotificationHandler(handlerType: null!));
     }
+
+    private static void AssertDispatcherLifetime(
+        IServiceCollection services,
+        ServiceLifetime lifetime) =>
+        Assert.All(
+            services.Where(descriptor =>
+                descriptor.ServiceType == typeof(Dispatcher) ||
+                descriptor.ServiceType == typeof(IDispatcher) ||
+                descriptor.ServiceType == typeof(IQueryDispatcher) ||
+                descriptor.ServiceType == typeof(ICommandDispatcher) ||
+                descriptor.ServiceType == typeof(INotificationDispatcher)),
+            descriptor => Assert.Equal(lifetime, descriptor.Lifetime));
 }

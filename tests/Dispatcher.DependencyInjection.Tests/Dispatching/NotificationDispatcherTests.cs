@@ -30,6 +30,8 @@ public sealed class NotificationDispatcherTests
 
         await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
             .PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
+
+        Assert.Empty(scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
     [Fact]
