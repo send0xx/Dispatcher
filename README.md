@@ -494,7 +494,7 @@ The [benchmark notes](benchmarks/Dispatcher.Benchmarks/README.md) describe the a
 
 - Notifications execute sequentially rather than concurrently.
 - Pipeline behaviors apply to queries and commands, not notifications.
-- Registering a handler or behavior through a factory delegate is not recommended when it is also covered by scanning or a typed registration method. Duplicate registrations are otherwise detected and ignored, but Microsoft DI does not expose the type a factory returns, so a factory registration cannot be matched against another one. Both survive: a notification handler fires twice per publish, and a pipeline behavior runs twice per request. Register such handlers and behaviors by type or as an instance instead.
+- Registering a handler or behavior through a factory delegate is not recommended when it is also covered by scanning or a typed registration method. Duplicate registrations are otherwise detected and ignored, but Microsoft DI does not expose the type a factory returns, so a factory registration cannot be matched against another one. Both survive: a notification handler fires twice per publish, and a pipeline behavior runs twice per request. A query or command instead fails fast, because it allows only one handler: the duplicate throws `DuplicateHandlerException` when the registry is created. Register such handlers and behaviors by type or as an instance instead.
 
 ## Project
 

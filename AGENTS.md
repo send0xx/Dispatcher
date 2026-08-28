@@ -88,6 +88,7 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
 - Typed handler registrations in `src/Dispatcher` add only executable Microsoft DI service descriptors.
 - Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from the final handler service descriptors when the singleton registry is created.
+- The registry factory registered by `AddDispatcher` closes over the `IServiceCollection` on purpose, so the delegate cannot be `static`. Reading the descriptors when the registry singleton is created, rather than when `AddDispatcher` runs, is what makes registration order irrelevant. The cost is that the closure keeps every `ServiceDescriptor` alive for the provider's lifetime. Generated registration code closes over the collection for the same reason. Accept the retention; do not trade it back for order-dependent registration.
 - The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
 - Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
@@ -116,6 +117,7 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Use `FrozenDictionary` for request and notification wrapper lookup.
 - Queries and commands require exactly one handler for the selected message type.
 - Duplicate query or command handlers for the same handled message type fail when the singleton registry is created.
+- The registry treats any non-keyed descriptor whose service type is a handler interface as a handler, so registering one directly with Microsoft DI routes exactly like a typed registration method does. The typed methods and assembly scanning stay the documented path because they also validate the handler shape, but the registry must not start rejecting descriptors it did not add itself: reading the final descriptors is what keeps registration order irrelevant.
 - Notifications allow zero or more handlers and execute sequentially in registration order.
 - Dispatch lookup uses exact concrete message types and startup-precomputed polymorphic routes. An exact handler wins;
   otherwise, select the most-specific compatible handled base class or interface. Do not broadcast notifications across
