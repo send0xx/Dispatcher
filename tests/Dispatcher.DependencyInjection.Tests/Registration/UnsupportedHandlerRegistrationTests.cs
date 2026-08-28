@@ -96,6 +96,7 @@ public sealed class UnsupportedHandlerRegistrationTests
 
             Assert.Same(assembly, exception.Assembly);
             Assert.NotEmpty(exception.LoaderExceptions);
+            Assert.Same(exception.LoaderExceptions, exception.LoaderExceptions);
             Assert.Empty(services);
         }
         finally

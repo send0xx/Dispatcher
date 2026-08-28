@@ -24,26 +24,52 @@ internal static class MessageTypeResolver
 
     internal static Type? SelectMostSpecific(
         Type messageType,
-        IEnumerable<Type> candidateTypes)
+        List<Type> candidates)
     {
-        var candidates = candidateTypes
-            .Where(candidate => candidate.IsAssignableFrom(messageType))
-            .Distinct()
-            .ToArray();
-        if (candidates.Length == 0)
+        if (candidates.Count == 0)
         {
             return null;
         }
 
-        var mostSpecific = candidates
-            .Where(candidate => !candidates.Any(other =>
-                candidate != other && candidate.IsAssignableFrom(other)))
-            .ToArray();
-        return mostSpecific.Length switch
+        if (candidates.Count == 1)
         {
-            1 => mostSpecific[0],
-            _ => throw new AmbiguousHandlerException(messageType, mostSpecific)
-        };
+            return candidates[0];
+        }
+
+        Type? selected = null;
+        List<Type>? ambiguous = null;
+        for (var candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
+        {
+            var candidate = candidates[candidateIndex];
+            var isMostSpecific = true;
+            for (var otherIndex = 0; otherIndex < candidates.Count; otherIndex++)
+            {
+                var other = candidates[otherIndex];
+                if (candidate != other && candidate.IsAssignableFrom(other))
+                {
+                    isMostSpecific = false;
+                    break;
+                }
+            }
+
+            if (!isMostSpecific)
+            {
+                continue;
+            }
+
+            if (selected is null)
+            {
+                selected = candidate;
+                continue;
+            }
+
+            ambiguous ??= [selected];
+            ambiguous.Add(candidate);
+        }
+
+        return ambiguous is null
+            ? selected
+            : throw new AmbiguousHandlerException(messageType, ambiguous);
     }
 
     private static bool IsConcrete(Type type) =>

@@ -17,6 +17,8 @@ namespace Dispatcher.Benchmarks;
 /// messages all route to a handled base type and enter the scanned route-target catalog.
 /// <see cref="BuildRegistryForUnroutableModules"/> measures the complete startup path when pending
 /// targets remain unchanged at registry creation.
+/// <see cref="BuildRegistryWithUnmatchedOpenHandler"/> measures registry creation when an open
+/// notification handler cannot be closed over any discovered notification.
 /// </remarks>
 [MemoryDiagnoser]
 [HideColumns("Error", "StdDev")]
@@ -65,6 +67,23 @@ public class AssemblyScanningBenchmarks
         return services.Count;
     }
 
+    /// <summary>
+    /// Measures registry creation when every attempt to close an open notification handler fails
+    /// its generic constraints.
+    /// </summary>
+    [Benchmark]
+    public int BuildRegistryWithUnmatchedOpenHandler()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
+        ScanAll(services);
+        services.AddNotificationHandler(typeof(UnmatchedOpenNotificationHandler<>));
+        services.AddDispatcher();
+        using var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<DispatcherRegistry>();
+        return services.Count;
+    }
+
     private int ScanAll(ServiceCollection services)
     {
         foreach (var module in _modules)
@@ -99,4 +118,21 @@ public class AssemblyScanningBenchmarks
     /// </summary>
     public abstract class ModuleEvent : INotification;
 
+    /// <summary>
+    /// Identifies notifications accepted by the unmatched open handler benchmark.
+    /// </summary>
+    public interface IUnmatchedNotification : INotification;
+
+    /// <summary>
+    /// An open handler whose constraint none of the emitted module notifications satisfies.
+    /// </summary>
+    /// <typeparam name="TNotification">The constrained notification type.</typeparam>
+    public sealed class UnmatchedOpenNotificationHandler<TNotification>
+        : INotificationHandler<TNotification>
+        where TNotification : IUnmatchedNotification
+    {
+        /// <inheritdoc />
+        public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
+    }
 }

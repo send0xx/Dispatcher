@@ -20,6 +20,8 @@ public sealed class AssemblyScanException : InvalidOperationException
         : base(CreateMessage(assembly, innerException), innerException)
     {
         Assembly = assembly;
+        LoaderExceptions = Array.AsReadOnly(
+            innerException.LoaderExceptions.OfType<Exception>().ToArray());
     }
 
     /// <summary>
@@ -34,8 +36,7 @@ public sealed class AssemblyScanException : InvalidOperationException
     /// The loader exceptions of the underlying <see cref="ReflectionTypeLoadException"/>, with the
     /// entries it leaves <see langword="null"/> removed.
     /// </value>
-    public IReadOnlyList<Exception> LoaderExceptions =>
-        ((ReflectionTypeLoadException)InnerException!).LoaderExceptions.OfType<Exception>().ToArray();
+    public IReadOnlyList<Exception> LoaderExceptions { get; }
 
     private static string CreateMessage(Assembly assembly, ReflectionTypeLoadException innerException)
     {

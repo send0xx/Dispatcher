@@ -32,6 +32,11 @@ internal sealed class DispatcherRegistrationState
             return state;
         }
 
+        return Create(services);
+    }
+
+    internal static DispatcherRegistrationState Create(IServiceCollection services)
+    {
         var created = new DispatcherRegistrationState();
         services.AddSingleton(created);
         return created;

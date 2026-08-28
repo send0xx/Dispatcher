@@ -13,14 +13,6 @@ internal static class HandlerScanner
 
     private const string MissingPublicConstructor = "must expose a public constructor.";
 
-    private static readonly HashSet<Type> HandlerInterfaces =
-    [
-        typeof(IQueryHandler<,>),
-        typeof(ICommandHandler<,>),
-        typeof(ICommandHandler<>),
-        typeof(INotificationHandler<>)
-    ];
-
     [RequiresDynamicCode(CompatibilityMessages.HandlerDynamicCode)]
     [RequiresUnreferencedCode(CompatibilityMessages.HandlerTrimming)]
     internal static IServiceCollection Register(
@@ -41,7 +33,7 @@ internal static class HandlerScanner
         var scannedMessages = ScanMessageAssemblies(state, scannedHandlers, candidates);
         RegisterHandlers(services, candidates, lifetime);
         RecordScan(
-            DispatcherRegistrationState.GetOrCreate(services),
+            state ?? DispatcherRegistrationState.Create(services),
             scannedHandlers,
             scannedMessages);
 
@@ -84,27 +76,54 @@ internal static class HandlerScanner
         List<HandlerCandidate> candidates,
         Dictionary<Type, string> unsupported)
     {
-        foreach (var type in types
-                     .Where(static type => type is { IsClass: true, IsAbstract: false })
-                     .OrderBy(static type => type.FullName, StringComparer.Ordinal))
+        var handlers = new List<ScannedHandler>();
+        var serviceTypes = new List<Type>();
+        foreach (var type in types)
         {
-            var serviceTypes = type.GetInterfaces()
-                .Where(IsHandlerInterface)
-                .OrderBy(static type => type.FullName, StringComparer.Ordinal)
-                .ToArray();
-            if (serviceTypes.Length == 0)
+            if (type is not { IsClass: true, IsAbstract: false })
             {
                 continue;
             }
 
-            if (type.ContainsGenericParameters)
+            serviceTypes.Clear();
+            foreach (var implementedInterface in type.GetInterfaces())
             {
-                AddOpenNotificationHandler(type, serviceTypes, candidates, unsupported);
+                if (HandlerTypeResolver.IsHandlerInterface(implementedInterface))
+                {
+                    serviceTypes.Add(implementedInterface);
+                }
             }
-            else if (HasPublicConstructor(type, unsupported))
+
+            if (serviceTypes.Count == 0)
             {
-                candidates.AddRange(serviceTypes.Select(serviceType =>
-                    new HandlerCandidate(serviceType, type, false)));
+                continue;
+            }
+
+            serviceTypes.Sort(CompareTypes);
+            handlers.Add(new ScannedHandler(type, serviceTypes.ToArray()));
+        }
+
+        handlers.Sort(static (first, second) => CompareTypes(first.HandlerType, second.HandlerType));
+        foreach (var handler in handlers)
+        {
+            if (handler.HandlerType.ContainsGenericParameters)
+            {
+                AddOpenNotificationHandler(
+                    handler.HandlerType,
+                    handler.ServiceTypes,
+                    candidates,
+                    unsupported);
+                continue;
+            }
+
+            if (!HasPublicConstructor(handler.HandlerType, unsupported))
+            {
+                continue;
+            }
+
+            foreach (var serviceType in handler.ServiceTypes)
+            {
+                candidates.Add(new HandlerCandidate(serviceType, handler.HandlerType, false));
             }
         }
     }
@@ -115,11 +134,7 @@ internal static class HandlerScanner
         List<HandlerCandidate> candidates,
         Dictionary<Type, string> unsupported)
     {
-        if (!handlerType.IsGenericTypeDefinition ||
-            handlerType.GetGenericArguments() is not [var parameter] ||
-            serviceTypes is not [var serviceType] ||
-            serviceType.GetGenericTypeDefinition() != typeof(INotificationHandler<>) ||
-            serviceType.GetGenericArguments()[0] != parameter)
+        if (serviceTypes is not [_] || !HandlerTypeResolver.IsOpenNotificationHandler(handlerType))
         {
             unsupported[handlerType] = UnsupportedOpenGenericShape;
             return;
@@ -180,17 +195,21 @@ internal static class HandlerScanner
         IEnumerable<HandlerCandidate> candidates,
         ServiceLifetime lifetime)
     {
-        var registrations = services
-            .Where(static descriptor => !descriptor.IsKeyedService)
-            .Select(static descriptor => (
-                descriptor.ServiceType,
-                ImplementationType: descriptor.ImplementationType ??
-                                    descriptor.ImplementationInstance?.GetType()))
-            .Where(static registration => registration.ImplementationType is not null)
-            .Select(static registration => (
-                registration.ServiceType,
-                ImplementationType: registration.ImplementationType!))
-            .ToHashSet();
+        var registrations = new HashSet<(Type ServiceType, Type ImplementationType)>();
+        foreach (var descriptor in services)
+        {
+            if (descriptor.IsKeyedService)
+            {
+                continue;
+            }
+
+            var implementationType = descriptor.ImplementationType ??
+                                     descriptor.ImplementationInstance?.GetType();
+            if (implementationType is not null)
+            {
+                registrations.Add((descriptor.ServiceType, implementationType));
+            }
+        }
 
         foreach (var candidate in candidates)
         {
@@ -239,10 +258,12 @@ internal static class HandlerScanner
         }
     }
 
-    private static bool IsHandlerInterface(Type type) =>
-        type.IsGenericType && HandlerInterfaces.Contains(type.GetGenericTypeDefinition());
+    private static int CompareTypes(Type first, Type second) =>
+        string.CompareOrdinal(first.FullName, second.FullName);
 
     private readonly record struct ScannedAssembly(Assembly Assembly, Type[] Types);
+
+    private readonly record struct ScannedHandler(Type HandlerType, Type[] ServiceTypes);
 
     private readonly record struct HandlerCandidate(
         Type ServiceType,

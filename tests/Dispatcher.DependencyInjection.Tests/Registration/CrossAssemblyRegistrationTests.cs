@@ -74,6 +74,36 @@ public sealed class CrossAssemblyRegistrationTests
     }
 
     [Fact]
+    public async Task Constraint_precheck_preserves_special_and_self_referencing_constraints()
+    {
+        var services = new ServiceCollection();
+        services.AddDispatcherMessage<StructNotification>();
+        services.AddDispatcherMessage<ClassNotification>();
+        services.AddDispatcherMessage<ComparableNotification>();
+        services.AddDispatcherMessage<NonComparableNotification>();
+        services.AddNotificationHandler(typeof(StructNotificationHandler<>));
+        services.AddNotificationHandler(typeof(ComparableNotificationHandler<>));
+        services.AddDispatcher();
+        services.AddSingleton<ConstraintRecorder>();
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+        await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+
+        await dispatcher.PublishAsync(new StructNotification(), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new ClassNotification(), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new ComparableNotification(), TestContext.Current.CancellationToken);
+        await dispatcher.PublishAsync(new NonComparableNotification(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            [typeof(StructNotification), typeof(ComparableNotification)],
+            scope.ServiceProvider.GetRequiredService<ConstraintRecorder>().Notifications);
+    }
+
+    [Fact]
     public async Task Scanned_and_explicitly_registered_handlers_for_one_query_are_rejected()
     {
         var services = new ServiceCollection();
@@ -156,5 +186,55 @@ public sealed class CrossAssemblyRegistrationTests
             .QueryAsync(new LaterDerivedQuery("typed"), TestContext.Current.CancellationToken);
 
         Assert.Equal("Handled later typed", result);
+    }
+
+    private readonly record struct StructNotification : INotification;
+
+    private sealed record ClassNotification : INotification;
+
+    private sealed record ComparableNotification : INotification, IComparable<ComparableNotification>
+    {
+        public int CompareTo(ComparableNotification? other) => 0;
+    }
+
+    private sealed record NonComparableNotification : INotification;
+
+    private sealed class StructNotificationHandler<TNotification> : INotificationHandler<TNotification>
+        where TNotification : struct, INotification
+    {
+        private readonly ConstraintRecorder _recorder;
+
+        public StructNotificationHandler(ConstraintRecorder recorder)
+        {
+            _recorder = recorder;
+        }
+
+        public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
+        {
+            _recorder.Notifications.Add(typeof(TNotification));
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class ComparableNotificationHandler<TNotification> : INotificationHandler<TNotification>
+        where TNotification : INotification, IComparable<TNotification>
+    {
+        private readonly ConstraintRecorder _recorder;
+
+        public ComparableNotificationHandler(ConstraintRecorder recorder)
+        {
+            _recorder = recorder;
+        }
+
+        public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
+        {
+            _recorder.Notifications.Add(typeof(TNotification));
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class ConstraintRecorder
+    {
+        internal List<Type> Notifications { get; } = [];
     }
 }
