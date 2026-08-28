@@ -24,9 +24,12 @@ A breaking release that removes public dispatch metadata and reworks reflection 
   registering `MessageRegistration` when the reflection implementation needs an explicit polymorphic
   route target.
 - **Breaking:** `DispatcherRegistry.Create` was removed, and building a registry by hand is no longer
-  supported. `AddDispatcher` registers the registry as a singleton that includes the route targets
-  discovered by handler scanning; resolve it with
-  `serviceProvider.GetRequiredService<DispatcherRegistry>()`.
+  supported. `AddDispatcher` builds the registry itself, including the route targets discovered by
+  handler scanning.
+- **Breaking:** The reflection implementation `Dispatcher` and its `DispatcherRegistry` are now
+  internal. Once `DispatcherRegistry.Create` was removed neither type exposed a member a consumer
+  could call, and the registry could no longer be constructed by hand. Resolve `IDispatcher`,
+  `IQueryDispatcher`, `ICommandDispatcher`, or `INotificationDispatcher` instead.
 - Reflection scanning retains discovered route targets in one internal catalog instead of adding a
   `MessageRegistration` service descriptor for every routable concrete message.
 - The reflection registry derives handler information from the final handler service descriptors when

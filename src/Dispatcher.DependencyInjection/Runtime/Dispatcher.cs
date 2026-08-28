@@ -6,7 +6,7 @@ namespace Dispatcher.DependencyInjection;
 /// </summary>
 /// <param name="serviceProvider">The service provider used to resolve handlers and behaviors.</param>
 /// <param name="registry">The registry used to locate handler wrappers.</param>
-public sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
+internal sealed class Dispatcher(IServiceProvider serviceProvider, DispatcherRegistry registry) : IDispatcher
 {
     /// <inheritdoc />
     public ValueTask<TResponse> QueryAsync<TResponse>(

@@ -63,7 +63,7 @@ public class AssemblyScanningBenchmarks
         ScanAll(services);
         services.AddDispatcher();
         using var provider = services.BuildServiceProvider();
-        _ = provider.GetRequiredService<DispatcherRegistry>();
+        _ = provider.GetRequiredService<IDispatcher>();
         return services.Count;
     }
 
@@ -80,7 +80,7 @@ public class AssemblyScanningBenchmarks
         services.AddNotificationHandler(typeof(UnmatchedOpenNotificationHandler<>));
         services.AddDispatcher();
         using var provider = services.BuildServiceProvider();
-        _ = provider.GetRequiredService<DispatcherRegistry>();
+        _ = provider.GetRequiredService<IDispatcher>();
         return services.Count;
     }
 

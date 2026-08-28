@@ -384,10 +384,13 @@ public sealed class DispatcherRegistrationTests
         ServiceLifetime lifetime) =>
         Assert.All(
             services.Where(descriptor =>
-                descriptor.ServiceType == typeof(Dispatcher) ||
                 descriptor.ServiceType == typeof(IDispatcher) ||
                 descriptor.ServiceType == typeof(IQueryDispatcher) ||
                 descriptor.ServiceType == typeof(ICommandDispatcher) ||
-                descriptor.ServiceType == typeof(INotificationDispatcher)),
+                descriptor.ServiceType == typeof(INotificationDispatcher) ||
+                // The concrete implementation is internal, so match it by shape: it is the only
+                // dispatcher descriptor registered by type rather than by factory delegate.
+                (descriptor.ImplementationType is not null &&
+                 typeof(IDispatcher).IsAssignableFrom(descriptor.ImplementationType))),
             descriptor => Assert.Equal(lifetime, descriptor.Lifetime));
 }

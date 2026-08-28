@@ -16,7 +16,7 @@ public sealed class DispatcherRegistryTests
 
         using var provider = services.BuildServiceProvider();
 
-        Assert.Throws<DuplicateHandlerException>(provider.GetRequiredService<DispatcherRegistry>);
+        Assert.Throws<DuplicateHandlerException>(provider.GetRequiredService<IDispatcher>);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class DispatcherRegistryTests
 
         using var provider = services.BuildServiceProvider();
         var exception = Assert.Throws<AmbiguousHandlerException>(
-            provider.GetRequiredService<DispatcherRegistry>);
+            provider.GetRequiredService<IDispatcher>);
 
         Assert.Equal(typeof(AmbiguousQuery), exception.MessageType);
         Assert.Equal(
