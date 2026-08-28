@@ -111,28 +111,4 @@ public class AssemblyScanningBenchmarks
 
         return assembly;
     }
-
-    /// <summary>
-    /// A handled base notification for the emitted module messages. It is abstract, so scanning the
-    /// benchmark assembly itself never treats it as a concrete route target.
-    /// </summary>
-    public abstract class ModuleEvent : INotification;
-
-    /// <summary>
-    /// Identifies notifications accepted by the unmatched open handler benchmark.
-    /// </summary>
-    public interface IUnmatchedNotification : INotification;
-
-    /// <summary>
-    /// An open handler whose constraint none of the emitted module notifications satisfies.
-    /// </summary>
-    /// <typeparam name="TNotification">The constrained notification type.</typeparam>
-    public sealed class UnmatchedOpenNotificationHandler<TNotification>
-        : INotificationHandler<TNotification>
-        where TNotification : IUnmatchedNotification
-    {
-        /// <inheritdoc />
-        public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken) =>
-            ValueTask.CompletedTask;
-    }
 }
