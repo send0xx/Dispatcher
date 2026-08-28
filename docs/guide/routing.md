@@ -11,32 +11,40 @@ registry creation in reflection mode, or at compile time in source-generation mo
 
 ## Polymorphic fallback
 
-Routes are polymorphic and precomputed. A concrete message uses its **exact** handler when one
-exists; otherwise Dispatcher selects the **most-specific compatible** base class or interface handler.
+Routes are polymorphic and precomputed, and the same resolution runs for every message kind. A
+concrete message uses its **exact** handler when one exists; otherwise Dispatcher selects the
+**most-specific compatible** base class or interface handler.
 
-For example, given `UserCreatedEvent : DomainEvent`, publishing a `UserCreatedEvent` routes to
-`INotificationHandler<DomainEvent>` when no `UserCreatedEvent` handler exists, as long as
-`UserCreatedEvent` is a known [route target](#route-targets).
+For a query or command, the selected handler is the one that runs. Given
+`ArchiveDocumentCommand : DocumentCommand`, dispatching an `ArchiveDocumentCommand` reaches
+`ICommandHandler<DocumentCommand>` when no handler for the exact type exists, as long as
+`ArchiveDocumentCommand` is a known [route target](#route-targets). With nothing compatible at all,
+dispatch throws `HandlerNotFoundException`.
+
+Notifications resolve the same way, and only the outcome differs. Given
+`UserCreatedEvent : DomainEvent`, publishing a `UserCreatedEvent` reaches the
+`INotificationHandler<DomainEvent>` handlers under the same conditions, and publishing with nothing
+compatible does nothing instead of throwing.
 
 ```mermaid
 flowchart TD
-    A[Dispatch UserCreatedEvent] --> B{Handler for the<br/>exact type?}
-    B -- yes --> C[Use it]
-    B -- no --> D{Is it a known<br/>route target?}
+    A[Dispatch a message] --> B{Handler for the<br/>exact type?}
+    B -- yes --> C[Run it]
+    B -- no --> D{Is the message a<br/>known route target?}
     D -- no --> F
-    D -- yes --> E{Most-specific<br/>compatible base?}
-    E -- yes --> G[Use the DomainEvent handler]
-    E -- no --> F["Query or command: HandlerNotFoundException<br/>Notification: no-op"]
+    D -- yes --> E{Most-specific<br/>compatible base handler?}
+    E -- yes --> G[Run that handler]
+    E -- no --> F["Query or command: HandlerNotFoundException<br/>Notification: nothing runs"]
 ```
 
 A message type is selected this way, and then:
 
+- **Query and command dispatch** invokes the single handler for the selected type, including that
+  type's pipeline behaviors.
 - **Notification dispatch** invokes every registered handler for that one selected type, sequentially
   in registration order. It does not broadcast across the inheritance hierarchy, so a handler for the
   derived type and a handler for its base type never both run. Compatible open generic handlers still
   run afterwards, as described in [Messages and handlers](messages.md#open-generic-handlers).
-- **Query and command dispatch** invokes the single handler for the selected type, including that
-  type's pipeline behaviors.
 - **Unrelated equally specific candidates** make the route ambiguous. The reflection implementation
   throws `AmbiguousHandlerException` during registry creation, and source generation reports a
   compiler diagnostic. Neither defers the failure to dispatch.
