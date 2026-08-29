@@ -23,7 +23,7 @@ internal static class HandlerScanner
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        var state = DispatcherRegistrationState.Find(services);
+        var state = DispatcherRegistrationState.Get(services);
         var scannedHandlers = ScanHandlerAssemblies(state, assemblies, out var candidates);
         if (scannedHandlers.Count == 0)
         {

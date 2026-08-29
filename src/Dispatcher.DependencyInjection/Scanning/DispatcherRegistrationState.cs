@@ -11,7 +11,7 @@ internal sealed class DispatcherRegistrationState
 
     internal HashSet<Type> MessageTypes { get; } = [];
 
-    internal static DispatcherRegistrationState? Find(IServiceCollection services)
+    internal static DispatcherRegistrationState? Get(IServiceCollection services)
     {
         foreach (var descriptor in services)
         {
@@ -25,20 +25,15 @@ internal sealed class DispatcherRegistrationState
         return null;
     }
 
-    internal static DispatcherRegistrationState GetOrCreate(IServiceCollection services)
-    {
-        if (Find(services) is { } state)
-        {
-            return state;
-        }
-
-        return Create(services);
-    }
-
     internal static DispatcherRegistrationState Create(IServiceCollection services)
     {
         var created = new DispatcherRegistrationState();
         services.AddSingleton(created);
         return created;
+    }
+
+    internal static DispatcherRegistrationState GetOrCreate(IServiceCollection services)
+    {
+        return Get(services) ?? Create(services);
     }
 }

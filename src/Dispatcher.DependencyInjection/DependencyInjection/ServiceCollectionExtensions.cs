@@ -68,7 +68,7 @@ public static class ServiceCollectionExtensions
 
         services.TryAddSingleton(provider =>
         {
-            var routeTargets = DispatcherRegistrationState.Find(services)?.MessageTypes ?? [];
+            var routeTargets = DispatcherRegistrationState.Get(services)?.MessageTypes ?? [];
             return DispatcherRegistryFactory.Create(
                 services,
                 routeTargets,
