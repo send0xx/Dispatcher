@@ -11,7 +11,7 @@ description: A small, reflection-free CQRS library for .NET applications that us
 **A small CQRS library for .NET applications that use dependency injection.**
 
 Focused APIs for queries, commands, notifications, handlers, and pipeline behaviors, with a source
-generator that makes the whole dispatch path trimming- and Native AOT-friendly.
+generator that makes the whole dispatch Native AOT-friendly.
 
 <div class="hero-actions">
 

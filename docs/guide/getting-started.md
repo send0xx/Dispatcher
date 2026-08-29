@@ -21,7 +21,7 @@ dotnet add package Send0xx.Dispatcher.SourceGeneration
 ```
 
 > [!IMPORTANT]
-> Choose **one** implementation package. Both bring in the abstractions, runtime, and Microsoft DI
+> Choose **one** implementation package. Both bring in the abstractions, runtime, and dependency injection
 > integration they require. [Source generation](source-generation.md) compares the two modes.
 
 The rest of this page uses the reflection-based package.

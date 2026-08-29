@@ -4,7 +4,7 @@ Contributions and design discussions are welcome. Dispatcher deliberately keeps 
 
 ## Before making changes
 
-Review the repository guidance in [AGENTS.md](AGENTS.md) before changing public contracts, registration semantics, pipelines, or source generation. Treat changes to the public command, query, notification, handler, and pipeline contracts as breaking API changes that require deliberate design discussion.
+Review the repository before changing public contracts, registration semantics, pipelines, or source generation. Treat changes to the public command, query, notification, handler, and pipeline contracts as breaking API changes that require deliberate design discussion.
 
 Keep changes focused and preserve unrelated work in the repository. Every public API must have XML documentation, and warnings are treated as errors.
 

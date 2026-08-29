@@ -31,7 +31,7 @@ For source-generated registration and Native AOT, install instead:
 dotnet add package Send0xx.Dispatcher.SourceGeneration
 ```
 
-Choose one implementation package. Both bring in the abstractions, runtime, and Microsoft DI integration they require.
+Choose one implementation package. Both bring in the abstractions, runtime, and dependency injection integration they require.
 
 ## Quick start
 
