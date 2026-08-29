@@ -23,6 +23,22 @@ public sealed class NotificationDispatcherTests
     }
 
     [Fact]
+    public async Task Overriding_an_open_generic_handler_adds_a_closed_route_without_replacing_it()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new StockAdjusted(), TestContext.Current.CancellationToken);
+
+        // StockAdjustedHandler derives from InventoryEventHandler<StockAdjusted>, so its override is the
+        // closed route. The open handler is a separate registration and still runs its own instance.
+        Assert.Equal(
+            ["stock-adjusted-override", "inventory-base-StockAdjusted"],
+            scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
     public async Task Notification_without_handlers_is_no_op()
     {
         await using var provider = TestServices.CreateProvider();
