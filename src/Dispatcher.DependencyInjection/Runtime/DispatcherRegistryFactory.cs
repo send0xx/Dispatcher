@@ -1,5 +1,6 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Dispatcher.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,8 +33,8 @@ internal static class DispatcherRegistryFactory
     private static HandlerRegistrations ReadRegistrations(IEnumerable<ServiceDescriptor> services)
     {
         var handlers = new List<HandlerRegistration>();
-        var openHandlers = new List<Type>();
-        var mappedOpenHandlers = new List<Type>();
+        var openHandlers = new List<OpenHandlerRegistration>();
+        var mappedOpenHandlers = new List<OpenHandlerRegistration>();
 
         foreach (var descriptor in services)
         {
@@ -47,7 +48,7 @@ internal static class DispatcherRegistryFactory
                 descriptor.ImplementationType is { } mappedHandlerType &&
                 HandlerTypeResolver.IsOpenNotificationHandler(mappedHandlerType))
             {
-                mappedOpenHandlers.Add(mappedHandlerType);
+                mappedOpenHandlers.Add(CreateOpenHandlerRegistration(mappedHandlerType));
                 continue;
             }
 
@@ -56,7 +57,7 @@ internal static class DispatcherRegistryFactory
                               serviceType;
             if (serviceType == handlerType && HandlerTypeResolver.IsOpenNotificationHandler(handlerType))
             {
-                openHandlers.Add(handlerType);
+                openHandlers.Add(CreateOpenHandlerRegistration(handlerType));
                 continue;
             }
 
@@ -68,14 +69,25 @@ internal static class DispatcherRegistryFactory
 
         if (mappedOpenHandlers.Count > 0)
         {
-            var mappedHandlerTypes = mappedOpenHandlers.ToHashSet();
-            openHandlers.RemoveAll(mappedHandlerTypes.Contains);
+            var mappedHandlerTypes = mappedOpenHandlers
+                .Select(static registration => registration.HandlerType)
+                .ToHashSet();
+            openHandlers.RemoveAll(registration => mappedHandlerTypes.Contains(registration.HandlerType));
         }
 
         return new HandlerRegistrations(
             handlers.ToArray(),
             openHandlers.ToArray(),
             mappedOpenHandlers.ToArray());
+    }
+
+    private static OpenHandlerRegistration CreateOpenHandlerRegistration(Type handlerType)
+    {
+        var parameter = handlerType.GetGenericArguments()[0];
+        return new OpenHandlerRegistration(
+            handlerType,
+            parameter.GetGenericParameterConstraints(),
+            parameter.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask);
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
@@ -342,17 +354,17 @@ internal static class DispatcherRegistryFactory
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
-    private static Type[] CloseOpenHandlers(Type[] handlerTypes, Type messageType)
+    private static Type[] CloseOpenHandlers(OpenHandlerRegistration[] handlers, Type messageType)
     {
-        if (handlerTypes.Length == 0)
+        if (handlers.Length == 0)
         {
             return [];
         }
 
-        var closedHandlerTypes = new List<Type>(handlerTypes.Length);
-        for (var index = 0; index < handlerTypes.Length; index++)
+        var closedHandlerTypes = new List<Type>(handlers.Length);
+        for (var index = 0; index < handlers.Length; index++)
         {
-            if (TryClose(handlerTypes[index], messageType, out var closedHandlerType))
+            if (TryClose(in handlers[index], messageType, out var closedHandlerType))
             {
                 closedHandlerTypes.Add(closedHandlerType);
             }
@@ -362,11 +374,11 @@ internal static class DispatcherRegistryFactory
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
-    private static bool CanCloseAny(Type[] handlerTypes, Type messageType)
+    private static bool CanCloseAny(OpenHandlerRegistration[] handlers, Type messageType)
     {
-        for (var index = 0; index < handlerTypes.Length; index++)
+        for (var index = 0; index < handlers.Length; index++)
         {
-            if (TryClose(handlerTypes[index], messageType, out _))
+            if (TryClose(in handlers[index], messageType, out _))
             {
                 return true;
             }
@@ -377,13 +389,19 @@ internal static class DispatcherRegistryFactory
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
     private static bool TryClose(
-        Type handlerType,
+        in OpenHandlerRegistration handler,
         Type messageType,
         [NotNullWhen(true)] out Type? closedHandlerType)
     {
+        if (!SatisfiesConstraints(in handler, messageType))
+        {
+            closedHandlerType = null;
+            return false;
+        }
+
         try
         {
-            closedHandlerType = handlerType.MakeGenericType(messageType);
+            closedHandlerType = handler.HandlerType.MakeGenericType(messageType);
             return true;
         }
         catch (ArgumentException)
@@ -391,6 +409,38 @@ internal static class DispatcherRegistryFactory
             closedHandlerType = null;
             return false;
         }
+    }
+
+    private static bool SatisfiesConstraints(in OpenHandlerRegistration handler, Type messageType)
+    {
+        if ((handler.SpecialConstraints & GenericParameterAttributes.ReferenceTypeConstraint) != 0 &&
+            messageType.IsValueType)
+        {
+            return false;
+        }
+
+        if ((handler.SpecialConstraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 &&
+            (!messageType.IsValueType || Nullable.GetUnderlyingType(messageType) is not null))
+        {
+            return false;
+        }
+
+        if ((handler.SpecialConstraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0 &&
+            !messageType.IsValueType &&
+            messageType.GetConstructor(Type.EmptyTypes) is null)
+        {
+            return false;
+        }
+
+        foreach (var constraint in handler.TypeConstraints)
+        {
+            if (!constraint.ContainsGenericParameters && !constraint.IsAssignableFrom(messageType))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
@@ -445,8 +495,13 @@ internal static class DispatcherRegistryFactory
 
     private readonly record struct HandlerRegistrations(
         HandlerRegistration[] Handlers,
-        Type[] OpenHandlers,
-        Type[] MappedOpenHandlers);
+        OpenHandlerRegistration[] OpenHandlers,
+        OpenHandlerRegistration[] MappedOpenHandlers);
+
+    private readonly record struct OpenHandlerRegistration(
+        Type HandlerType,
+        Type[] TypeConstraints,
+        GenericParameterAttributes SpecialConstraints);
 
     private readonly record struct HandlerRegistration(
         HandlerKind Kind,
