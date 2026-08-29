@@ -166,16 +166,17 @@ public sealed class PipelineBehaviorTests
     {
         using var replacement = new CancellationTokenSource();
         using var dispatch = new CancellationTokenSource();
+        var replacementToken = replacement.Token;
         var services = TestServices.CreateServices();
         services.AddScoped<IPipelineBehavior<TokenQuery, CancellationToken>>(_ =>
-            new TokenReplacingBehavior(replacement.Token));
+            new TokenReplacingBehavior(replacementToken));
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
 
         var received = await scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
             .QueryAsync(new TokenQuery(), dispatch.Token);
 
-        Assert.Equal(replacement.Token, received);
+        Assert.Equal(replacementToken, received);
         Assert.NotEqual(dispatch.Token, received);
     }
 
@@ -184,16 +185,17 @@ public sealed class PipelineBehaviorTests
     {
         using var replacement = new CancellationTokenSource();
         using var dispatch = new CancellationTokenSource();
+        var replacementToken = replacement.Token;
         var services = TestServices.CreateServices();
         services.AddScoped<IPipelineBehavior<TokenCommand, CancellationToken>>(_ =>
-            new TokenReplacingCommandBehavior(replacement.Token));
+            new TokenReplacingCommandBehavior(replacementToken));
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
 
         var received = await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
             .ExecuteAsync(new TokenCommand(), dispatch.Token);
 
-        Assert.Equal(replacement.Token, received);
+        Assert.Equal(replacementToken, received);
         Assert.NotEqual(dispatch.Token, received);
     }
 
@@ -202,9 +204,10 @@ public sealed class PipelineBehaviorTests
     {
         using var replacement = new CancellationTokenSource();
         using var dispatch = new CancellationTokenSource();
+        var replacementToken = replacement.Token;
         var services = TestServices.CreateServices();
         services.AddScoped<IPipelineBehavior<TokenRecordingCommand, Unit>>(_ =>
-            new TokenReplacingResultlessCommandBehavior(replacement.Token));
+            new TokenReplacingResultlessCommandBehavior(replacementToken));
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();
 
@@ -212,7 +215,7 @@ public sealed class PipelineBehaviorTests
             .ExecuteAsync(new TokenRecordingCommand(), dispatch.Token);
 
         var received = scope.ServiceProvider.GetRequiredService<TestState>().ReceivedToken;
-        Assert.Equal(replacement.Token, received);
+        Assert.Equal(replacementToken, received);
         Assert.NotEqual(dispatch.Token, received);
     }
 

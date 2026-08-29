@@ -341,19 +341,16 @@ public sealed class DispatcherRegistrationTests
     {
         IServiceCollection services = null!;
 
-        Assert.Throws<ArgumentNullException>(() => services.AddDispatcher());
-        Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers<TestAssemblyMarker>());
+        Assert.Throws<ArgumentNullException>(services.AddDispatcher);
+        Assert.Throws<ArgumentNullException>(services.AddDispatcherHandlers<TestAssemblyMarker>);
         Assert.Throws<ArgumentNullException>(() =>
             services.AddDispatcherHandlers(typeof(TestAssemblyMarker).Assembly));
-        Assert.Throws<ArgumentNullException>(() =>
-            services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>());
-        Assert.Throws<ArgumentNullException>(() =>
-            services.AddCommandHandler<RecordCommand, RecordCommandHandler>());
-        Assert.Throws<ArgumentNullException>(() =>
-            services.AddNotificationHandler<SomethingHappened, ANotificationHandler>());
-        Assert.Throws<ArgumentNullException>(() => services.AddPipelineBehavior<FirstGreetingBehavior>());
-        Assert.Throws<ArgumentNullException>(() =>
-            services.AddPipelineBehavior<GreetingQuery, string, FirstGreetingBehavior>());
+        Assert.Throws<ArgumentNullException>(services.AddQueryHandler<GreetingQuery, string, GreetingQueryHandler>);
+        Assert.Throws<ArgumentNullException>(services.AddCommandHandler<RecordCommand, RecordCommandHandler>);
+        Assert.Throws<ArgumentNullException>(services.AddNotificationHandler<SomethingHappened, ANotificationHandler>);
+        Assert.Throws<ArgumentNullException>(services.AddPipelineBehavior<FirstGreetingBehavior>);
+        Assert.Throws<ArgumentNullException>(services
+            .AddPipelineBehavior<GreetingQuery, string, FirstGreetingBehavior>);
     }
 
     [Fact]
