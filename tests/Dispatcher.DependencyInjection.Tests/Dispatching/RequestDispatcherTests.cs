@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Dispatcher.DependencyInjection.Tests.Dispatching;
 
-public sealed class DispatcherTests
+public sealed class RequestDispatcherTests
 {
     [Fact]
     public async Task Dispatches_query_and_both_command_shapes()
