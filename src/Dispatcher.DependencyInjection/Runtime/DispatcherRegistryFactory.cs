@@ -18,7 +18,7 @@ internal static class DispatcherRegistryFactory
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(routeTargets);
 
-        var registrations = ReadRegistrations(services);
+        var (registrations, mappedOpenHandlers) = ReadRegistrations(services);
         var messageTypes = routeTargets
             .Concat(registrations
                 .Where(static registration => registration.Kind != HandlerKind.OpenNotification)
@@ -33,6 +33,7 @@ internal static class DispatcherRegistryFactory
             messageTypes,
             CreateNotificationHandlers(registrations),
             CreateOpenHandlers(registrations),
+            mappedOpenHandlers,
             telemetry);
 
         return new DispatcherRegistry(
@@ -41,18 +42,48 @@ internal static class DispatcherRegistryFactory
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
-    private static HandlerRegistration[] ReadRegistrations(IEnumerable<ServiceDescriptor> services)
+    private static (HandlerRegistration[] Registrations, OpenHandlerBinder[] MappedOpenHandlers)
+        ReadRegistrations(IEnumerable<ServiceDescriptor> services)
     {
         var registrations = new List<HandlerRegistration>();
+        var mappedOpenHandlers = new List<OpenHandlerBinder>();
+        var mappedOpenHandlerTypes = new HashSet<Type>();
         foreach (var descriptor in services)
         {
+            if (TryReadMappedOpenNotificationHandler(descriptor) is { } mappedHandlerType)
+            {
+                mappedOpenHandlers.Add(new OpenHandlerBinder(mappedHandlerType));
+                mappedOpenHandlerTypes.Add(mappedHandlerType);
+                continue;
+            }
+
             if (TryReadRegistration(descriptor) is { } registration)
             {
                 registrations.Add(registration);
             }
         }
 
-        return registrations.ToArray();
+        // A mapped handler is already resolved through INotificationHandler<TNotification>.
+        // Drop its self-registration so scanning or AddNotificationHandler cannot invoke it again.
+        registrations.RemoveAll(registration =>
+            registration.Kind == HandlerKind.OpenNotification &&
+            mappedOpenHandlerTypes.Contains(registration.HandlerType));
+
+        return (registrations.ToArray(), mappedOpenHandlers.ToArray());
+    }
+
+    private static Type? TryReadMappedOpenNotificationHandler(ServiceDescriptor descriptor)
+    {
+        if (descriptor.IsKeyedService || descriptor.ServiceType != typeof(INotificationHandler<>))
+        {
+            return null;
+        }
+
+        var handlerType = descriptor.ImplementationType;
+
+        return handlerType is not null && HandlerTypeResolver.IsOpenNotificationHandler(handlerType)
+            ? handlerType
+            : null;
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
@@ -67,7 +98,7 @@ internal static class DispatcherRegistryFactory
         var handlerType = descriptor.ImplementationType ??
                           descriptor.ImplementationInstance?.GetType() ??
                           serviceType;
-        if (serviceType.IsGenericType)
+        if (serviceType is { IsGenericType: true, ContainsGenericParameters: false })
         {
             var definition = serviceType.GetGenericTypeDefinition();
             var arguments = serviceType.GetGenericArguments();
@@ -291,10 +322,11 @@ internal static class DispatcherRegistryFactory
         IReadOnlyList<Type> messageTypes,
         IReadOnlyDictionary<Type, NotificationHandlerWrapper> handlers,
         IReadOnlyList<OpenHandlerBinder> openHandlers,
+        IReadOnlyList<OpenHandlerBinder> mappedOpenHandlers,
         DispatcherTelemetry? telemetry)
     {
         var routes = new Dictionary<Type, NotificationHandlerWrapper>();
-        if (handlers.Count == 0 && openHandlers.Count == 0)
+        if (handlers.Count == 0 && openHandlers.Count == 0 && mappedOpenHandlers.Count == 0)
         {
             return routes;
         }
@@ -319,6 +351,13 @@ internal static class DispatcherRegistryFactory
 
             var handledType = MessageTypeResolver.SelectMostSpecific(messageType, handledTypes);
             var openHandlerTypes = CloseOpenHandlers(messageType, openHandlers);
+            if (handledType is null && HasApplicableMappedHandler(messageType, mappedOpenHandlers))
+            {
+                // The mapped handler is resolved through INotificationHandler<TNotification>, so the
+                // published type is its own handled type when no closed handler selects one.
+                handledType = messageType;
+            }
+
             if (handledType is null && openHandlerTypes.Length == 0)
             {
                 continue;
@@ -337,6 +376,22 @@ internal static class DispatcherRegistryFactory
         }
 
         return routes;
+    }
+
+    [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
+    private static bool HasApplicableMappedHandler(
+        Type messageType,
+        IReadOnlyList<OpenHandlerBinder> mappedOpenHandlers)
+    {
+        for (var index = 0; index < mappedOpenHandlers.Count; index++)
+        {
+            if (mappedOpenHandlers[index].TryClose(messageType, out _))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]
@@ -377,12 +432,17 @@ internal static class DispatcherRegistryFactory
                 openHandlerTypes);
         }
 
-        return openHandlerTypes.Length == 0
-            ? handlers[handledType]
-            : CreateNotificationWrapper(
+        if (openHandlerTypes.Length > 0)
+        {
+            return CreateNotificationWrapper(
                 typeof(CompositeNotificationHandlerWrapper<,>),
                 [handledType, messageType],
                 openHandlerTypes);
+        }
+
+        return handlers.TryGetValue(handledType, out var handler)
+            ? handler
+            : CreateNotificationWrapper(typeof(NotificationHandlerWrapper<>), handledType);
     }
 
     [RequiresDynamicCode(CompatibilityMessages.WrapperDynamicCode)]

@@ -151,7 +151,7 @@ Dispatcher first invokes the one selected closed notification route, then compat
 registration order, closed over the concrete published type.
 
 > [!IMPORTANT]
-> Open handlers are registered as their own services and therefore do not appear in
+> Open handlers registered this way are registered as their own services and therefore do not appear in
 > `IEnumerable<INotificationHandler<TNotification>>`. That enumerable remains the closed-handler view.
 
 ## Missing and duplicate handlers

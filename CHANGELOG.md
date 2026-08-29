@@ -55,6 +55,14 @@ A breaking release that removes public dispatch metadata and reworks reflection 
 
 - Assembly scanning now validates handler and route-target assemblies before changing the service
   collection, so a type-load failure cannot leave partially registered handlers or stale scan state.
+- An open generic notification handler mapped to the handler interface with Microsoft dependency
+  injection, such as `AddScoped(typeof(INotificationHandler<>), typeof(AuditHandler<>))`, now routes.
+  Creating the registry previously threw `ArgumentException` because the reflection implementation read
+  the descriptor as a closed handler whose notification type was still a type parameter. Microsoft DI
+  serves such a handler through `IEnumerable<INotificationHandler<TNotification>>`, so it runs as part
+  of the selected closed route, and the registry now also routes a concrete notification whose only
+  handler is the mapping. A handler that is both mapped and registered under its own type, by assembly
+  scanning or `AddNotificationHandler`, runs once rather than twice per publish.
 
 ## 1.0.0
 
