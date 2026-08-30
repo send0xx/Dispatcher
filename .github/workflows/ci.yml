@@ -37,12 +37,19 @@ jobs:
   test:
     name: Test ${{ matrix.framework }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
-        framework:
-          - net8.0
-          - net10.0
+        include:
+          - framework: net8.0
+            coverage: false
+          - framework: net10.0
+            coverage: true
+    env:
+      COVERAGE_ARGUMENTS: ${{ matrix.coverage && format('--coverage --coverage-output-format cobertura --coverage-settings {0}/coverage.runsettings', github.workspace) || '' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -59,18 +66,28 @@ jobs:
           dotnet test tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
+          $COVERAGE_ARGUMENTS
 
       - name: Test source generation
         run: >-
           dotnet test tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
+          $COVERAGE_ARGUMENTS
 
       - name: Test implementation parity
         run: >-
           dotnet test tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj
           -c Release
           --framework ${{ matrix.framework }}
+          $COVERAGE_ARGUMENTS
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v7
+        with:
+          fail_ci_if_error: true
+          use_oidc: true
 
   publish_aot:
     name: Publish Native AOT sample
