@@ -23,61 +23,22 @@ public sealed class RequestDispatcherTests
     }
 
     [Fact]
-    public async Task Passes_cancellation_token_to_handler()
-    {
-        await using var provider = TestServices.CreateProvider();
-        await using var scope = provider.CreateAsyncScope();
-        using var cancellation = new CancellationTokenSource();
-
-        var received = await scope.ServiceProvider
-            .GetRequiredService<IQueryDispatcher>()
-            .QueryAsync(new TokenQuery(), cancellation.Token);
-
-        Assert.Equal(cancellation.Token, received);
-    }
-
-    [Fact]
     public async Task Missing_handler_throws_descriptive_exception()
     {
         await using var provider = TestServices.CreateProvider();
         await using var scope = provider.CreateAsyncScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
-        var exception = await Assert.ThrowsAsync<HandlerNotFoundException>(() =>
-            scope.ServiceProvider.GetRequiredService<IQueryDispatcher>()
-                .QueryAsync(new MissingQuery(), TestContext.Current.CancellationToken).AsTask());
-
-        Assert.Equal(typeof(MissingQuery), exception.MessageType);
-    }
-
-    [Fact]
-    public async Task Missing_handler_throws_for_both_command_overloads()
-    {
-        await using var provider = TestServices.CreateProvider();
-        await using var scope = provider.CreateAsyncScope();
-        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
-
-        var resultless = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
+        var queryException = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
+            await dispatcher.QueryAsync(new MissingQuery(), TestContext.Current.CancellationToken));
+        var commandException = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
             await dispatcher.ExecuteAsync(new MissingCommand(), TestContext.Current.CancellationToken));
-        var withResponse = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
+        var commandWithResponseException = await Assert.ThrowsAsync<HandlerNotFoundException>(async () =>
             await dispatcher.ExecuteAsync(new MissingResponseCommand(), TestContext.Current.CancellationToken));
 
-        Assert.Equal(typeof(MissingCommand), resultless.MessageType);
-        Assert.Equal(typeof(MissingResponseCommand), withResponse.MessageType);
-    }
-
-    [Fact]
-    public async Task Missing_resultless_command_handler_throws_synchronously()
-    {
-        await using var provider = TestServices.CreateProvider();
-        await using var scope = provider.CreateAsyncScope();
-        var dispatcher = scope.ServiceProvider.GetRequiredService<ICommandDispatcher>();
-
-        var exception = Assert.Throws<HandlerNotFoundException>(() =>
-        {
-            _ = dispatcher.ExecuteAsync(new MissingCommand(), TestContext.Current.CancellationToken);
-        });
-
-        Assert.Equal(typeof(MissingCommand), exception.MessageType);
+        Assert.Equal(typeof(MissingQuery), queryException.MessageType);
+        Assert.Equal(typeof(MissingCommand), commandException.MessageType);
+        Assert.Equal(typeof(MissingResponseCommand), commandWithResponseException.MessageType);
     }
 
     [Fact]
@@ -150,5 +111,19 @@ public sealed class RequestDispatcherTests
         Assert.Equal(
             ["car-query"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
+    public async Task Passes_cancellation_token_to_handler()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+        using var cancellation = new CancellationTokenSource();
+
+        var received = await scope.ServiceProvider
+            .GetRequiredService<IQueryDispatcher>()
+            .QueryAsync(new TokenQuery(), cancellation.Token);
+
+        Assert.Equal(cancellation.Token, received);
     }
 }

@@ -41,8 +41,6 @@ public sealed class PipelineBehaviorTests
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
-    // A resultless command is adapted to Unit inside the pipeline, so it reaches the behaviors
-    // through different code than a command that declares a response.
     [Fact]
     public async Task Runs_first_registered_behavior_outermost_for_a_resultless_command()
     {
@@ -55,6 +53,8 @@ public sealed class PipelineBehaviorTests
         await scope.ServiceProvider.GetRequiredService<ICommandDispatcher>()
             .ExecuteAsync(new RecordCommand("ordered"), TestContext.Current.CancellationToken);
 
+        // A resultless command is adapted to Unit inside the pipeline, so it reaches the behaviors
+        // through different code than a command that declares a response.
         var state = scope.ServiceProvider.GetRequiredService<TestState>();
         Assert.Equal("ordered", state.Recorded);
         Assert.Equal(

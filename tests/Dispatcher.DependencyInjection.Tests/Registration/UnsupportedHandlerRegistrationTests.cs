@@ -147,6 +147,7 @@ public sealed class UnsupportedHandlerRegistrationTests
                 : null;
     }
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private sealed class RouteTargetLoadContext(string contractsAssemblyPath, string blockedAssemblyName)
         : AssemblyLoadContext(isCollectible: true)
     {

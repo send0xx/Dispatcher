@@ -106,7 +106,11 @@ public sealed class DispatcherTelemetryTests
         {
             Assert.Equal("dispatcher.operation.duration", measurement.InstrumentName);
             Assert.True(measurement.Value >= 0);
-            Assert.DoesNotContain(measurement.Tags, tag => tag.Key == "error.type");
+            Assert.DoesNotContain(measurement.Tags, tag =>
+            {
+                (string key, _) = tag;
+                return key == "error.type";
+            });
         });
         Assert.Equal(
             ["query", "command", "command", "notification"],
@@ -210,8 +214,7 @@ public sealed class DispatcherTelemetryTests
             tag.Key == "exception.type" &&
             Equals(tag.Value, typeof(InvalidOperationException).FullName));
         Assert.Contains(exceptionEvent.Tags, tag =>
-            tag.Key == "exception.message" &&
-            Equals(tag.Value, "telemetry failure"));
+            tag is { Key: "exception.message", Value: "telemetry failure" });
         Assert.Contains(exceptionEvent.Tags, tag => tag.Key == "exception.stacktrace");
 
         var measurement = Assert.Single(capture.Measurements);
@@ -244,9 +247,7 @@ public sealed class DispatcherTelemetryTests
         Assert.Equal(typeof(InvalidOperationException).FullName, activity.GetTagItem("error.type"));
         var exceptionEvent = Assert.Single(activity.Events);
         Assert.Equal("exception", exceptionEvent.Name);
-        Assert.Contains(exceptionEvent.Tags, tag =>
-            tag.Key == "exception.message" &&
-            Equals(tag.Value, "telemetry failure"));
+        Assert.Contains(exceptionEvent.Tags, tag => tag is { Key: "exception.message", Value: "telemetry failure" });
 
         var measurement = Assert.Single(capture.Measurements);
         Assert.Contains(measurement.Tags, tag =>
@@ -376,8 +377,7 @@ internal sealed class TelemetryCapture : IDisposable
             _activityListener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == activitySourceName,
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) =>
-                    ActivitySamplingResult.AllDataAndRecorded,
+                Sample = static (ref _) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = activity => Activities.Enqueue(activity)
             };
             ActivitySource.AddActivityListener(_activityListener);

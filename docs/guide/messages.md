@@ -128,11 +128,29 @@ internal sealed class RecordOrderCreated
 await notifications.PublishAsync(new OrderCreated(orderId), cancellationToken);
 ```
 
+### Handler shapes
+
+Notification handlers have three useful routing shapes. Given
+`UserCreated : DomainEvent`:
+
+| Shape | Declaration | When publishing `UserCreated` |
+| --- | --- | --- |
+| Exact closed handler | `INotificationHandler<UserCreated>` | Selected and invoked |
+| Polymorphic closed handler | `INotificationHandler<DomainEvent>` | Invoked only when no exact or more-specific closed handler exists |
+| Constrained open generic handler | `Handler<TNotification> where TNotification : DomainEvent` | Closed as `Handler<UserCreated>` and invoked in addition to the selected closed handler |
+
+A closed handler has no remaining generic type parameters. Its handled base class or interface makes
+it a polymorphic fallback; it is not a generic constraint, and Dispatcher does not broadcast to it
+when an exact closed handler exists. Use a constrained open generic handler for logging, auditing, or
+other work that must run for every concrete event in a hierarchy alongside its specific handler.
+
 ### Open generic handlers
 
-An open generic notification handler can observe every compatible known concrete notification:
+An open generic notification handler can observe every compatible known concrete notification. The
+constraint determines which notification hierarchy it observes:
 
 ```csharp
+// All notifications
 internal sealed class AuditHandler<TNotification>
     : INotificationHandler<TNotification>
     where TNotification : INotification
@@ -144,11 +162,32 @@ internal sealed class AuditHandler<TNotification>
 }
 
 builder.Services.AddNotificationHandler(typeof(AuditHandler<>));
+
+// Constrained observer
+public abstract record DomainEvent : INotification;
+
+public sealed record UserCreated(Guid UserId) : DomainEvent;
+
+internal sealed class DomainEventLogger<TNotification>
+    : INotificationHandler<TNotification>
+    where TNotification : DomainEvent
+{
+    public ValueTask HandleAsync(
+        TNotification notification,
+        CancellationToken cancellationToken = default) =>
+        ValueTask.CompletedTask;
+}
+
+builder.Services.AddNotificationHandler(typeof(DomainEventLogger<>));
 ```
 
 Assembly scanning and generated handler registration discover this canonical shape automatically.
 Dispatcher first invokes the one selected closed notification route, then compatible open handlers in
 registration order, closed over the concrete published type.
+
+If `INotificationHandler<UserCreated>` is also registered, publishing `UserCreated` invokes that exact
+handler first and then `DomainEventLogger<UserCreated>`. A closed
+`INotificationHandler<DomainEvent>` would not run in that case because the exact closed route wins.
 
 > [!IMPORTANT]
 > Open handlers registered this way are registered as their own services and therefore do not appear in

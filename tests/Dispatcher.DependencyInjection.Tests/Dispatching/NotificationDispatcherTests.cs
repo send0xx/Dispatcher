@@ -9,6 +9,18 @@ namespace Dispatcher.DependencyInjection.Tests.Dispatching;
 public sealed class NotificationDispatcherTests
 {
     [Fact]
+    public async Task Notification_without_handlers_is_no_op()
+    {
+        await using var provider = TestServices.CreateProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
+            .PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
+
+        Assert.Empty(scope.ServiceProvider.GetRequiredService<TestState>().Events);
+    }
+
+    [Fact]
     public async Task Publishes_notifications_sequentially_in_registration_order()
     {
         await using var provider = TestServices.CreateProvider();
@@ -36,18 +48,6 @@ public sealed class NotificationDispatcherTests
         Assert.Equal(
             ["stock-adjusted-override", "inventory-base-StockAdjusted"],
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
-    }
-
-    [Fact]
-    public async Task Notification_without_handlers_is_no_op()
-    {
-        await using var provider = TestServices.CreateProvider();
-        await using var scope = provider.CreateAsyncScope();
-
-        await scope.ServiceProvider.GetRequiredService<INotificationDispatcher>()
-            .PublishAsync(new UnhandledNotification(), TestContext.Current.CancellationToken);
-
-        Assert.Empty(scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
     [Fact]
