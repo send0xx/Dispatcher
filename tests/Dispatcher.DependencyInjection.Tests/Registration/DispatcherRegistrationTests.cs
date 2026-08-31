@@ -297,46 +297,6 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
-    public void Open_notification_registration_is_idempotent_and_uses_self_registration()
-    {
-        var services = new ServiceCollection();
-
-        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
-        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
-
-        var service = Assert.Single(
-            services,
-            descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>));
-        Assert.Equal(typeof(FirstOpenNotificationHandler<>), service.ImplementationType);
-        Assert.False(service.IsKeyedService);
-        Assert.Single(services);
-    }
-
-    [Fact]
-    public void Open_notification_registration_uses_dispatcher_options()
-    {
-        var services = new ServiceCollection();
-
-        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>), options =>
-            options.ServiceLifetime = ServiceLifetime.Singleton);
-
-        Assert.Equal(
-            ServiceLifetime.Singleton,
-            Assert.Single(
-                services,
-                descriptor => descriptor.ServiceType == typeof(FirstOpenNotificationHandler<>)).Lifetime);
-    }
-
-    [Fact]
-    public void Rejects_noncanonical_open_notification_handler()
-    {
-        var services = new ServiceCollection();
-
-        Assert.Throws<ArgumentException>(() =>
-            services.AddNotificationHandler(typeof(Dictionary<,>)));
-    }
-
-    [Fact]
     public void Registration_methods_reject_a_null_service_collection()
     {
         IServiceCollection services = null!;
@@ -368,12 +328,11 @@ public sealed class DispatcherRegistrationTests
     }
 
     [Fact]
-    public void Assembly_and_handler_type_arguments_reject_null()
+    public void Assembly_argument_rejects_null()
     {
         var services = new ServiceCollection();
 
         Assert.Throws<ArgumentNullException>(() => services.AddDispatcherHandlers(assembly: null!));
-        Assert.Throws<ArgumentNullException>(() => services.AddNotificationHandler(handlerType: null!));
     }
 
     private static void AssertDispatcherLifetime(

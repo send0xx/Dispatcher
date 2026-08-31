@@ -200,7 +200,7 @@ public sealed class DispatcherGeneratorOutputTests
                     ValueTask.CompletedTask;
             }
 
-            internal sealed record TestNotification : INotification;
+            internal readonly record struct TestNotification : INotification;
             internal sealed class TestNotificationHandler : INotificationHandler<TestNotification>
             {
                 public ValueTask HandleAsync(TestNotification notification, CancellationToken cancellationToken) =>
@@ -264,16 +264,25 @@ public sealed class DispatcherGeneratorOutputTests
             tree.ToString().Contains(
                 "public static class GeneratedHandlerServiceCollectionExtensions_GeneratorTests",
                 StringComparison.Ordinal))).ToString();
-        Assert.Contains("AddNotificationHandler(services, typeof(global::AuditHandler<>)", registration, StringComparison.Ordinal);
+        Assert.Contains("RegisterOpenNotificationHandler_", registration, StringComparison.Ordinal);
+        Assert.Contains("RegisterClosedOpenNotificationHandler_", registration, StringComparison.Ordinal);
+        Assert.Contains("typeof(global::AuditHandler<TNotification>)", registration, StringComparison.Ordinal);
         Assert.Contains("IsOpenNotificationHandler_", registration, StringComparison.Ordinal);
         Assert.Contains("InvokeOpenNotificationHandler_", registration, StringComparison.Ordinal);
+        Assert.DoesNotContain("typeof(global::AuditHandler<>)", registration, StringComparison.Ordinal);
         Assert.DoesNotContain("AddKeyed", registration, StringComparison.Ordinal);
         Assert.DoesNotContain("GetKeyed", registration, StringComparison.Ordinal);
 
         var dispatcher = Assert.Single(result.GeneratedTrees.Where(tree =>
             tree.ToString().Contains("internal sealed class Dispatcher", StringComparison.Ordinal))).ToString();
+        var dispatcherRegistration = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "public static class GeneratedDispatcherServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
         Assert.Contains("internal sealed class OpenNotificationHandlerRegistry", dispatcher, StringComparison.Ordinal);
         Assert.Contains("OpenNotificationCore<global::TestNotification>", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("RegisterOpenNotificationHandler_", dispatcherRegistration, StringComparison.Ordinal);
+        Assert.Contains("<global::TestNotification>(services);", dispatcherRegistration, StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", dispatcher, StringComparison.Ordinal);
         Assert.DoesNotContain("Keyed", dispatcher, StringComparison.Ordinal);
         Assert.Empty(result.OutputCompilation.GetDiagnostics(TestContext.Current.CancellationToken)

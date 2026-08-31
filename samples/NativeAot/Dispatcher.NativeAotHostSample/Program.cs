@@ -45,9 +45,16 @@ app.MapGet("/messages", async (IQueryDispatcher queries, CancellationToken cance
 app.MapGet("/audit", async (IQueryDispatcher queries, CancellationToken cancellationToken) =>
     Results.Ok(await queries.QueryAsync(new GetAuditCountQuery(), cancellationToken)));
 
+app.MapPost("/audit/pulse", async (INotificationDispatcher notifications, CancellationToken cancellationToken) =>
+{
+    await notifications.PublishAsync(new AuditPulse(), cancellationToken);
+    return Results.NoContent();
+});
+
 await app.RunAsync();
 
 public sealed record AddMessageRequest(string Text);
+
 public sealed record AddMessageResponse(Guid Id);
 
 [JsonSerializable(typeof(AddMessageRequest))]

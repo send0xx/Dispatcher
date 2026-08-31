@@ -21,7 +21,7 @@ internal static class GeneratedDispatcherEmitter
             .ToArray();
         var notifications = result.DispatchRoutes
             .Where(route => route.Handler?.Kind == HandlerModelKind.Notification ||
-                !route.OpenNotificationHandlers.IsDefaultOrEmpty)
+                            !route.OpenNotificationHandlers.IsDefaultOrEmpty)
             .ToArray();
         var hasOpenNotificationHandlers = !result.DispatchOpenNotificationHandlers.IsDefaultOrEmpty;
         var source = new StringBuilder();
@@ -64,7 +64,7 @@ internal static class GeneratedDispatcherEmitter
         source.AppendLine("}");
         if (hasOpenNotificationHandlers)
         {
-            AppendOpenNotificationHandlerRegistry(source, notifications, result.DispatchOpenNotificationHandlers);
+            AppendOpenNotificationHandlerRegistry(source, notifications);
         }
         GeneratedTelemetryEmitter.Append(
             source,
@@ -130,6 +130,33 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine("                \"A singleton dispatcher would capture the root service provider.\");");
         registration.AppendLine("        }");
         registration.AppendLine();
+        foreach (var route in notifications.Where(static route => !route.OpenNotificationHandlers.IsDefaultOrEmpty))
+        {
+            var message = route.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+            foreach (var handler in route.OpenNotificationHandlers)
+            {
+                registration.Append("        ").Append(handler.RegistrationClassName)
+                    .Append(".RegisterOpenNotificationHandler_").Append(handler.MethodSuffix)
+                    .Append('<').Append(message).AppendLine(">(services);");
+            }
+        }
+        if (hasOpenNotificationHandlers)
+        {
+            registration.AppendLine();
+            registration.AppendLine("        var openNotificationRegistrationCount = services.Count;");
+            registration.AppendLine("        for (var index = 0; index < openNotificationRegistrationCount; index++)");
+            registration.AppendLine("        {");
+            registration.AppendLine("            var descriptor = services[index];");
+            foreach (var handler in result.DispatchOpenNotificationHandlers)
+            {
+                registration.Append("            if (").Append(handler.RegistrationClassName).Append(".RegisterPendingOpenNotificationHandler_").Append(handler.MethodSuffix).AppendLine("(descriptor, services))");
+                registration.AppendLine("            {");
+                registration.AppendLine("                continue;");
+                registration.AppendLine("            }");
+            }
+            registration.AppendLine("        }");
+            registration.AppendLine();
+        }
         registration.AppendLine("        foreach (var descriptor in services)");
         registration.AppendLine("        {");
         registration.Append("            if (descriptor.ServiceType == typeof(").Append(generatedTypeName).AppendLine("))");
@@ -198,7 +225,6 @@ internal static class GeneratedDispatcherEmitter
         registration.AppendLine("    }");
         registration.AppendLine("}");
         context.AddSource(extensionsName + ".g.cs", SourceText.From(registration.ToString(), Encoding.UTF8));
-
     }
 
     private static void AppendRequestDictionary(
@@ -526,8 +552,7 @@ internal static class GeneratedDispatcherEmitter
 
     private static void AppendOpenNotificationHandlerRegistry(
         StringBuilder source,
-        IReadOnlyList<DispatchRouteModel> notificationRoutes,
-        IReadOnlyList<OpenGenericNotificationHandlerModel> openHandlers)
+        IReadOnlyList<DispatchRouteModel> notificationRoutes)
     {
         var openRoutes = notificationRoutes
             .Where(static route => !route.OpenNotificationHandlers.IsDefaultOrEmpty)
@@ -555,32 +580,24 @@ internal static class GeneratedDispatcherEmitter
 
         source.AppendLine("        foreach (var registration in registrations)");
         source.AppendLine("        {");
-        foreach (var handler in openHandlers)
+        for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
         {
-            source.Append("            if (").Append(handler.RegistrationClassName)
-                .Append(".IsOpenNotificationHandler_").Append(handler.MethodSuffix)
-                .AppendLine("(registration))");
-            source.AppendLine("            {");
-            for (var routeIndex = 0; routeIndex < openRoutes.Length; routeIndex++)
+            var route = openRoutes[routeIndex];
+            var message = route.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+            foreach (var handler in route.OpenNotificationHandlers)
             {
-                var route = openRoutes[routeIndex];
-                if (!route.OpenNotificationHandlers.Any(candidate =>
-                        SymbolEqualityComparer.Default.Equals(
-                            candidate.ImplementationType,
-                            handler.ImplementationType)))
-                {
-                    continue;
-                }
-
-                var message = route.MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+                source.Append("            if (").Append(handler.RegistrationClassName)
+                    .Append(".IsOpenNotificationHandler_").Append(handler.MethodSuffix)
+                    .Append('<').Append(message).AppendLine(">(registration))");
+                source.AppendLine("            {");
                 source.Append("                route").Append(routeIndex)
                     .Append(".Add(static (provider, notification, token) => ")
                     .Append(handler.RegistrationClassName).Append(".InvokeOpenNotificationHandler_")
                     .Append(handler.MethodSuffix).Append('<').Append(message).Append(">(")
                     .Append("provider, (").Append(message).AppendLine(")notification, token));");
+                source.AppendLine("                continue;");
+                source.AppendLine("            }");
             }
-            source.AppendLine("                continue;");
-            source.AppendLine("            }");
         }
         source.AppendLine("        }");
         source.AppendLine();

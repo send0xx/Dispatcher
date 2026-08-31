@@ -229,8 +229,18 @@ public sealed class DispatcherGeneratorModularityTests
             "global::Dispatcher.SourceGeneration.GeneratedHandlerServiceCollectionExtensions_Open_Handlers.InvokeOpenNotificationHandler_",
             dispatcher,
             StringComparison.Ordinal);
-        Assert.Contains("OpenNotificationCore<global::Contracts.SharedEventOccurred>", dispatcher, StringComparison.Ordinal);
+        Assert.Contains("OpenNotificationCore<global::Contracts.SharedEventOccurred>", dispatcher,
+            StringComparison.Ordinal);
         Assert.DoesNotContain("global::AuditHandler", dispatcher, StringComparison.Ordinal);
+        var registration = Assert.Single(result.GeneratedTrees.Where(tree =>
+            tree.ToString().Contains(
+                "public static class GeneratedDispatcherServiceCollectionExtensions",
+                StringComparison.Ordinal))).ToString();
+        Assert.Contains(
+            "global::Dispatcher.SourceGeneration.GeneratedHandlerServiceCollectionExtensions_Open_Handlers.RegisterOpenNotificationHandler_",
+            registration,
+            StringComparison.Ordinal);
+        Assert.Contains("<global::Contracts.SharedEventOccurred>(services);", registration, StringComparison.Ordinal);
     }
 
     private static MetadataReference CompileQueryModule(

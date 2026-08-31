@@ -135,6 +135,16 @@ public abstract class DispatchParityTests
     }
 
     [Fact]
+    public async Task Open_notification_handler_is_closed_over_a_value_type()
+    {
+        await using var host = CreateHost();
+
+        await host.Dispatcher.PublishAsync(new AuditPulse(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(["audit-AuditPulse"], host.Recorder.Events);
+    }
+
+    [Fact]
     public async Task Invokes_closed_notification_handlers_sequentially_in_registration_order()
     {
         await using var host = CreateHost();

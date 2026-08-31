@@ -14,4 +14,6 @@ public abstract record MessageEvent(Guid Id) : INotification;
 
 public sealed record MessageAdded(Guid Id) : MessageEvent(Id);
 
+public readonly record struct AuditPulse : INotification;
+
 public sealed record MessageSnapshot(IReadOnlyCollection<Message> Messages, int NotificationsObserved);

@@ -216,7 +216,7 @@ public sealed class ServiceCollectionHandlerRegistrationTests
     {
         var services = CreateServices();
         services.AddScoped(typeof(INotificationHandler<>), typeof(OrderEvents<>));
-        services.AddNotificationHandler(typeof(OrderEvents<>));
+        services.AddScoped(typeof(OrderEvents<>));
         services.AddDispatcherMessage<OrderShipped>();
         await using var provider = TestServices.BuildProvider(services);
         await using var scope = provider.CreateAsyncScope();

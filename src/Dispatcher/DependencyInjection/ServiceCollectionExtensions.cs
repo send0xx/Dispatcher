@@ -149,61 +149,6 @@ public static class ServiceCollectionExtensions
         AddHandler<INotificationHandler<TNotification>, THandler>(services, configure);
 
     /// <summary>
-    /// Registers an open generic notification handler.
-    /// </summary>
-    /// <param name="services">The service collection to add the handler to.</param>
-    /// <param name="handlerType">The open generic notification handler type to register.</param>
-    /// <returns>The same service collection so that additional calls can be chained.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="services"/> or <paramref name="handlerType"/> is <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="handlerType"/> is not a canonical open generic notification handler.
-    /// </exception>
-    public static IServiceCollection AddNotificationHandler(
-        this IServiceCollection services,
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
-        Type handlerType) =>
-        services.AddNotificationHandler(handlerType, static _ => { });
-
-    /// <summary>
-    /// Registers an open generic notification handler with the specified options.
-    /// </summary>
-    /// <param name="services">The service collection to add the handler to.</param>
-    /// <param name="handlerType">The open generic notification handler type to register.</param>
-    /// <param name="configure">The delegate that configures the handler registration.</param>
-    /// <returns>The same service collection so that additional calls can be chained.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="services"/>, <paramref name="handlerType"/>, or <paramref name="configure"/> is
-    /// <see langword="null"/>.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="handlerType"/> is not a canonical open generic notification handler.
-    /// </exception>
-    public static IServiceCollection AddNotificationHandler(
-        this IServiceCollection services,
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
-        Type handlerType,
-        Action<DispatcherOptions> configure)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(handlerType);
-
-        ValidateOpenNotificationHandler(handlerType);
-        if (IsRegistered(services, handlerType, handlerType))
-        {
-            return services;
-        }
-
-        var lifetime = GetLifetime(configure);
-        services.Add(ServiceDescriptor.Describe(handlerType, handlerType, lifetime));
-
-        return services;
-    }
-
-    /// <summary>
     /// Registers a pipeline behavior for a request and response type.
     /// </summary>
     /// <typeparam name="TRequest">The type of request handled by the pipeline.</typeparam>
@@ -213,8 +158,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The same service collection so that additional calls can be chained.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    TBehavior>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
         this IServiceCollection services)
         where TRequest : IRequest
         where TBehavior : class, IPipelineBehavior<TRequest, TResponse> =>
@@ -233,8 +177,7 @@ public static class ServiceCollectionExtensions
     /// <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
     /// </exception>
     public static IServiceCollection AddPipelineBehavior<TRequest, TResponse,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    TBehavior>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TBehavior>(
         this IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TRequest : IRequest
@@ -259,8 +202,7 @@ public static class ServiceCollectionExtensions
     }
 
     private static IServiceCollection AddHandler<TService,
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-    THandler>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(
         IServiceCollection services,
         Action<DispatcherOptions> configure)
         where TService : class
@@ -307,35 +249,5 @@ public static class ServiceCollectionExtensions
         var options = new DispatcherOptions();
         configure(options);
         return options.ServiceLifetime;
-    }
-
-    private static void ValidateOpenNotificationHandler(
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
-        Type handlerType)
-    {
-        var handlerInterfaces = handlerType.GetInterfaces()
-            .Where(@interface => @interface.IsGenericType &&
-                                 @interface.GetGenericTypeDefinition() is var definition &&
-                                 (definition == typeof(IQueryHandler<,>) ||
-                                  definition == typeof(ICommandHandler<,>) ||
-                                  definition == typeof(ICommandHandler<>) ||
-                                  definition == typeof(INotificationHandler<>)))
-            .ToArray();
-        if (!handlerType.IsGenericTypeDefinition ||
-            !handlerType.IsClass ||
-            handlerType.IsAbstract ||
-            handlerType.GetGenericArguments() is not [var typeParameter] ||
-            handlerInterfaces is not [var handlerInterface] ||
-            handlerInterface.GetGenericTypeDefinition() != typeof(INotificationHandler<>) ||
-            handlerInterface.GetGenericArguments()[0] != typeParameter ||
-            handlerType.GetConstructors().Length == 0)
-        {
-            throw new ArgumentException(
-                $"Handler '{handlerType.FullName}' must be a non-abstract open generic class with one type " +
-                "parameter, implement INotificationHandler<TNotification> using that parameter directly, " +
-                "and expose a public constructor.",
-                nameof(handlerType));
-        }
     }
 }

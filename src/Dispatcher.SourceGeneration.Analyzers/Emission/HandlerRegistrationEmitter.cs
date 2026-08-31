@@ -83,10 +83,7 @@ internal static class HandlerRegistrationEmitter
 
         foreach (var handler in result.LocalOpenNotificationHandlers)
         {
-            source.Append("        global::Dispatcher.ServiceCollectionExtensions.AddNotificationHandler(services, typeof(")
-                .Append(handler.ImplementationType.ConstructUnboundGenericType()
-                    .ToDisplayString(SymbolDisplayFormats.FullyQualified))
-                .AppendLine("), handlerOptions => handlerOptions.ServiceLifetime = options.ServiceLifetime);");
+            source.Append("        RegisterOpenNotificationHandler_").Append(handler.MethodSuffix).AppendLine("(services, options.ServiceLifetime);");
         }
 
         source.AppendLine();
@@ -101,23 +98,78 @@ internal static class HandlerRegistrationEmitter
         var parameter = handler.TypeParameter;
         var parameterName = parameter.Name;
         var implementation = handler.ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
+        var visibility = handler.CanInvokeFromOtherAssemblies ? "    public static " : "    internal static ";
         source.AppendLine();
         source.AppendLine("    /// <summary>");
-        source.AppendLine("    /// Identifies the service descriptor for a generated open notification handler.");
+        source.AppendLine("    /// Registers this generated open notification handler for a concrete notification type.");
+        source.AppendLine("    /// </summary>");
+        source.Append("    /// <typeparam name=\"").Append(parameterName).AppendLine("\">The concrete notification type.</typeparam>");
+        source.AppendLine("    /// <param name=\"services\">The service collection to add the handler to.</param>");
+        source.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        source.AppendLine("    /// <paramref name=\"services\"/> is <see langword=\"null\"/>.");
+        source.AppendLine("    /// </exception>");
+        source.Append(visibility).Append("void RegisterOpenNotificationHandler_").Append(handler.MethodSuffix).Append('<').Append(parameterName).AppendLine(">(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        AppendConstraints(source, parameter, "        ");
+        source.AppendLine("    {");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
+        source.Append("        var state = GetOpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine("(services);");
+        source.Append("        if (!state.NotificationTypes.Add(typeof(").Append(parameterName).AppendLine(")))");
+        source.AppendLine("        {");
+        source.AppendLine("            return;");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.Append("        state.Registrations.Add(RegisterClosedOpenNotificationHandler_").Append(handler.MethodSuffix).Append('<').Append(parameterName).AppendLine(">);");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Registers pending closed routes when a descriptor belongs to this generated handler.");
         source.AppendLine("    /// </summary>");
         source.AppendLine("    /// <param name=\"descriptor\">The service descriptor to inspect.</param>");
+        source.AppendLine("    /// <param name=\"services\">The service collection to add closed handlers to.</param>");
+        source.AppendLine("    /// <returns><see langword=\"true\"/> when the descriptor belongs to this handler.</returns>");
+        source.AppendLine("    /// <exception cref=\"global::System.ArgumentNullException\">");
+        source.AppendLine("    /// <paramref name=\"descriptor\"/> or <paramref name=\"services\"/> is <see langword=\"null\"/>.");
+        source.AppendLine("    /// </exception>");
+        source.Append("    public static bool RegisterPendingOpenNotificationHandler_").Append(handler.MethodSuffix).AppendLine("(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor descriptor,");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        source.AppendLine("    {");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(descriptor);");
+        source.AppendLine("        global::System.ArgumentNullException.ThrowIfNull(services);");
+        source.Append("        if (descriptor.ImplementationInstance is not OpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine(" state)");
+        source.AppendLine("        {");
+        source.AppendLine("            return false;");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.AppendLine("        if (state.IsHandlerRegistered)");
+        source.AppendLine("        {");
+        source.AppendLine("            foreach (var registration in state.Registrations)");
+        source.AppendLine("            {");
+        source.AppendLine("                registration(services, state.Lifetime);");
+        source.AppendLine("            }");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.AppendLine("        return true;");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.AppendLine("    /// <summary>");
+        source.AppendLine("    /// Identifies the closed service descriptor for this generated notification handler.");
+        source.AppendLine("    /// </summary>");
+        source.Append("    /// <typeparam name=\"").Append(parameterName)
+            .AppendLine("\">The concrete notification type.</typeparam>");
+        source.AppendLine("    /// <param name=\"descriptor\">The service descriptor to inspect.</param>");
         source.AppendLine("    /// <returns><see langword=\"true\"/> when the descriptor registers this handler.</returns>");
-        source.Append("    public static bool IsOpenNotificationHandler_").Append(handler.MethodSuffix)
-            .AppendLine("(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor descriptor) =>");
-        source.AppendLine("        !descriptor.IsKeyedService &&");
-        source.Append("        descriptor.ServiceType == typeof(")
-            .Append(handler.ImplementationType.ConstructUnboundGenericType()
-                .ToDisplayString(SymbolDisplayFormats.FullyQualified))
-            .AppendLine(") &&");
-        source.Append("        (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) == typeof(")
-            .Append(handler.ImplementationType.ConstructUnboundGenericType()
-                .ToDisplayString(SymbolDisplayFormats.FullyQualified))
-            .AppendLine(");");
+        source.Append(visibility).Append("bool IsOpenNotificationHandler_").Append(handler.MethodSuffix)
+            .Append('<').Append(parameterName).AppendLine(">(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor descriptor)");
+        AppendConstraints(source, parameter, "        ");
+        source.AppendLine("    {");
+        source.Append("        var handlerType = typeof(").Append(implementation).AppendLine(");");
+        source.AppendLine("        return !descriptor.IsKeyedService &&");
+        source.AppendLine("            descriptor.ServiceType == handlerType &&");
+        source.AppendLine("            (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) == handlerType;");
+        source.AppendLine("    }");
         source.AppendLine();
         source.AppendLine("    /// <summary>");
         source.AppendLine("    /// Invokes a generated open notification handler closed over a concrete notification type.");
@@ -128,7 +180,7 @@ internal static class HandlerRegistrationEmitter
         source.AppendLine("    /// <param name=\"notification\">The notification to handle.</param>");
         source.AppendLine("    /// <param name=\"cancellationToken\">The cancellation token for the operation.</param>");
         source.AppendLine("    /// <returns>A value task that represents the handler invocation.</returns>");
-        source.Append(handler.CanInvokeFromOtherAssemblies ? "    public static " : "    internal static ")
+        source.Append(visibility)
             .Append("global::System.Threading.Tasks.ValueTask InvokeOpenNotificationHandler_")
             .Append(handler.MethodSuffix).Append('<').Append(parameterName).AppendLine(">(");
         source.AppendLine("        global::System.IServiceProvider serviceProvider,");
@@ -142,6 +194,82 @@ internal static class HandlerRegistrationEmitter
         source.Append("            throw new global::System.InvalidOperationException($\"Service '{typeof(")
             .Append(implementation).AppendLine(").FullName}' is not registered.\");");
         source.AppendLine("        return handler.HandleAsync(notification, cancellationToken);");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.Append("    private static void RegisterOpenNotificationHandler_").Append(handler.MethodSuffix)
+            .AppendLine("(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime)");
+        source.AppendLine("    {");
+        source.Append("        var state = GetOpenNotificationHandlerState_").Append(handler.MethodSuffix)
+            .AppendLine("(services);");
+        source.AppendLine("        if (state.IsHandlerRegistered)");
+        source.AppendLine("        {");
+        source.AppendLine("            return;");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.AppendLine("        state.IsHandlerRegistered = true;");
+        source.AppendLine("        state.Lifetime = lifetime;");
+        source.AppendLine("        foreach (var registration in state.Registrations)");
+        source.AppendLine("        {");
+        source.AppendLine("            registration(services, lifetime);");
+        source.AppendLine("        }");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.Append("    private static void RegisterClosedOpenNotificationHandler_").Append(handler.MethodSuffix)
+            .Append('<').Append(parameterName).AppendLine(">(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime)");
+        AppendConstraints(source, parameter, "        ");
+        source.AppendLine("    {");
+        source.Append("        var handlerType = typeof(").Append(implementation).AppendLine(");");
+        source.AppendLine("        foreach (var descriptor in services)");
+        source.AppendLine("        {");
+        source.AppendLine("            if (!descriptor.IsKeyedService &&");
+        source.AppendLine("                descriptor.ServiceType == handlerType &&");
+        source.AppendLine("                (descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()) == handlerType)");
+        source.AppendLine("            {");
+        source.AppendLine("                return;");
+        source.AppendLine("            }");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.AppendLine("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Describe(");
+        source.AppendLine("            handlerType,");
+        source.AppendLine("            handlerType,");
+        source.AppendLine("            lifetime));");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.Append("    private static OpenNotificationHandlerState_").Append(handler.MethodSuffix)
+            .Append(" GetOpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine("(");
+        source.AppendLine("        global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        source.AppendLine("    {");
+        source.AppendLine("        foreach (var descriptor in services)");
+        source.AppendLine("        {");
+        source.Append("            if (descriptor.ImplementationInstance is OpenNotificationHandlerState_")
+            .Append(handler.MethodSuffix).AppendLine(" state)");
+        source.AppendLine("            {");
+        source.AppendLine("                return state;");
+        source.AppendLine("            }");
+        source.AppendLine("        }");
+        source.AppendLine();
+        source.Append("        var created = new OpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine("();");
+        source.AppendLine("        services.Add(global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(");
+        source.Append("            typeof(OpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine("),");
+        source.AppendLine("            created));");
+        source.AppendLine("        return created;");
+        source.AppendLine("    }");
+        source.AppendLine();
+        source.Append("    private sealed class OpenNotificationHandlerState_").Append(handler.MethodSuffix).AppendLine();
+        source.AppendLine("    {");
+        source.AppendLine("        internal bool IsHandlerRegistered { get; set; }");
+        source.AppendLine();
+        source.AppendLine("        internal global::Microsoft.Extensions.DependencyInjection.ServiceLifetime Lifetime { get; set; }");
+        source.AppendLine();
+        source.AppendLine("        internal global::System.Collections.Generic.HashSet<global::System.Type> NotificationTypes { get; } = [];");
+        source.AppendLine();
+        source.AppendLine("        internal global::System.Collections.Generic.List<global::System.Action<");
+        source.AppendLine("            global::Microsoft.Extensions.DependencyInjection.IServiceCollection,");
+        source.AppendLine("            global::Microsoft.Extensions.DependencyInjection.ServiceLifetime>> Registrations { get; } = [];");
         source.AppendLine("    }");
     }
 

@@ -32,8 +32,7 @@ public class AssemblyScanningBenchmarks
     public int ModuleCount { get; set; }
 
     [GlobalSetup]
-    public void Setup() =>
-        _modules = Enumerable.Range(0, ModuleCount).Select(CreateModule).ToArray();
+    public void Setup() => _modules = Enumerable.Range(0, ModuleCount).Select(CreateModule).ToArray();
 
     [Benchmark]
     public int ScanUnroutableModules()
@@ -77,7 +76,7 @@ public class AssemblyScanningBenchmarks
         var services = new ServiceCollection();
         services.AddDispatcherHandlers(typeof(OrdersModule).Assembly);
         ScanAll(services);
-        services.AddNotificationHandler(typeof(UnmatchedOpenNotificationHandler<>));
+        services.AddScoped(typeof(UnmatchedOpenNotificationHandler<>));
         services.AddDispatcher();
         using var provider = services.BuildServiceProvider();
         _ = provider.GetRequiredService<IDispatcher>();

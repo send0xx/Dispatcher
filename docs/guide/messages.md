@@ -6,15 +6,15 @@ description: The three message kinds, their contracts, and how to dispatch each 
 
 # Messages and handlers
 
-| Kind | Message implements | Handler implements | Handlers | Response |
-| --- | --- | --- | --- | --- |
-| Query | `IQuery<TResponse>` | `IQueryHandler<TQuery, TResponse>` | Exactly one | Always |
-| Command | `ICommand` or `ICommand<TResponse>` | `ICommandHandler<TCommand>` or `ICommandHandler<TCommand, TResponse>` | Exactly one | Optional |
-| Notification | `INotification` | `INotificationHandler<TNotification>` | Zero or more | Never |
+| Kind         | Message implements                  | Handler implements                                                    | Handlers     | Response |
+|--------------|-------------------------------------|-----------------------------------------------------------------------|--------------|----------|
+| Query        | `IQuery<TResponse>`                 | `IQueryHandler<TQuery, TResponse>`                                    | Exactly one  | Always   |
+| Command      | `ICommand` or `ICommand<TResponse>` | `ICommandHandler<TCommand>` or `ICommandHandler<TCommand, TResponse>` | Exactly one  | Optional |
+| Notification | `INotification`                     | `INotificationHandler<TNotification>`                                 | Zero or more | Never    |
 
 Every handler exposes a single `HandleAsync` taking the message and a `CancellationToken`, returning
-`ValueTask` or `ValueTask<TResponse>`. Handlers may be `internal`, and are resolved from the current
-DI scope on every dispatch.
+`ValueTask` or `ValueTask<TResponse>`. Handlers may be `internal`, and are resolved from the current DI scope on every
+dispatch.
 
 ## The marker hierarchy
 
@@ -33,8 +33,8 @@ flowchart LR
     CB --> C2["ICommand (of TResponse)"]
 ```
 
-These markers are what [pipeline behaviors](pipeline-behaviors.md) constrain against to decide which
-requests they apply to.
+These markers are what [pipeline behaviors](pipeline-behaviors.md) constrain against to decide which requests they apply
+to.
 
 ## Queries
 
@@ -100,13 +100,13 @@ var orderId = await commands.ExecuteAsync(
 await commands.ExecuteAsync(new ClearOrdersCommand(), cancellationToken);
 ```
 
-A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch
-methods remain resultless.
+A resultless `ICommand` is adapted to `Unit` only inside the pipeline; its public handler and dispatch methods remain
+resultless.
 
 ## Notifications
 
-Notifications can have zero or more handlers, and run **sequentially in registration order**.
-Publishing one with no handlers is a no-op.
+Notifications can have zero or more handlers, and run **sequentially in registration order**. Publishing one with no
+handlers is a no-op.
 
 ```csharp
 public sealed record OrderCreated(Guid OrderId) : INotification;
@@ -133,21 +133,21 @@ await notifications.PublishAsync(new OrderCreated(orderId), cancellationToken);
 Notification handlers have three useful routing shapes. Given
 `UserCreated : DomainEvent`:
 
-| Shape | Declaration | When publishing `UserCreated` |
-| --- | --- | --- |
-| Exact closed handler | `INotificationHandler<UserCreated>` | Selected and invoked |
-| Polymorphic closed handler | `INotificationHandler<DomainEvent>` | Invoked only when no exact or more-specific closed handler exists |
+| Shape                            | Declaration                                                | When publishing `UserCreated`                                                           |
+|----------------------------------|------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| Exact closed handler             | `INotificationHandler<UserCreated>`                        | Selected and invoked                                                                    |
+| Polymorphic closed handler       | `INotificationHandler<DomainEvent>`                        | Invoked only when no exact or more-specific closed handler exists                       |
 | Constrained open generic handler | `Handler<TNotification> where TNotification : DomainEvent` | Closed as `Handler<UserCreated>` and invoked in addition to the selected closed handler |
 
-A closed handler has no remaining generic type parameters. Its handled base class or interface makes
-it a polymorphic fallback; it is not a generic constraint, and Dispatcher does not broadcast to it
-when an exact closed handler exists. Use a constrained open generic handler for logging, auditing, or
-other work that must run for every concrete event in a hierarchy alongside its specific handler.
+A closed handler has no remaining generic type parameters. Its handled base class or interface makes it a polymorphic
+fallback; it is not a generic constraint, and Dispatcher does not broadcast to it when an exact closed handler exists.
+Use a constrained open generic handler for logging, auditing, or other work that must run for every concrete event in a
+hierarchy alongside its specific handler.
 
 ### Open generic handlers
 
-An open generic notification handler can observe every compatible known concrete notification. The
-constraint determines which notification hierarchy it observes:
+An open generic notification handler can observe every compatible known concrete notification. The constraint determines
+which notification hierarchy it observes:
 
 ```csharp
 // All notifications
@@ -160,8 +160,6 @@ internal sealed class AuditHandler<TNotification>
         CancellationToken cancellationToken = default) =>
         ValueTask.CompletedTask;
 }
-
-builder.Services.AddNotificationHandler(typeof(AuditHandler<>));
 
 // Constrained observer
 public abstract record DomainEvent : INotification;
@@ -178,19 +176,19 @@ internal sealed class DomainEventLogger<TNotification>
         ValueTask.CompletedTask;
 }
 
-builder.Services.AddNotificationHandler(typeof(DomainEventLogger<>));
 ```
 
-Assembly scanning and generated handler registration discover this canonical shape automatically.
-Dispatcher first invokes the one selected closed notification route, then compatible open handlers in
-registration order, closed over the concrete published type.
+Reflection assembly scanning discovers this canonical shape automatically. Generated handler registration discovers the
+same shape at compile time and emits a closed service descriptor for every compatible known concrete notification,
+including value types. Dispatcher first invokes the one selected closed notification route, then compatible open
+handlers in registration order, closed over the concrete published type.
 
-If `INotificationHandler<UserCreated>` is also registered, publishing `UserCreated` invokes that exact
-handler first and then `DomainEventLogger<UserCreated>`. A closed
+If `INotificationHandler<UserCreated>` is also registered, publishing `UserCreated` invokes that exact handler first and
+then `DomainEventLogger<UserCreated>`. A closed
 `INotificationHandler<DomainEvent>` would not run in that case because the exact closed route wins.
 
 > [!IMPORTANT]
-> Open handlers registered this way are registered as their own services and therefore do not appear in
+> Open handlers are registered as their own services and therefore do not appear in
 > `IEnumerable<INotificationHandler<TNotification>>`. That enumerable remains the closed-handler view.
 
 ## Missing and duplicate handlers

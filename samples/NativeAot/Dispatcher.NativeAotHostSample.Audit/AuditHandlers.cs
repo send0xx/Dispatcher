@@ -36,3 +36,16 @@ internal sealed class AuditNotificationHandler<TNotification>(AuditState state)
         return ValueTask.CompletedTask;
     }
 }
+
+internal sealed class StructAuditNotificationHandler<TNotification>(AuditState state)
+    : INotificationHandler<TNotification>
+    where TNotification : struct, INotification
+{
+    public ValueTask HandleAsync(
+        TNotification notification,
+        CancellationToken cancellationToken)
+    {
+        state.Record();
+        return ValueTask.CompletedTask;
+    }
+}

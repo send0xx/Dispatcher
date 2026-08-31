@@ -54,7 +54,7 @@ public sealed class CrossAssemblyRegistrationTests
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers<HandlerAssemblyMarker>();
-        services.AddNotificationHandler(typeof(RestrictedOpenNotificationHandler<>));
+        services.AddDispatcherHandlers<AdditionalHandlerAssemblyMarker>();
         services.AddDispatcher();
         services.AddSingleton<OpenNotificationRecorder>();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -69,7 +69,13 @@ public sealed class CrossAssemblyRegistrationTests
         await dispatcher.PublishAsync(new OpenOnlyNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            ["open-restricted-RestrictedNotification"],
+            [
+                "open-a-RestrictedNotification",
+                "open-restricted-RestrictedNotification",
+                "open-b-RestrictedNotification",
+                "open-a-OpenOnlyNotification",
+                "open-b-OpenOnlyNotification"
+            ],
             scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
     }
 
@@ -81,8 +87,8 @@ public sealed class CrossAssemblyRegistrationTests
         services.AddDispatcherMessage<ClassNotification>();
         services.AddDispatcherMessage<ComparableNotification>();
         services.AddDispatcherMessage<NonComparableNotification>();
-        services.AddNotificationHandler(typeof(StructNotificationHandler<>));
-        services.AddNotificationHandler(typeof(ComparableNotificationHandler<>));
+        services.AddScoped(typeof(StructNotificationHandler<>));
+        services.AddScoped(typeof(ComparableNotificationHandler<>));
         services.AddDispatcher();
         services.AddSingleton<ConstraintRecorder>();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -146,11 +152,11 @@ public sealed class CrossAssemblyRegistrationTests
     }
 
     [Fact]
-    public async Task Open_notification_handler_registered_after_a_scan_observes_that_scan_s_messages()
+    public async Task Later_handler_scan_adds_open_notification_handlers_for_already_discovered_messages()
     {
         var services = new ServiceCollection();
         services.AddDispatcherHandlers<HandlerAssemblyMarker>();
-        services.AddNotificationHandler(typeof(FirstOpenNotificationHandler<>));
+        services.AddDispatcherHandlers<AdditionalHandlerAssemblyMarker>();
         services.AddDispatcher();
         services.AddSingleton<OpenNotificationRecorder>();
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -164,7 +170,7 @@ public sealed class CrossAssemblyRegistrationTests
             .PublishAsync(new OpenOnlyNotification(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            ["open-a-OpenOnlyNotification"],
+            ["open-a-OpenOnlyNotification", "open-b-OpenOnlyNotification"],
             scope.ServiceProvider.GetRequiredService<OpenNotificationRecorder>().Events);
     }
 

@@ -184,6 +184,9 @@ public sealed record UserUpdated : DomainEvent;
 /// <summary>An event with its own handler, which must suppress the base handlers.</summary>
 public sealed record UserCreated : DomainEvent;
 
+/// <summary>A value-type notification handled through a generated closed registration.</summary>
+public readonly record struct AuditPulse : INotification;
+
 /// <summary>A notification no handler can observe, so publishing it must do nothing.</summary>
 public sealed record Ignored : INotification;
 
@@ -275,6 +278,18 @@ internal sealed class UserCreatedHandler(ParityRecorder recorder) : INotificatio
 public sealed class AuditHandler<TNotification>(ParityRecorder recorder)
     : INotificationHandler<TNotification>
     where TNotification : DomainEvent
+{
+    public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
+    {
+        recorder.Events.Add("audit-" + typeof(TNotification).Name);
+        return ValueTask.CompletedTask;
+    }
+}
+
+/// <summary>Observes value-type notifications through a generated closed registration.</summary>
+public sealed class StructAuditHandler<TNotification>(ParityRecorder recorder)
+    : INotificationHandler<TNotification>
+    where TNotification : struct, INotification
 {
     public ValueTask HandleAsync(TNotification notification, CancellationToken cancellationToken)
     {
