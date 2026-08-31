@@ -251,7 +251,7 @@ public static class ServiceCollectionExtensions
         var options = new DispatcherOptions();
         configure(options);
 
-        return HandlerScanner.Register(services, assemblies, options.ServiceLifetime);
+        return HandlerAssemblyRegistrar.Register(services, assemblies, options.ServiceLifetime);
     }
 
     /// <summary>

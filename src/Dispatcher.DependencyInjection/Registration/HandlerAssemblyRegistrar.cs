@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Dispatcher.DependencyInjection;
 
-internal static class HandlerScanner
+internal static class HandlerAssemblyRegistrar
 {
     private const string UnsupportedOpenGenericShape =
         "is generic but is not a supported open generic handler. Use a closed handler type, or an " +
