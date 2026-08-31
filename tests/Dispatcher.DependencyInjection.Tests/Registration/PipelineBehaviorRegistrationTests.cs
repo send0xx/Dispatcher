@@ -4,10 +4,6 @@ using Xunit;
 
 namespace Dispatcher.DependencyInjection.Tests.Registration;
 
-/// <summary>
-/// Covers which behavior types <c>AddPipelineBehavior</c> accepts, and what it registers for the ones
-/// it does. How a registered behavior runs at dispatch time is covered by <c>PipelineBehaviorTests</c>.
-/// </summary>
 public sealed class PipelineBehaviorRegistrationTests
 {
     [Fact]
@@ -16,6 +12,17 @@ public sealed class PipelineBehaviorRegistrationTests
         var services = new ServiceCollection();
 
         Assert.Throws<ArgumentException>(() => services.AddPipelineBehavior(typeof(string)));
+    }
+
+    [Fact]
+    public void Rejects_abstract_pipeline_behavior_type()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            services.AddPipelineBehavior(typeof(AbstractGreetingBehavior)));
+
+        Assert.Equal("behaviorType", exception.ParamName);
     }
 
     [Fact]

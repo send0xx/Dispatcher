@@ -234,6 +234,14 @@ internal sealed class BaseGreetingBehavior(TestState state) : IPipelineBehavior<
     }
 }
 
+internal abstract class AbstractGreetingBehavior : IPipelineBehavior<GreetingQuery, string>
+{
+    public abstract ValueTask<string> HandleAsync(
+        GreetingQuery request,
+        RequestHandlerDelegate<string> next,
+        CancellationToken cancellationToken);
+}
+
 internal sealed class PartiallyClosedGreetingBehavior<TResponse>
     : IPipelineBehavior<GreetingQuery, TResponse>
 {
