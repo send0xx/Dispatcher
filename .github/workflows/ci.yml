@@ -67,6 +67,7 @@ jobs:
           -c Release
           --framework ${{ matrix.framework }}
           $COVERAGE_ARGUMENTS
+          ${{ matrix.coverage && '--coverage-output Dispatcher.DependencyInjection.Tests.cobertura.xml' || '' }}
 
       - name: Test source generation
         run: >-
@@ -74,6 +75,7 @@ jobs:
           -c Release
           --framework ${{ matrix.framework }}
           $COVERAGE_ARGUMENTS
+          ${{ matrix.coverage && '--coverage-output Dispatcher.SourceGeneration.Tests.cobertura.xml' || '' }}
 
       - name: Test implementation parity
         run: >-
@@ -81,11 +83,16 @@ jobs:
           -c Release
           --framework ${{ matrix.framework }}
           $COVERAGE_ARGUMENTS
+          ${{ matrix.coverage && '--coverage-output Dispatcher.Parity.Tests.cobertura.xml' || '' }}
 
       - name: Upload coverage to Coveralls
         if: matrix.coverage
         uses: coverallsapp/github-action@v2
         with:
+          files: >-
+            TestResults/Dispatcher.DependencyInjection.Tests.cobertura.xml
+            TestResults/Dispatcher.SourceGeneration.Tests.cobertura.xml
+            TestResults/Dispatcher.Parity.Tests.cobertura.xml
           format: cobertura
 
   publish_aot:
