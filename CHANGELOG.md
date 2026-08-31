@@ -13,6 +13,9 @@ This file records user-facing changes to Dispatcher releases.
 - Source-generated open notification handlers now use explicit closed service descriptors for every compatible known
   notification type. This removes Microsoft DI's runtime open-generic closure from the generated path and supports
   value-type notifications under Native AOT while preserving module lifetimes and registration order.
+- Source generation was rewritten around separate discovery, compilation analysis, route resolution, and emission
+  stages. The generated dispatcher and registration code is more consistently structured and formatted while preserving
+  handler routing, notifications, pipelines, telemetry, diagnostics, namespaces, and generated API names.
 
 ## 2.0.0
 
