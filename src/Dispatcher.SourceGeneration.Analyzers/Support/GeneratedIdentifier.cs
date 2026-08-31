@@ -1,11 +1,11 @@
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Dispatcher.SourceGeneration;
+namespace Dispatcher.SourceGeneration.Support;
 
-internal static class IdentifierSanitizer
+internal static class GeneratedIdentifier
 {
-    internal static string SanitizeIdentifier(string value)
+    internal static string From(string value)
     {
         var builder = new StringBuilder(value.Length + 1);
         if (value.Length == 0 || !SyntaxFacts.IsIdentifierStartCharacter(value[0]))

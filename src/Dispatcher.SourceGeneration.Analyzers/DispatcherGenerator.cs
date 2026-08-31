@@ -1,6 +1,7 @@
 using System.Text;
 using Dispatcher.SourceGeneration.Analysis;
 using Dispatcher.SourceGeneration.Emission;
+using Dispatcher.SourceGeneration.Support;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -15,20 +16,19 @@ public sealed class DispatcherGenerator : IIncrementalGenerator
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(static postInitializationContext =>
+        context.RegisterPostInitializationOutput(static output =>
         {
-            postInitializationContext.AddSource(
+            output.AddSource(
                 "GenerateDispatcherHandlersAttribute.g.cs",
-                SourceText.From(InjectedSources.HandlerAttribute, Encoding.UTF8));
-            postInitializationContext.AddSource(
+                SourceText.From(GeneratedAttributes.HandlerRegistration, Encoding.UTF8));
+            output.AddSource(
                 "GenerateDispatcherAttribute.g.cs",
-                SourceText.From(InjectedSources.DispatcherAttribute, Encoding.UTF8));
+                SourceText.From(GeneratedAttributes.DispatcherRegistration, Encoding.UTF8));
         });
 
         var model = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
-            DispatcherAnalyzer.Analyze(compilation, cancellationToken));
-
-        context.RegisterSourceOutput(model, static (productionContext, result) =>
-            DispatcherEmitter.Emit(productionContext, result));
+            CompilationAnalyzer.Analyze(compilation, cancellationToken));
+        context.RegisterSourceOutput(model, static (output, generation) =>
+            SourceOutputEmitter.Emit(output, generation));
     }
 }

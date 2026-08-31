@@ -1,15 +1,15 @@
 using Microsoft.CodeAnalysis;
 
-namespace Dispatcher.SourceGeneration.Analysis;
+namespace Dispatcher.SourceGeneration.Diagnostics;
 
-internal static class GeneratorDiagnostics
+internal static class DiagnosticCatalog
 {
-    internal static readonly DiagnosticDescriptor InvalidMethodName = Create(
+    internal static readonly DiagnosticDescriptor InvalidHandlerRegistrationName = Create(
         "DSPG001", "Invalid generated registration method name",
         "'{0}' is not a valid generated registration method name");
     internal static readonly DiagnosticDescriptor DuplicateRequestHandler = Create(
         "DSPG002", "Multiple request handlers", "Request '{0}' has multiple handlers: {1}");
-    internal static readonly DiagnosticDescriptor OpenGenericHandler = Create(
+    internal static readonly DiagnosticDescriptor UnsupportedGenericHandler = Create(
         "DSPG003", "Unsupported open generic handler",
         "Handler '{0}' is generic but is not a supported open generic handler. Use a closed handler " +
         "type that is not nested in a generic type, or an open generic notification handler with one " +
@@ -20,17 +20,17 @@ internal static class GeneratorDiagnostics
     internal static readonly DiagnosticDescriptor MissingRequestHandler = Create(
         "DSPG005", "Request has no handler",
         "Request '{0}' has no handler in this assembly or in the modules it references");
-    internal static readonly DiagnosticDescriptor InvalidDispatcherMethodName = Create(
+    internal static readonly DiagnosticDescriptor InvalidDispatcherRegistrationName = Create(
         "DSPG006", "Invalid generated dispatcher registration method name",
         "'{0}' is not a valid generated dispatcher registration method name");
     internal static readonly DiagnosticDescriptor InaccessibleReferencedMessage = Create(
         "DSPG007", "Referenced message is inaccessible",
         "Message '{0}' handled by module '{1}' must be accessible to the generated host dispatcher");
-    internal static readonly DiagnosticDescriptor UnsupportedOpenGenericBehavior = Create(
+    internal static readonly DiagnosticDescriptor UnsupportedPipelineBehavior = Create(
         "DSPG008", "Unsupported open generic pipeline behavior",
         "Pipeline behavior '{0}' must have two type parameters, implement " +
         "IPipelineBehavior<TRequest, TResponse> using them in order, and expose a public constructor");
-    internal static readonly DiagnosticDescriptor AmbiguousHandlerRoute = Create(
+    internal static readonly DiagnosticDescriptor AmbiguousRoute = Create(
         "DSPG009", "Ambiguous polymorphic handler route",
         "Message '{0}' matches multiple equally specific handled message types: {1}");
     internal static readonly DiagnosticDescriptor UnregisteredLocalHandlers = Create(

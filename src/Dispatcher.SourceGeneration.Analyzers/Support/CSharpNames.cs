@@ -1,11 +1,13 @@
 using Microsoft.CodeAnalysis;
 
-namespace Dispatcher.SourceGeneration;
+namespace Dispatcher.SourceGeneration.Support;
 
-internal static class SymbolDisplayFormats
+internal static class CSharpNames
 {
-    internal static readonly SymbolDisplayFormat FullyQualified =
+    private static readonly SymbolDisplayFormat Format =
         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
             SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
+    internal static string Type(ITypeSymbol symbol) => symbol.ToDisplayString(Format);
 }
