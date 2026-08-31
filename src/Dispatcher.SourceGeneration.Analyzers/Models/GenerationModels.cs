@@ -44,19 +44,6 @@ internal sealed class HandlerModel
         : MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ", " +
           ResponseType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ", " +
           ImplementationType.ToDisplayString(SymbolDisplayFormats.FullyQualified);
-    public string ServiceType => Kind switch
-    {
-        HandlerModelKind.Query => "global::Dispatcher.IQueryHandler<" +
-            MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ", " +
-            ResponseType!.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ">",
-        HandlerModelKind.CommandWithResponse => "global::Dispatcher.ICommandHandler<" +
-            MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ", " +
-            ResponseType!.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ">",
-        HandlerModelKind.Command => "global::Dispatcher.ICommandHandler<" +
-            MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ">",
-        _ => "global::Dispatcher.INotificationHandler<" +
-            MessageType.ToDisplayString(SymbolDisplayFormats.FullyQualified) + ">"
-    };
 }
 
 internal sealed class OpenGenericNotificationHandlerModel(INamedTypeSymbol implementationType)
