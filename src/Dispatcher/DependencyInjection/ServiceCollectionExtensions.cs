@@ -249,10 +249,11 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
+        var lifetime = GetLifetime(configure);
         services.Add(ServiceDescriptor.Describe(
             typeof(IPipelineBehavior<TRequest, TResponse>),
             typeof(TBehavior),
-            GetLifetime(configure)));
+            lifetime));
 
         return services;
     }
