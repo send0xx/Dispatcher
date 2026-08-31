@@ -229,6 +229,17 @@ public sealed class ServiceCollectionHandlerRegistrationTests
             scope.ServiceProvider.GetRequiredService<TestState>().Events);
     }
 
+    [Fact]
+    public void Rejects_non_message_dispatcher_route_target()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            services.AddDispatcherMessage(typeof(string)));
+
+        Assert.Equal("messageType", exception.ParamName);
+    }
+
     private static ServiceCollection CreateServices()
     {
         var services = new ServiceCollection();
