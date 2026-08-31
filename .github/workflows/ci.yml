@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      statuses: write
     strategy:
       fail-fast: false
       matrix:
@@ -82,12 +82,11 @@ jobs:
           --framework ${{ matrix.framework }}
           $COVERAGE_ARGUMENTS
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage to Coveralls
         if: matrix.coverage
-        uses: codecov/codecov-action@v7
+        uses: coverallsapp/github-action@v2
         with:
-          fail_ci_if_error: true
-          use_oidc: true
+          format: cobertura
 
   publish_aot:
     name: Publish Native AOT sample

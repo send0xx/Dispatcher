@@ -4,7 +4,7 @@
 [![NuGet SourceGeneration](https://img.shields.io/nuget/v/Send0xx.Dispatcher.SourceGeneration.svg?label=SourceGeneration)](https://www.nuget.org/packages/Send0xx.Dispatcher.SourceGeneration/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/send0xx/Dispatcher/blob/main/LICENSE)
 [![CI](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml/badge.svg)](https://github.com/send0xx/Dispatcher/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/send0xx/Dispatcher/graph/badge.svg)](https://codecov.io/gh/send0xx/Dispatcher)
+[![Coverage Status](https://coveralls.io/repos/github/send0xx/Dispatcher/badge.svg?branch=main)](https://coveralls.io/github/send0xx/Dispatcher?branch=main)
 
 Dispatcher is a small CQRS library for .NET applications that use dependency injection. It provides focused APIs for queries, commands, notifications, handlers, and pipeline behaviors.
 
