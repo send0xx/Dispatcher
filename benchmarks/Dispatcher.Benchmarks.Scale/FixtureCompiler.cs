@@ -23,21 +23,13 @@ internal sealed class FixtureCorpus : IDisposable
 
     internal required FixtureConfiguration Configuration { get; init; }
 
-    internal required FixtureSources Sources { get; init; }
-
-    internal required SyntaxTree ContractsTree { get; init; }
-
     internal required ImmutableArray<SyntaxTree> ModuleTrees { get; init; }
-
-    internal required SyntaxTree HostTree { get; init; }
 
     internal required ImmutableArray<CSharpCompilation> ModuleCompilations { get; init; }
 
     internal required CSharpCompilation HostCompilation { get; init; }
 
     internal required CSharpCompilation ChangedHostCompilation { get; init; }
-
-    internal required CSharpCompilation HostBeforeModuleReference { get; init; }
 
     internal required GeneratorDriver CachedHostDriver { get; init; }
 
@@ -48,8 +40,6 @@ internal sealed class FixtureCorpus : IDisposable
     internal required string TemporaryDirectory { get; init; }
 
     internal required ImmutableArray<string> ModuleAssemblyPaths { get; init; }
-
-    internal required string HostAssemblyPath { get; init; }
 
     internal required ImmutableArray<Assembly> LoadedModules { get; set; }
 
@@ -220,20 +210,15 @@ internal static class FixtureCompiler
             var corpus = new FixtureCorpus
             {
                 Configuration = configuration,
-                Sources = sources,
-                ContractsTree = contractsTree,
                 ModuleTrees = moduleTrees.ToImmutable(),
-                HostTree = hostTree,
                 ModuleCompilations = moduleCompilations.ToImmutable(),
                 HostCompilation = hostCompilation,
                 ChangedHostCompilation = changedHost,
-                HostBeforeModuleReference = moduleReferenceBaseline,
                 CachedHostDriver = cachedHost.Driver,
                 ChangedHostBaseDriver = cachedHost.Driver,
                 ModuleReferenceBaseDriver = moduleReferenceDriver.Driver,
                 TemporaryDirectory = temporaryDirectory,
                 ModuleAssemblyPaths = modulePaths.ToImmutable(),
-                HostAssemblyPath = hostPath,
                 LoadedModules = loadedModules,
                 LoadedHost = loadedHost
             };
