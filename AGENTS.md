@@ -2,37 +2,47 @@
 
 ## Project intent
 
-Dispatcher is a small CQRS library for .NET applications using dependency injection. Keep the API focused on queries, commands, notifications, handlers, and pipeline behaviors. Prefer straightforward runtime code over abstractions that do not provide a measurable benefit.
+Dispatcher is a small CQRS library for .NET applications using dependency injection. Keep the API focused on queries,
+commands, notifications, handlers, and pipeline behaviors. Prefer straightforward runtime code over abstractions that do
+not provide a measurable benefit.
 
-Before introducing a new type, study the existing design and prefer refactoring or composing its types when the responsibility fits naturally; add a type only when it represents a genuinely distinct responsibility.
+Before introducing a new type, study the existing design and prefer refactoring or composing its types when the
+responsibility fits naturally; add a type only when it represents a genuinely distinct responsibility.
 
-The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net10.0`. The current package version is defined centrally in `Directory.Build.props`.
+The libraries target `net8.0` and `net10.0`. Samples and benchmarks target `net10.0`. The current package version is
+defined centrally in `Directory.Build.props`.
 
 ## Solution structure
 
 - `src/Dispatcher.Abstractions`: public messages, handlers, dispatcher contracts, pipeline contracts, and `Unit`.
 - `src/Dispatcher`: typed Microsoft DI registration extensions and Dispatcher and telemetry options.
-- `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime, registration, and handler scanning.
-- `src/Dispatcher.SourceGeneration`: source-generation package facade and its dependency on shared Dispatcher runtime APIs.
-- `src/Dispatcher.SourceGeneration.Analyzers`: source generator for the dispatcher implementation and handler registration.
+- `src/Dispatcher.DependencyInjection`: reflection-based Dispatcher, frozen registry, wrappers, telemetry runtime,
+  registration, and handler scanning.
+- `src/Dispatcher.SourceGeneration`: source-generation package facade and its dependency on shared Dispatcher runtime
+  APIs.
+- `src/Dispatcher.SourceGeneration.Analyzers`: source generator for the dispatcher implementation and handler
+  registration.
 - `samples/DependencyInjection`: reflection-based modular Minimal API with internal Orders and Stock handlers.
 - `samples/NativeAot`: Native AOT Minimal API where the host composes generated handlers from referenced assemblies.
 - `tests/Dispatcher.DependencyInjection.Tests`: integration tests targeting .NET 8 and .NET 10.
-- `tests/Dispatcher.Parity.Tests`: dispatch scenarios written once and run against both implementations.
-  Its messages and handlers are declared in the project itself and generated over at build time, so the
-  reflection-based and source-generated dispatchers route the same CLR types. Keep every request in it
-  handled: the generator reports an unhandled request as an error, so a handlerless request breaks the build.
-- `tests/Dispatcher.SourceGeneration.Tests`: generator diagnostics and emitted output, verified by compiling
-  source through the generator. It targets .NET 8 and .NET 10 like the other suites, because the harness
-  compiles against the running runtime's reference assemblies, so each framework proves the emitted source
-  compiles and runs there.
+- `tests/Dispatcher.Parity.Tests`: dispatch scenarios written once and run against both implementations. Its messages
+  and handlers are declared in the project itself and generated over at build time, so the reflection-based and
+  source-generated dispatchers route the same CLR types. Keep every request in it handled: the generator reports an
+  unhandled request as an error, so a handlerless request breaks the build.
+- `tests/Dispatcher.SourceGeneration.Tests`: generator diagnostics and emitted output, verified by compiling source
+  through the generator. It targets .NET 8 and .NET 10 like the other suites, because the harness compiles against the
+  running runtime's reference assemblies, so each framework proves the emitted source compiles and runs there.
 - `tests/Dispatcher.TestSupport.*`: shared contracts and handler assemblies used by cross-assembly integration tests.
-- `benchmarks/Dispatcher.Benchmarks`: BenchmarkDotNet latency and allocation benchmarks.
-- `docs`: the DocFX documentation site published to <https://send0xx.github.io/Dispatcher/>. `docs/index.md`, `docs/guide`, and `docs/reference.md` are hand-written; `docs/api` holds only a hand-written `index.md`, and its API pages are generated at build time.
+- `benchmarks/Dispatcher.Benchmarks.*`: shared fixtures plus focused execution, telemetry, and scale benchmarks.
+- `docs`: the DocFX documentation site published to <https://send0xx.github.io/Dispatcher/>. `docs/index.md`,
+  `docs/guide`, and `docs/reference.md` are hand-written; `docs/api` holds only a hand-written `index.md`, and its API
+  pages are generated at build time.
 - `RELEASING.md`: CI, documentation, and NuGet publishing instructions for maintainers.
-- `CHANGELOG.md`: user-facing release history; update it when a release changes observable behavior or package consumption.
+- `CHANGELOG.md`: user-facing release history; update it when a release changes observable behavior or package
+  consumption.
 
-Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not automatically determine a type's namespace.
+Choose namespaces deliberately based on each type's responsibility and public API. Folder organization does not
+automatically determine a type's namespace.
 
 ## Settled API decisions
 
@@ -41,17 +51,20 @@ Choose namespaces deliberately based on each type's responsibility and public AP
 - Both command shapes inherit from `ICommandBase`, which inherits from `IRequest`.
 - Resultless `ICommand` is adapted to `Unit` only inside the pipeline.
 - A resultless `ICommandHandler<TCommand>` returns `ValueTask`, not `ValueTask<Unit>`.
-- Command dispatch methods are named `ExecuteAsync`; query dispatch uses `QueryAsync`; notification dispatch uses `PublishAsync`.
-- Keep specialized query and command handler interfaces. Do not introduce a shared public `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.
+- Command dispatch methods are named `ExecuteAsync`; query dispatch uses `QueryAsync`; notification dispatch uses
+  `PublishAsync`.
+- Keep specialized query and command handler interfaces. Do not introduce a shared public
+  `IRequestHandler<TRequest,TResponse>` unless the public design is deliberately reconsidered.
 - Use one `IPipelineBehavior<TRequest,TResponse>` contract for queries and both command shapes.
-- `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as `next(cancellationToken)`.
+- `RequestHandlerDelegate<TResponse>` accepts only a `CancellationToken`. Behaviors invoke it as
+  `next(cancellationToken)`.
 - Keep `MessageType` naming in exception types because dispatch failures can also describe notifications.
 - Public abstractions are organized into the current folders. Do not consolidate them into one file.
-- `IQuery<TResponse>` and `ICommand<TResponse>` are invariant. Do not reintroduce `out`. Requests route by
-  concrete type to one handler declaring one response type, so an upcast such as `IQuery<object>` can never
-  dispatch; invariance makes the compiler reject it instead of failing at runtime.
-- No type named `Dispatcher` may sit directly in the `Dispatcher` namespace, because it shadows that
-  namespace for consumers and produces CS0426. The reflection implementation lives in
+- `IQuery<TResponse>` and `ICommand<TResponse>` are invariant. Do not reintroduce `out`. Requests route by concrete type
+  to one handler declaring one response type, so an upcast such as `IQuery<object>` can never dispatch; invariance makes
+  the compiler reject it instead of failing at runtime.
+- No type named `Dispatcher` may sit directly in the `Dispatcher` namespace, because it shadows that namespace for
+  consumers and produces CS0426. The reflection implementation lives in
   `Dispatcher.DependencyInjection`, and the generated dispatcher is emitted into `Dispatcher.SourceGeneration`.
 
 Treat changes to these contracts as breaking API changes. Discuss and benchmark them before implementation.
@@ -61,48 +74,60 @@ Treat changes to these contracts as breaking API changes. Discuss and benchmark 
 - `AddDispatcher()` registers infrastructure only. It must not scan assemblies implicitly.
 - Modules register their own handlers separately through `AddDispatcherHandlers<TMarker>()` or an assembly overload.
 - Reflection scanning must include internal handler classes.
-- Handler assembly registration is idempotent, and it must stay idempotent against the typed registration
-  methods too. Registering one handler through both paths must not duplicate its service descriptor, which
-  would run a notification handler twice and make a query or command look like it has duplicate handlers.
-- Every check for an already-registered handler or behavior must match a descriptor registered as an
-  instance as well as one registered by type, through
-  `descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()`. A descriptor added by
-  factory delegate cannot be matched, because Microsoft DI does not expose what a factory returns; a
-  handler or behavior registered that way and then registered again does run twice.
-- Scanning fails when an assembly has types that cannot be loaded. A type that fails to load cannot be
-  inspected, so scanning cannot tell whether it declared a handler; taking the types that did load
-  would drop it silently. `AssemblyScanException` names the assembly and carries the loader
-  exceptions.
-- Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly
-  later as a notification that never arrives or a missing request handler. Collect every offending type and
-  throw one `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.
-- Registration order must not change which messages are routable. Scanning cannot route a message whose
-  handler is registered by a later call, so it keeps that message pending and registry creation reconsiders
-  every pending message against the final registrations. Without that, registering an open generic
-  notification handler after the scan that discovered its notifications silently delivered nothing.
-- `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI registrations of `IPipelineBehavior<,>` must continue to work.
-- `AddPipelineBehavior` is idempotent for the same behavior and service type, in both the typed and the
-  reflection overloads. Registering a behavior twice would otherwise run it twice in every pipeline it
-  applies to. The first registration wins so that outermost-first ordering is unaffected.
+- Handler assembly registration is idempotent, and it must stay idempotent against the typed registration methods too.
+  Registering one handler through both paths must not duplicate its service descriptor, which would run a notification
+  handler twice and make a query or command look like it has duplicate handlers.
+- Every check for an already-registered handler or behavior must match a descriptor registered as an instance as well as
+  one registered by type, through
+  `descriptor.ImplementationType ?? descriptor.ImplementationInstance?.GetType()`. A descriptor added by factory
+  delegate cannot be matched, because Microsoft DI does not expose what a factory returns; a handler or behavior
+  registered that way and then registered again does run twice.
+- Scanning fails when an assembly has types that cannot be loaded. A type that fails to load cannot be inspected, so
+  scanning cannot tell whether it declared a handler; taking the types that did load would drop it silently.
+  `AssemblyScanException` names the assembly and carries the loader exceptions.
+- Scanning never silently skips a handler it cannot register, because a skipped handler fails invisibly later as a
+  notification that never arrives or a missing request handler. Collect every offending type and throw one
+  `UnsupportedHandlerException`, mirroring how the generator reports one diagnostic per type.
+- Registration order must not change which messages are routable. Scanning cannot route a message whose handler is
+  registered by a later call, so it keeps that message pending and registry creation reconsiders every pending message
+  against the final registrations. Without that, registering an open generic notification handler after the scan that
+  discovered its notifications silently delivered nothing.
+- `AddPipelineBehavior` is the single supported convenience method for behavior registration. Direct Microsoft DI
+  registrations of `IPipelineBehavior<,>` must continue to work.
+- `AddPipelineBehavior` is idempotent for the same behavior and service type, in both the typed and the reflection
+  overloads. Registering a behavior twice would otherwise run it twice in every pipeline it applies to. The first
+  registration wins so that outermost-first ordering is unaffected.
 - Dispatcher is scoped by design. The registry and immutable wrappers are singleton infrastructure.
-- Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would capture the root provider and invalidate scoped dependency resolution.
-- `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
+- Do not change Dispatcher to singleton while scoped handlers or behaviors are supported. A singleton Dispatcher would
+  capture the root provider and invalidate scoped dependency resolution.
+- `DispatcherOptions` belongs to `src/Dispatcher` and uses Microsoft DI's `ServiceLifetime`; the shared package
+  therefore depends on Microsoft.Extensions.DependencyInjection.Abstractions.
 - Typed handler registrations in `src/Dispatcher` add only executable Microsoft DI service descriptors.
-- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers are constructed from the final handler service descriptors when the singleton registry is created.
-- The registry factory registered by `AddDispatcher` closes over the `IServiceCollection` on purpose, so the delegate cannot be `static`. Reading the descriptors when the registry singleton is created, rather than when `AddDispatcher` runs, is what makes registration order irrelevant. The cost is that the closure keeps every `ServiceDescriptor` alive for the provider's lifetime. Generated registration code closes over the collection for the same reason. Accept the retention; do not trade it back for order-dependent registration.
+- Reflection-based wrapper construction and executable wrappers belong to `src/Dispatcher.DependencyInjection`; wrappers
+  are constructed from the final handler service descriptors when the singleton registry is created.
+- The registry factory registered by `AddDispatcher` closes over the `IServiceCollection` on purpose, so the delegate
+  cannot be `static`. Reading the descriptors when the registry singleton is created, rather than when `AddDispatcher`
+  runs, is what makes registration order irrelevant. The cost is that the closure keeps every `ServiceDescriptor` alive
+  for the provider's lifetime. Generated registration code closes over the collection for the same reason. Accept the
+  retention; do not trade it back for order-dependent registration.
 - The reflection implementation's direct use of the BCL `IServiceProvider` is intentional.
-- Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated capability. A thin adapter adds an allocation and interface call without improving the current runtime.
+- Do not add an adapter around `IServiceProvider` unless it enables a concrete container integration or source-generated
+  capability. A thin adapter adds an allocation and interface call without improving the current runtime.
 
 ## Pipeline implementation
 
 - Resolve behaviors for each dispatch so scoped and transient lifetimes remain correct.
-- When no behavior applies, invoke the handler directly. This path should remain allocation-free for synchronously completing handlers.
-- Reuse an existing indexed behavior collection when the container provides one; materialize only an arbitrary enumerable fallback.
+- When no behavior applies, invoke the handler directly. This path should remain allocation-free for synchronously
+  completing handlers.
+- Reuse an existing indexed behavior collection when the container provides one; materialize only an arbitrary
+  enumerable fallback.
 - Invoke the outermost behavior directly instead of wrapping it in an additional closure.
 - Preserve registration order: the first registered behavior is outermost.
 - Preserve short-circuiting and cancellation-token replacement through `next`.
-- Do not add a scoped pipeline cache. ASP.NET creates a scope per HTTP request, so chain construction is generally not amortized and the cache adds per-request objects and complexity.
-- Do not cache executable pipelines in singleton wrappers. They would retain scoped behaviors or a scoped provider across requests.
+- Do not add a scoped pipeline cache. ASP.NET creates a scope per HTTP request, so chain construction is generally not
+  amortized and the cache adds per-request objects and complexity.
+- Do not cache executable pipelines in singleton wrappers. They would retain scoped behaviors or a scoped provider
+  across requests.
 
 Expected steady-state characteristics on .NET 10 are approximately:
 
@@ -118,18 +143,24 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 - Use `FrozenDictionary` for request and notification wrapper lookup.
 - Queries and commands require exactly one handler for the selected message type.
 - Duplicate query or command handlers for the same handled message type fail when the singleton registry is created.
-- The registry treats any non-keyed descriptor whose service type is a handler interface as a handler, so registering one directly with Microsoft DI routes exactly like a typed registration method does. The typed methods and assembly scanning stay the documented path because they also validate the handler shape, but the registry must not start rejecting descriptors it did not add itself: reading the final descriptors is what keeps registration order irrelevant.
+- The registry treats any non-keyed descriptor whose service type is a handler interface as a handler, so registering
+  one directly with Microsoft DI routes exactly like a typed registration method does. The typed methods and assembly
+  scanning stay the documented path because they also validate the handler shape, but the registry must not start
+  rejecting descriptors it did not add itself: reading the final descriptors is what keeps registration order
+  irrelevant.
 - Notifications allow zero or more handlers and execute sequentially in registration order.
 - Dispatch lookup uses exact concrete message types and startup-precomputed polymorphic routes. An exact handler wins;
   otherwise, select the most-specific compatible handled base class or interface. Do not broadcast notifications across
   multiple levels of the type hierarchy.
 - Route discovery includes handler assemblies and assemblies declaring handled message types. Generated dispatchers also
   include concrete messages declared by the host. Do not scan every referenced assembly implicitly.
-- Reflection, including closed wrapper construction from handler service descriptors, is limited to startup. Dispatch must not use reflection.
+- Reflection, including closed wrapper construction from handler service descriptors, is limited to startup. Dispatch
+  must not use reflection.
 
 ## Documentation style
 
-- Every public API must have XML documentation. `CS1591` is intentionally not suppressed, and warnings are treated as errors.
+- Every public API must have XML documentation. `CS1591` is intentionally not suppressed, and warnings are treated as
+  errors.
 - Internal APIs do not require XML documentation.
 - Write summary blocks on separate lines:
 
@@ -147,21 +178,21 @@ Treat these numbers as regression indicators, not cross-machine performance guar
 
 User-facing prose lives in the DocFX site under `docs/`, not in `README.md`.
 
-- `README.md` is a short entry point: badges, features, install, a quick start, and links to the site.
-  It is also the NuGet package readme (`PackageReadmeFile` in `Directory.Build.props`), so **every link
-  in it must be an absolute URL**. NuGet does not resolve relative links.
-- Keep the site small. It has seven guide pages and one reference page; prefer adding a section to an
-  existing page over creating a new one. New conceptual content belongs in `docs/guide` and must be
-  added to `docs/guide/toc.yml`, or it will not appear in the navigation. Lookup material belongs in
+- `README.md` is a short entry point: badges, features, install, a quick start, and links to the site. It is also the
+  NuGet package readme (`PackageReadmeFile` in `Directory.Build.props`), so **every link in it must be an absolute
+  URL**. NuGet does not resolve relative links.
+- Keep the site small. It has seven guide pages and one reference page; prefer adding a section to an existing page over
+  creating a new one. New conceptual content belongs in `docs/guide` and must be added to `docs/guide/toc.yml`, or it
+  will not appear in the navigation. Lookup material belongs in
   `docs/reference.md`.
-- Do not write per-page introductions, "read on" footers, or restate a neighbouring page. The site is
-  deliberately terse; a table or a code block usually replaces a paragraph.
-- Do not hand-write API documentation. The `docs/api` pages are generated from XML documentation
-  comments; only `docs/api/index.md` is authored by hand.
-- Cross-link between pages with relative Markdown links. The site is built with `--warningsAsErrors`,
-  so a broken link fails the build.
-- Behavior documented in the site must match the source. When a change alters observable behavior,
-  update the affected guide page in the same change, and `CHANGELOG.md` when it affects a release.
+- Do not write per-page introductions, "read on" footers, or restate a neighbouring page. The site is deliberately
+  terse; a table or a code block usually replaces a paragraph.
+- Do not hand-write API documentation. The `docs/api` pages are generated from XML documentation comments; only
+  `docs/api/index.md` is authored by hand.
+- Cross-link between pages with relative Markdown links. The site is built with `--warningsAsErrors`, so a broken link
+  fails the build.
+- Behavior documented in the site must match the source. When a change alters observable behavior, update the affected
+  guide page in the same change, and `CHANGELOG.md` when it affects a release.
 
 ## Performance work
 
@@ -170,18 +201,23 @@ User-facing prose lives in the DocFX site under `docs/`, not in `README.md`.
 - Do not use `--job Dry` results as performance evidence; Dry runs only verify discovery and execution.
 - Distinguish warmed-scope throughput from an ASP.NET-style fresh-scope-per-request scenario.
 - Preserve handler and behavior lifetime semantics before accepting allocation reductions.
-- Avoid mutable shared pipeline state, `AsyncLocal`, scoped objects retained by singleton caches, or optimizations that break concurrent dispatch.
+- Avoid mutable shared pipeline state, `AsyncLocal`, scoped objects retained by singleton caches, or optimizations that
+  break concurrent dispatch.
 
 Run benchmarks with:
 
 ```bash
-dotnet run --project benchmarks/Dispatcher.Benchmarks -c Release
+dotnet run --project benchmarks/Dispatcher.Benchmarks.Execution -c Release -- execution
+dotnet run --project benchmarks/Dispatcher.Benchmarks.Telemetry -c Release -- telemetry
+dotnet run --project benchmarks/Dispatcher.Benchmarks.Scale -c Release -- scale
 ```
 
 ## Verification
 
 - Tests should verify observable behavior, public contracts, or a concrete regression scenario.
-- Do not add tests that merely restate implementation details already evident from the source, such as assembly ownership, concrete internal collection types, or the presence or absence of internal members. Those details should be reviewed in the implementation itself rather than locked down through reflection-based tests.
+- Do not add tests that merely restate implementation details already evident from the source, such as assembly
+  ownership, concrete internal collection types, or the presence or absence of internal members. Those details should be
+  reviewed in the implementation itself rather than locked down through reflection-based tests.
 
 For normal changes, run:
 
@@ -193,14 +229,14 @@ dotnet test --project tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.cspr
 dotnet test --project tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj -c Release --no-build --framework net10.0
 ```
 
-`dotnet test` needs `--project`: `global.json` selects the Microsoft.Testing.Platform runner, which
-rejects a positional project path.
+`dotnet test` needs `--project`: `global.json` selects the Microsoft.Testing.Platform runner, which rejects a positional
+project path.
 
 The format run excludes `samples/` because of [dotnet/sdk#51136](https://github.com/dotnet/sdk/issues/51136):
-`dotnet format` does not apply the ASP.NET request delegate generator's interceptors, so the Minimal
-API `Map*` calls in the Native AOT sample report IL2026 and IL3050 that a real build never produces.
-Do not silence those diagnostics in the sample; its AOT configuration is correct, and suppressing them
-would hide genuine trimming problems in the one project meant to catch them.
+`dotnet format` does not apply the ASP.NET request delegate generator's interceptors, so the Minimal API `Map*` calls in
+the Native AOT sample report IL2026 and IL3050 that a real build never produces. Do not silence those diagnostics in the
+sample; its AOT configuration is correct, and suppressing them would hide genuine trimming problems in the one project
+meant to catch them.
 
 Run .NET 8 tests as well when a .NET 8 runtime is installed:
 
@@ -228,22 +264,28 @@ dotnet docfx docs/docfx.json --warningsAsErrors
 
 Add `--serve` to preview the result on <http://localhost:8080>.
 
-The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration, transient behavior lifetime, and registration idempotence.
+The test suite should continue covering handler dispatch, cancellation, pipeline order, short-circuiting, resultless
+command adaptation through `Unit`, notification order, missing and duplicate handlers, direct DI behavior registration,
+transient behavior lifetime, and registration idempotence.
 
 ## AOT and source generation
 
 - The current reflection implementation is intentionally not trimming or NativeAOT safe.
 - The source-generated package must not reference the reflection-based `Dispatcher.DependencyInjection` implementation.
 - Preserve the separate `AddDispatcherHandlers` module seam so generated registrations can replace reflection later.
-- Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public command/query contracts unnecessarily.
+- Source generation should produce explicit handler registrations and dispatch metadata rather than changing the public
+  command/query contracts unnecessarily.
 - Internal handlers across module assemblies must remain supported.
-- The generator injects its internal `GenerateDispatcherHandlersAttribute`; do not add generator-only attributes to runtime or abstractions assemblies.
-- Generated modules opt in with `GenerateDispatcherHandlersAttribute` and must use a unique, valid extension method name.
-- Keep generator diagnostics documented in `AnalyzerReleases.Unshipped.md` and covered by generator tests.
-  Do not add an `AdditionalFiles` item for the two `AnalyzerReleases.*.md` files. `Microsoft.CodeAnalysis.Analyzers.targets`
+- The generator injects its internal `GenerateDispatcherHandlersAttribute`; do not add generator-only attributes to
+  runtime or abstractions assemblies.
+- Generated modules opt in with `GenerateDispatcherHandlersAttribute` and must use a unique, valid extension method
+  name.
+- Keep generator diagnostics documented in `AnalyzerReleases.Unshipped.md` and covered by generator tests. Do not add an
+  `AdditionalFiles` item for the two `AnalyzerReleases.*.md` files. `Microsoft.CodeAnalysis.Analyzers.targets`
   already includes them, and a second include makes Roslyn workspace loaders such as `dotnet format` and DocFX report
   duplicate documents.
-- Keep generated/AOT support as a separate implementation path and compare it against the reflection path before replacing existing behavior.
+- Keep generated/AOT support as a separate implementation path and compare it against the reflection path before
+  replacing existing behavior.
 
 ## Repository hygiene
 
@@ -251,7 +293,8 @@ The test suite should continue covering handler dispatch, cancellation, pipeline
 - Line endings are LF everywhere, enforced by `.gitattributes` (`* text=auto eol=lf`) to match
   `end_of_line = lf` in `.editorconfig`. Do not commit CRLF, and do not rely on `core.autocrlf`.
 - Do not add empty lines at the end of files.
-- Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear responsibilities.
+- Do not use partial classes to split implementation across files. Prefer cohesive, explicitly named types with clear
+  responsibilities.
 - Do not commit `.DS_Store`, `*.DotSettings.user`, build output, benchmark artifacts, or old package artifacts.
 - Do not commit generated documentation: `docs/_site/` and the generated API metadata under `docs/api/` are ignored.
 - `artifacts/packages` may contain packages from multiple versions; never publish with an unreviewed wildcard.

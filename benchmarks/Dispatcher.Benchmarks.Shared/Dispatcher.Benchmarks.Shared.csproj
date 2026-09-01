@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+    <ProjectReference Include="../../src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>
