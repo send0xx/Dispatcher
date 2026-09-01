@@ -34,14 +34,14 @@ public class ReflectionScaleBenchmarks : ScaleBenchmarkBase
         base.Cleanup();
     }
 
-    [Benchmark]
+    [Benchmark, InvocationCount(1)]
     public int HandlerScanning()
     {
         var services = ScanModules();
         return services.Count;
     }
 
-    [Benchmark]
+    [Benchmark, InvocationCount(1)]
     public int RegistryCreationFromCompletedServices()
     {
         var services = new ServiceCollection();
@@ -56,7 +56,7 @@ public class ReflectionScaleBenchmarks : ScaleBenchmarkBase
         return services.Count;
     }
 
-    [Benchmark]
+    [Benchmark, InvocationCount(1)]
     public int CompleteProviderStartup()
     {
         var services = ScanModules();

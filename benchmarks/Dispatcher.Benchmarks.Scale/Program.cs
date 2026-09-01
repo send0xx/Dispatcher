@@ -13,8 +13,10 @@ if (args.Length > 0 && args[0].Equals("build-timing", StringComparison.OrdinalIg
 
 if (args.Length > 0 && args[0].Equals("validate", StringComparison.OrdinalIgnoreCase))
 {
-    using var corpus = FixtureCorpus.Create(FixtureSize.Small);
-    Console.WriteLine("Small scale fixture validation passed.");
+    var benchmark = new SourceGenerationScaleBenchmarks { Size = FixtureSize.Small };
+    benchmark.Setup();
+    benchmark.Cleanup();
+    Console.WriteLine("Small scale fixture and generated-provider cleanup validation passed.");
     return;
 }
 

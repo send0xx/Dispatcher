@@ -56,6 +56,8 @@ dotnet run --project benchmarks/Dispatcher.Benchmarks.Scale -c Release -- build-
 Use Release builds on an idle machine without a debugger. BenchmarkDotNet reports the runtime, SDK, architecture,
 operating system, hardware, absolute time, and managed allocations. Interpret scale generation separately from final
 assembly emission. Dry jobs are useful only for discovery and setup validation; do not use them as performance evidence.
+Scale scanning, startup, generation, and emission run once per measurement iteration so each observation represents one
+operation instead of a GC-sensitive batch. Sampled dispatch retains BenchmarkDotNet's adaptive throughput batching.
 
 Source-generation method boundaries are explicit:
 
