@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Jobs;
 using Dispatcher.DependencyInjection;
 using Dispatcher.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,18 @@ public sealed class DispatcherBenchmarkAttribute : Attribute, IConfigSource
     public IConfig Config { get; } = ManualConfig.CreateEmpty()
         .AddDiagnoser(MemoryDiagnoser.Default)
         .HideColumns("Error", "StdDev", "RatioSD");
+}
+
+[AttributeUsage(AttributeTargets.Class)]
+public sealed class ScaleOperationBenchmarkAttribute : Attribute, IConfigSource
+{
+    public IConfig Config { get; } = ManualConfig.CreateEmpty()
+        .AddDiagnoser(MemoryDiagnoser.Default)
+        .HideColumns("Error", "StdDev", "RatioSD")
+        .AddJob(Job.Default
+            .WithEnvironmentVariable("DOTNET_TieredCompilation", "0")
+            .WithInvocationCount(1)
+            .WithUnrollFactor(1));
 }
 
 public sealed class BenchmarkProvider : IDisposable

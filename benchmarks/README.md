@@ -57,15 +57,29 @@ Use Release builds on an idle machine without a debugger. BenchmarkDotNet report
 operating system, hardware, absolute time, and managed allocations. Interpret scale generation separately from final
 assembly emission. Dry jobs are useful only for discovery and setup validation; do not use them as performance evidence.
 Scale scanning, startup, generation, and emission run once per measurement iteration so each observation represents one
-operation instead of a GC-sensitive batch. Sampled dispatch retains BenchmarkDotNet's adaptive throughput batching.
+operation instead of a GC-sensitive batch. Those groups also disable tiered compilation, because JIT tier promotion
+partway through a run splits a single operation into several timing modes and produces bimodal results that cannot
+support a scaling claim. Dispatch is measured separately in `ScaleDispatchBenchmarks`, which keeps BenchmarkDotNet's
+adaptive throughput batching and the runtime's default tiering so the hot path stays representative of production.
+Running that group alongside the allocation-heavy scanning and generation groups inflates and destabilises it, so take
+nanosecond dispatch figures from an isolated run:
 
-Source-generation method boundaries are explicit:
+```shell
+DISPATCHER_BENCHMARK_PROFILE=quick dotnet run --project benchmarks/Dispatcher.Benchmarks.Scale -c Release -- \
+  --filter '*ScaleDispatchBenchmarks*'
+```
+
+Source-generation method boundaries are explicit. The cold methods build a fresh `CSharpCompilation` for every
+operation, so Roslyn's per-compilation symbol cache cannot carry over between iterations and make a later "cold" run
+cheaper than the first. Syntax trees and metadata references are shared, so parsing and metadata reads stay warm.
+`ColdModuleHandlerRegistration` generates for one module only, and every fixture holds roughly the same number of
+messages per module, so it is expected to stay flat across `Small`, `Medium`, and `Large` rather than scale with them:
 
 | Method                            | Generator driver                               | Compilation/emission                                     |
 |-----------------------------------|------------------------------------------------|----------------------------------------------------------|
-| `ColdModuleHandlerRegistration`   | Constructed in the operation                   | Input module already parsed and compiled; no emit        |
-| `ColdHostDispatcherGeneration`    | Constructed in the operation                   | Input host and module metadata already compiled; no emit |
-| `TotalColdGeneration`             | One new driver per module and host             | Fixture compilation and disk output excluded             |
+| `ColdModuleHandlerRegistration`   | Constructed in the operation                   | Fresh compilation from parsed module input; no emit      |
+| `ColdHostDispatcherGeneration`    | Constructed in the operation                   | Fresh compilation from parsed host input; no emit        |
+| `TotalColdGeneration`             | One new driver per module and host             | Fresh compilations; parsing and disk output excluded     |
 | `CachedIncrementalGeneration`     | Reuses a warmed driver                         | No source change; no emit                                |
 | `IncrementalAfterMessageChange`   | Reuses the same warmed baseline                | One host message change; no emit                         |
 | `IncrementalAfterModuleReference` | Reuses a driver warmed without the last module | Adds the final metadata reference; no emit               |

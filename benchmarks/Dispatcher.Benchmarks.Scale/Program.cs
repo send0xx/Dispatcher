@@ -13,10 +13,26 @@ if (args.Length > 0 && args[0].Equals("build-timing", StringComparison.OrdinalIg
 
 if (args.Length > 0 && args[0].Equals("validate", StringComparison.OrdinalIgnoreCase))
 {
-    var benchmark = new SourceGenerationScaleBenchmarks { Size = FixtureSize.Small };
-    benchmark.Setup();
-    benchmark.Cleanup();
-    Console.WriteLine("Small scale fixture and generated-provider cleanup validation passed.");
+    var reflection = new ReflectionScaleBenchmarks { Size = FixtureSize.Small };
+    reflection.Setup();
+    reflection.Cleanup();
+
+    var generation = new SourceGenerationScaleBenchmarks { Size = FixtureSize.Small };
+    generation.Setup();
+    generation.Cleanup();
+
+    foreach (var implementation in Enum.GetValues<BenchmarkImplementation>())
+    {
+        var dispatch = new ScaleDispatchBenchmarks
+        {
+            Size = FixtureSize.Small,
+            Implementation = implementation
+        };
+        dispatch.Setup();
+        dispatch.Cleanup();
+    }
+
+    Console.WriteLine("Small scale fixture, providers, and load-context cleanup validation passed for every group.");
     return;
 }
 
@@ -27,7 +43,12 @@ if (args.Length > 0 && args[0].Equals("quick", StringComparison.OrdinalIgnoreCas
 
 var profiles = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
 {
-    ["quick"] = ["*ReflectionScaleBenchmarks*", "*SourceGenerationScaleBenchmarks*"],
+    ["quick"] =
+    [
+        "*ReflectionScaleBenchmarks*",
+        "*SourceGenerationScaleBenchmarks*",
+        "*ScaleDispatchBenchmarks*"
+    ],
     ["scale"] = ["*"],
     ["full"] = ["*"]
 };

@@ -5,6 +5,8 @@ namespace Dispatcher.Benchmarks.Scale;
 
 internal static class EndToEndBuildTiming
 {
+    private const string DependencyInjectionVersion = "10.0.11";
+
     internal static async Task RunAsync(FixtureSize size)
     {
         var configuration = FixtureConfiguration.Create(size);
@@ -111,7 +113,7 @@ internal static class EndToEndBuildTiming
         {
             project.AppendLine("  <ItemGroup>");
             project.AppendLine(
-                "    <PackageReference Include=\"Microsoft.Extensions.DependencyInjection\" Version=\"10.0.11\" />");
+                $"    <PackageReference Include=\"Microsoft.Extensions.DependencyInjection\" Version=\"{DependencyInjectionVersion}\" />");
             project.AppendLine("  </ItemGroup>");
         }
 

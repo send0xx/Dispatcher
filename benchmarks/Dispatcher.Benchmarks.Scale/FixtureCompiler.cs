@@ -233,6 +233,13 @@ internal static class FixtureCompiler
         }
     }
 
+    internal static GenerationRun RunColdGenerator(CSharpCompilation template) =>
+        RunGenerator(CSharpCompilation.Create(
+            template.AssemblyName,
+            template.SyntaxTrees,
+            template.References,
+            template.Options));
+
     internal static GenerationRun RunGenerator(CSharpCompilation compilation)
     {
         GeneratorDriver driver = CSharpGeneratorDriver.Create(new SourceGeneration.DispatcherGenerator())
