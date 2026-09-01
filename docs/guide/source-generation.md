@@ -83,8 +83,7 @@ builder.Services
     .AddOrderHandlers();
 ```
 
-Modular composition is supported, but not required. The
-[Native AOT sample](../reference.md#samples) is a complete application using it.
+Modular composition is supported, but not required.
 
 ## Routes must be known at build time
 
