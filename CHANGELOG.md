@@ -2,12 +2,13 @@
 
 This file records user-facing changes to Dispatcher releases.
 
-## Unreleased
+## 3.0.0
 
 ### Changed
 
-- **Breaking:** The `AddNotificationHandler(Type)` overload was removed. Reflection assembly scanning discovers open
-  generic notification handlers, while source generation emits their closed registrations. The typed
+- **Breaking:** The `AddNotificationHandler(Type)` and
+  `AddNotificationHandler(Type, Action<DispatcherOptions>)` overloads were removed. Reflection assembly scanning
+  discovers open generic notification handlers, while source generation emits their closed registrations. The typed
   `AddNotificationHandler<TNotification, THandler>()` overload remains in `Dispatcher` for explicit closed-handler
   registration.
 - Source-generated open notification handlers now use explicit closed service descriptors for every compatible known
