@@ -1,90 +1,90 @@
 <Solution>
     <Folder Name="/benchmarks/">
-        <File Path="benchmarks/BENCHMARK_REWORK_PLAN.md"/>
-        <File Path="benchmarks/README.md"/>
-        <Project Path="benchmarks/Dispatcher.Benchmarks.Shared/Dispatcher.Benchmarks.Shared.csproj"/>
-        <Project Path="benchmarks/Dispatcher.Benchmarks.Execution/Dispatcher.Benchmarks.Execution.csproj"/>
-        <Project Path="benchmarks/Dispatcher.Benchmarks.Telemetry/Dispatcher.Benchmarks.Telemetry.csproj"/>
-        <Project Path="benchmarks/Dispatcher.Benchmarks.Scale/Dispatcher.Benchmarks.Scale.csproj"/>
+        <File Path="benchmarks/BENCHMARK_REWORK_PLAN.md" />
+        <File Path="benchmarks/README.md" />
+        <Project Path="benchmarks/Dispatcher.Benchmarks.Shared/Dispatcher.Benchmarks.Shared.csproj" />
+        <Project Path="benchmarks/Dispatcher.Benchmarks.Execution/Dispatcher.Benchmarks.Execution.csproj" />
+        <Project Path="benchmarks/Dispatcher.Benchmarks.Telemetry/Dispatcher.Benchmarks.Telemetry.csproj" />
+        <Project Path="benchmarks/Dispatcher.Benchmarks.Scale/Dispatcher.Benchmarks.Scale.csproj" />
     </Folder>
     <Folder Name="/docs/">
-        <File Path="docs/docfx.json"/>
-        <File Path="docs/index.md"/>
-        <File Path="docs/reference.md"/>
-        <File Path="docs/toc.yml"/>
+        <File Path="docs/docfx.json" />
+        <File Path="docs/index.md" />
+        <File Path="docs/reference.md" />
+        <File Path="docs/toc.yml" />
     </Folder>
     <Folder Name="/docs/api/">
-        <File Path="docs/api/index.md"/>
+        <File Path="docs/api/index.md" />
     </Folder>
     <Folder Name="/docs/guide/">
-        <File Path="docs/guide/getting-started.md"/>
-        <File Path="docs/guide/messages.md"/>
-        <File Path="docs/guide/opentelemetry.md"/>
-        <File Path="docs/guide/pipeline-behaviors.md"/>
-        <File Path="docs/guide/registration.md"/>
-        <File Path="docs/guide/routing.md"/>
-        <File Path="docs/guide/source-generation.md"/>
-        <File Path="docs/guide/toc.yml"/>
+        <File Path="docs/guide/getting-started.md" />
+        <File Path="docs/guide/messages.md" />
+        <File Path="docs/guide/opentelemetry.md" />
+        <File Path="docs/guide/pipeline-behaviors.md" />
+        <File Path="docs/guide/registration.md" />
+        <File Path="docs/guide/routing.md" />
+        <File Path="docs/guide/source-generation.md" />
+        <File Path="docs/guide/toc.yml" />
     </Folder>
     <Folder Name="/docs/templates/">
-        <File Path="docs/templates/dispatcher/public/main.css"/>
+        <File Path="docs/templates/dispatcher/public/main.css" />
     </Folder>
     <Folder Name="/samples/NativeAot/">
-        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj"/>
-        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj"/>
-        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj"/>
-        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj"/>
+        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
+        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Handlers/Dispatcher.NativeAotHostSample.Handlers.csproj" />
+        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Audit/Dispatcher.NativeAotHostSample.Audit.csproj" />
+        <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample/Dispatcher.NativeAotHostSample.csproj" />
     </Folder>
     <Folder Name="/samples/">
-        <File Path="samples/README.md"/>
+        <File Path="samples/README.md" />
     </Folder>
     <Folder Name="/samples/DependencyInjection/">
-        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Contracts/Dispatcher.SampleApi.Contracts.csproj"/>
-        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj"/>
-        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj"/>
-        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj"/>
+        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Contracts/Dispatcher.SampleApi.Contracts.csproj" />
+        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Orders/Dispatcher.SampleApi.Modules.Orders.csproj" />
+        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi.Modules.Stock/Dispatcher.SampleApi.Modules.Stock.csproj" />
+        <Project Path="samples/DependencyInjection/Dispatcher.SampleApi/Dispatcher.SampleApi.csproj" />
     </Folder>
     <Folder Name="/src/">
-        <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj"/>
-        <Project Path="src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj"/>
-        <Project Path="src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj"/>
-        <Project Path="src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj"/>
-        <Project Path="src/Dispatcher/Dispatcher.csproj"/>
+        <Project Path="src/Dispatcher.Abstractions/Dispatcher.Abstractions.csproj" />
+        <Project Path="src/Dispatcher.DependencyInjection/Dispatcher.DependencyInjection.csproj" />
+        <Project Path="src/Dispatcher.SourceGeneration.Analyzers/Dispatcher.SourceGeneration.Analyzers.csproj" />
+        <Project Path="src/Dispatcher.SourceGeneration/Dispatcher.SourceGeneration.csproj" />
+        <Project Path="src/Dispatcher/Dispatcher.csproj" />
     </Folder>
     <Folder Name="/tests/">
-        <Project Path="tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj"/>
-        <Project Path="tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj"/>
-        <Project Path="tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.ConflictingHandlers/Dispatcher.TestSupport.ConflictingHandlers.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.TypeLoadFailureDependency/Dispatcher.TestSupport.TypeLoadFailureDependency.csproj"/>
-        <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj"/>
+        <Project Path="tests/Dispatcher.DependencyInjection.Tests/Dispatcher.DependencyInjection.Tests.csproj" />
+        <Project Path="tests/Dispatcher.Parity.Tests/Dispatcher.Parity.Tests.csproj" />
+        <Project Path="tests/Dispatcher.SourceGeneration.Tests/Dispatcher.SourceGeneration.Tests.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.AdditionalHandlers/Dispatcher.TestSupport.AdditionalHandlers.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.ConflictingHandlers/Dispatcher.TestSupport.ConflictingHandlers.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.Contracts/Dispatcher.TestSupport.Contracts.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.Handlers/Dispatcher.TestSupport.Handlers.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.TypeLoadFailureDependency/Dispatcher.TestSupport.TypeLoadFailureDependency.csproj" />
+        <Project Path="tests/Dispatcher.TestSupport.UnsupportedHandlers/Dispatcher.TestSupport.UnsupportedHandlers.csproj" />
     </Folder>
     <Folder Name="/github/">
-        <File Path=".github/ISSUE_TEMPLATE/bug_report.yml"/>
-        <File Path=".github/ISSUE_TEMPLATE/config.yml"/>
-        <File Path=".github/ISSUE_TEMPLATE/feature_request.yml"/>
-        <File Path=".github/PULL_REQUEST_TEMPLATE.md"/>
-        <File Path=".github/SECURITY.md"/>
-        <File Path=".github/dependabot.yml"/>
-        <File Path=".github/workflows/ci.yml"/>
-        <File Path=".github/workflows/docs.yml"/>
+        <File Path=".github/ISSUE_TEMPLATE/bug_report.yml" />
+        <File Path=".github/ISSUE_TEMPLATE/config.yml" />
+        <File Path=".github/ISSUE_TEMPLATE/feature_request.yml" />
+        <File Path=".github/PULL_REQUEST_TEMPLATE.md" />
+        <File Path=".github/SECURITY.md" />
+        <File Path=".github/dependabot.yml" />
+        <File Path=".github/workflows/ci.yml" />
+        <File Path=".github/workflows/docs.yml" />
     </Folder>
     <Folder Name="/_/">
-        <File Path=".config/dotnet-tools.json"/>
-        <File Path=".editorconfig"/>
-        <File Path=".gitignore"/>
-        <File Path="AGENTS.md"/>
-        <File Path="CHANGELOG.md"/>
-        <File Path="CONTRIBUTING.md"/>
-        <File Path="coverage.runsettings"/>
-        <File Path="Directory.Build.props"/>
-        <File Path="Directory.Packages.props"/>
-        <File Path="global.json"/>
-        <File Path="LICENSE"/>
-        <File Path="README.md"/>
-        <File Path="RELEASING.md"/>
+        <File Path=".config/dotnet-tools.json" />
+        <File Path=".editorconfig" />
+        <File Path=".gitignore" />
+        <File Path="AGENTS.md" />
+        <File Path="CHANGELOG.md" />
+        <File Path="CONTRIBUTING.md" />
+        <File Path="coverage.runsettings" />
+        <File Path="Directory.Build.props" />
+        <File Path="Directory.Packages.props" />
+        <File Path="global.json" />
+        <File Path="LICENSE" />
+        <File Path="README.md" />
+        <File Path="RELEASING.md" />
     </Folder>
 </Solution>
