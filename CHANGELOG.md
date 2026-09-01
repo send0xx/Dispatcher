@@ -16,6 +16,9 @@ This file records user-facing changes to Dispatcher releases.
 - Source generation was rewritten around separate discovery, compilation analysis, route resolution, and emission
   stages. The generated dispatcher and registration code is more consistently structured and formatted while preserving
   handler routing, notifications, pipelines, telemetry, diagnostics, namespaces, and generated API names.
+- Benchmarks were reorganized into focused execution, telemetry, and scale suites. Reflection and source-generated
+  dispatch now use the same workloads, while deterministic scale fixtures measure handler scanning, provider startup,
+  source generation, incremental changes, assembly emission, pipeline depth, and notification fan-out.
 
 ## 2.0.0
 
