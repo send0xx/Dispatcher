@@ -11,9 +11,11 @@ public class PipelineDepthBenchmarks
     private BenchmarkProvider _provider = null!;
     private BenchmarkHost _host = null!;
 
-    [ParamsAllValues] public BenchmarkImplementation Implementation { get; set; }
+    [ParamsAllValues]
+    public BenchmarkImplementation Implementation { get; set; }
 
-    [Params(0, 1, 3, 5, 10)] public int BehaviorCount { get; set; }
+    [Params(0, 1, 3, 5, 10)]
+    public int BehaviorCount { get; set; }
 
     [GlobalSetup]
     public async Task Setup()
@@ -46,5 +48,6 @@ public class PipelineDepthBenchmarks
     }
 
     [Benchmark]
-    public ValueTask<int> QueryWithBehaviors() => _host.Dispatcher.QueryAsync(Query);
+    public ValueTask<int> QueryWithBehaviors() =>
+        _host.Dispatcher.QueryAsync(Query);
 }

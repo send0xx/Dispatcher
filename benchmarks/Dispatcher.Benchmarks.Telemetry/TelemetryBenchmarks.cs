@@ -39,11 +39,14 @@ public class TelemetryBenchmarks
     private string? _activityMessageType;
     private string? _metricMessageType;
 
-    [ParamsAllValues] public BenchmarkImplementation Implementation { get; set; }
+    [ParamsAllValues]
+    public BenchmarkImplementation Implementation { get; set; }
 
-    [ParamsSource(nameof(Modes))] public TelemetryMode Mode { get; set; }
+    [ParamsSource(nameof(Modes))]
+    public TelemetryMode Mode { get; set; }
 
-    [ParamsAllValues] public OperationOutcome Outcome { get; set; }
+    [ParamsAllValues]
+    public OperationOutcome Outcome { get; set; }
 
     public static IEnumerable<TelemetryMode> Modes =>
         Environment.GetEnvironmentVariable("DISPATCHER_BENCHMARK_PROFILE") == "quick"
@@ -73,8 +76,7 @@ public class TelemetryBenchmarks
             _activityListener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == instrumentationName,
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) =>
-                    ActivitySamplingResult.AllDataAndRecorded,
+                Sample = static (ref _) => ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = activity =>
                 {
                     if (_captureTags)

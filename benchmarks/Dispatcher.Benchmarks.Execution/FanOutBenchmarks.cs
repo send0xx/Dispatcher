@@ -11,9 +11,11 @@ public class NotificationFanOutBenchmarks
     private BenchmarkProvider _provider = null!;
     private BenchmarkHost _host = null!;
 
-    [ParamsAllValues] public BenchmarkImplementation Implementation { get; set; }
+    [ParamsAllValues]
+    public BenchmarkImplementation Implementation { get; set; }
 
-    [Params(0, 1, 5, 20, 50)] public int HandlerCount { get; set; }
+    [Params(0, 1, 5, 20, 50)]
+    public int HandlerCount { get; set; }
 
     [GlobalSetup]
     public async Task Setup()
@@ -43,5 +45,6 @@ public class NotificationFanOutBenchmarks
     }
 
     [Benchmark]
-    public ValueTask Publish() => _host.Dispatcher.PublishAsync(Notification);
+    public ValueTask Publish() =>
+        _host.Dispatcher.PublishAsync(Notification);
 }

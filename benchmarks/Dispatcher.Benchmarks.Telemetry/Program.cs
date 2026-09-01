@@ -38,5 +38,4 @@ var profiles = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase
     ["full"] = ["*"]
 };
 
-BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
-    .Run(BenchmarkProfiles.Select(args, profiles));
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(BenchmarkProfiles.Select(args, profiles));

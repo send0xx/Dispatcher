@@ -42,17 +42,20 @@ public class BasicDispatchBenchmarks
         _directHandler.HandleAsync(QueryMessage, CancellationToken.None);
 
     [Benchmark]
-    public ValueTask<int> Query() => _host.Dispatcher.QueryAsync(QueryMessage);
+    public ValueTask<int> Query() =>
+        _host.Dispatcher.QueryAsync(QueryMessage);
 
     [Benchmark]
     public ValueTask<int> CommandReturningResponse() =>
         _host.Dispatcher.ExecuteAsync(ResponseCommand);
 
     [Benchmark]
-    public ValueTask CommandWithoutResponse() => _host.Dispatcher.ExecuteAsync(Command);
+    public ValueTask CommandWithoutResponse() =>
+        _host.Dispatcher.ExecuteAsync(Command);
 
     [Benchmark]
-    public ValueTask NotificationWithOneHandler() => _host.Dispatcher.PublishAsync(Notification);
+    public ValueTask NotificationWithOneHandler() =>
+        _host.Dispatcher.PublishAsync(Notification);
 
     [Benchmark]
     public ValueTask NotificationWithTwoHandlers() =>

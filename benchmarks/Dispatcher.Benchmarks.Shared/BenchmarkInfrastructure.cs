@@ -17,11 +17,9 @@ public enum BenchmarkImplementation
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class DispatcherBenchmarkAttribute : Attribute, IConfigSource
 {
-    public DispatcherBenchmarkAttribute() => Config = ManualConfig.CreateEmpty()
+    public IConfig Config { get; } = ManualConfig.CreateEmpty()
         .AddDiagnoser(MemoryDiagnoser.Default)
         .HideColumns("Error", "StdDev", "RatioSD");
-
-    public IConfig Config { get; }
 }
 
 public sealed class BenchmarkProvider : IDisposable
