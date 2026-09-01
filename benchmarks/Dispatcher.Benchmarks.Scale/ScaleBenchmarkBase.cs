@@ -17,12 +17,10 @@ public abstract class ScaleBenchmarkBase
     public virtual void Setup()
     {
         Corpus = FixtureCorpus.Create(Size);
-        var expectedTrees = Corpus.Configuration.ModuleCount + 2;
-        var expectedAssemblies = Corpus.Configuration.ModuleCount + 2;
-        if (Corpus.ModuleTrees.Length + 2 != expectedTrees ||
-            Corpus.ModuleAssemblyPaths.Length + 2 != expectedAssemblies)
+        if (Corpus.ModuleTrees.Length != Corpus.Configuration.ModuleCount ||
+            Corpus.ModuleAssemblyPaths.Length != Corpus.Configuration.ModuleCount)
         {
-            throw new InvalidOperationException("Scale fixture tree or assembly counts are invalid.");
+            throw new InvalidOperationException("Scale fixture module tree or assembly counts are invalid.");
         }
     }
 
