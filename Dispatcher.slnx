@@ -28,6 +28,7 @@
     </Folder>
     <Folder Name="/docs/templates/">
         <File Path="docs/templates/dispatcher/public/main.css" />
+        <File Path="docs\templates\dispatcher\public\main.js" />
     </Folder>
     <Folder Name="/samples/NativeAot/">
         <Project Path="samples/NativeAot/Dispatcher.NativeAotHostSample.Contracts/Dispatcher.NativeAotHostSample.Contracts.csproj" />
