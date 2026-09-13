@@ -16,8 +16,10 @@ updates:
       # Pinned to the lowest Roslyn version the generator supports, so it must be raised
       # deliberately rather than tracked to the newest release.
       - dependency-name: Microsoft.CodeAnalysis.CSharp
-      # Deliberately multi-targeted: net8.0 stays on 8.0.0 so the package keeps its
-      # lowest supported Microsoft DI dependency.
+      # Deliberately multi-targeted: net8.0 stays on 8.0.x so the package keeps its
+      # lowest supported Microsoft DI dependency. Dependabot ignores the TargetFramework
+      # condition on the PackageVersion items, so it would raise the net8.0 entry too.
+      - dependency-name: Microsoft.Extensions.DependencyInjection
       - dependency-name: Microsoft.Extensions.DependencyInjection.Abstractions
 
   - package-ecosystem: github-actions
